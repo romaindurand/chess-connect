@@ -226,6 +226,7 @@
 			return;
 		}
 
+		errorMessage = '';
 		selectedBoardFrom = null;
 		selectedReservePiece = selectedReservePiece === piece ? null : piece;
 	}
@@ -248,6 +249,34 @@
 			return 'Invitation en attente';
 		}
 		return 'Mode spectateur';
+	}
+
+	function turnLineText(): string {
+		if (!game) {
+			return '';
+		}
+
+		if (game.state.winner) {
+			return `Partie terminée — gagnant: ${game.state.winner === 'white' ? 'Blanc' : 'Noir'}`;
+		}
+
+		if (game.viewerRole !== 'white' && game.viewerRole !== 'black') {
+			return '';
+		}
+
+		const turnNumber = Math.floor(game.state.pliesPlayed / 2) + 1;
+		const isViewerTurn = game.viewerColor === game.state.turn;
+		return `Tour ${turnNumber} — ${isViewerTurn ? "C'est à votre tour de jouer" : "C'est à l'adversaire de jouer"}`;
+	}
+
+	function isViewerTurnNow(): boolean {
+		if (!game || game.state.winner) {
+			return false;
+		}
+		if (game.viewerRole !== 'white' && game.viewerRole !== 'black') {
+			return false;
+		}
+		return game.viewerColor === game.state.turn;
 	}
 
 	function pieceIcon(piece: PieceType): typeof ChessPawn {
@@ -275,6 +304,11 @@
 		<div>
 			<h1 class="text-2xl font-semibold">Partie {gameId}</h1>
 			<p class="text-sm text-gray-600">{roleText()}</p>
+			{#if turnLineText()}
+				<p class={`text-sm ${isViewerTurnNow() ? 'font-bold text-gray-900' : 'text-gray-700'}`}>
+					{turnLineText()}
+				</p>
+			{/if}
 		</div>
 		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={copyInviteLink}>
 			{copying ? 'Lien copié' : 'Copier le lien'}
@@ -396,13 +430,6 @@
 			</div>
 		</div>
 
-		<p class="mt-4 text-sm text-gray-700">
-			{#if game.state.winner}
-				Partie terminée — gagnant: {game.state.winner === 'white' ? 'Blanc' : 'Noir'}
-			{:else}
-				Tour actuel: {game.state.turn === 'white' ? 'Blanc' : 'Noir'}
-			{/if}
-		</p>
 	{/if}
 
 	{#if errorMessage}

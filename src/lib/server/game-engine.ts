@@ -29,6 +29,19 @@ function isInside(coord: Coord): boolean {
 	return coord.x >= 0 && coord.y >= 0 && coord.x < BOARD_SIZE && coord.y < BOARD_SIZE;
 }
 
+function normalizePawnDirectionAtPosition(
+	pawnDirection: 1 | -1,
+	position: Coord
+): 1 | -1 {
+	if (pawnDirection === -1 && position.y === 0) {
+		return 1;
+	}
+	if (pawnDirection === 1 && position.y === BOARD_SIZE - 1) {
+		return -1;
+	}
+	return pawnDirection;
+}
+
 function getPiece(board: GameState['board'], coord: Coord): PieceOnBoard | null {
 	if (!isInside(coord)) {
 		return null;
@@ -235,7 +248,12 @@ export function applyPlayerMove(state: GameState, color: Color, move: PlayerMove
 		board[move.to.y][move.to.x] = {
 			type: move.piece,
 			owner: color,
-			pawnDirection: color === 'white' ? -1 : 1
+			pawnDirection:
+				move.piece === 'pawn'
+					? normalizePawnDirectionAtPosition(color === 'white' ? -1 : 1, move.to)
+					: color === 'white'
+						? -1
+						: 1
 		};
 		reserves[color][move.piece] = false;
 	} else {

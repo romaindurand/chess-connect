@@ -58,6 +58,28 @@ describe('game-engine placement phase', () => {
 			})
 		).toThrow(/placement/i);
 	});
+
+	it('sets pawn direction correctly when placed on farthest rank', () => {
+		const whiteState = makeActiveState('white');
+		const afterWhitePlace = applyPlayerMove(whiteState, 'white', {
+			kind: 'place',
+			piece: 'pawn',
+			to: { x: 1, y: 0 }
+		});
+
+		expect(afterWhitePlace.board[0][1]?.pawnDirection).toBe(1);
+		expect(getPieceMoves(afterWhitePlace, { x: 1, y: 0 })).toContainEqual({ x: 1, y: 1 });
+
+		const blackState = makeActiveState('black');
+		const afterBlackPlace = applyPlayerMove(blackState, 'black', {
+			kind: 'place',
+			piece: 'pawn',
+			to: { x: 2, y: 3 }
+		});
+
+		expect(afterBlackPlace.board[3][2]?.pawnDirection).toBe(-1);
+		expect(getPieceMoves(afterBlackPlace, { x: 2, y: 3 })).toContainEqual({ x: 2, y: 2 });
+	});
 });
 
 describe('game-engine movement and capture', () => {
