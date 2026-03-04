@@ -1,0 +1,134 @@
+export const BOARD_SIZE = 4;
+
+export type Color = 'white' | 'black';
+export type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop';
+export type ViewerRole = Color | 'guest' | 'spectator';
+export type GameStatus = 'waiting' | 'active' | 'finished';
+
+export interface Coord {
+	x: number;
+	y: number;
+}
+
+export interface PieceOnBoard {
+	type: PieceType;
+	owner: Color;
+	pawnDirection: 1 | -1;
+}
+
+export type Reserve = Record<PieceType, boolean>;
+
+export interface PlayerInfo {
+	name: string;
+	joinedAt: number;
+}
+
+export interface PlayersByColor {
+	white: PlayerInfo | null;
+	black: PlayerInfo | null;
+}
+
+export interface GameState {
+	id: string;
+	status: GameStatus;
+	players: PlayersByColor;
+	board: (PieceOnBoard | null)[][];
+	reserves: Record<Color, Reserve>;
+	turn: Color;
+	pliesPlayed: number;
+	winner: Color | null;
+	createdAt: number;
+	lastActivityAt: number;
+	version: number;
+}
+
+export interface LegalOptions {
+	byBoardFrom: Record<string, Coord[]>;
+	byReservePiece: Record<PieceType, Coord[]>;
+}
+
+export interface GameView {
+	state: GameState;
+	viewerRole: ViewerRole;
+	viewerColor: Color | null;
+	joinAllowed: boolean;
+	legalOptions: LegalOptions;
+}
+
+export interface PlaceMove {
+	kind: 'place';
+	piece: PieceType;
+	to: Coord;
+}
+
+export interface BoardMove {
+	kind: 'move';
+	from: Coord;
+	to: Coord;
+}
+
+export type PlayerMove = PlaceMove | BoardMove;
+
+export interface CreateGamePayload {
+	name: string;
+}
+
+export interface CreateGameResponse {
+	gameId: string;
+	url: string;
+	color: Color;
+}
+
+export interface JoinGamePayload {
+	type: 'join';
+	name: string;
+}
+
+export interface PlayMovePayload {
+	type: 'play';
+	move: PlayerMove;
+}
+
+export type GameActionPayload = JoinGamePayload | PlayMovePayload;
+
+export interface ApiErrorPayload {
+	error: string;
+}
+
+export interface SnapshotEvent {
+	type: 'snapshot';
+	game: GameView;
+}
+
+export interface KeepAliveEvent {
+	type: 'keepalive';
+	at: number;
+}
+
+export type ServerEvent = SnapshotEvent | KeepAliveEvent;
+
+export const PIECES: PieceType[] = ['pawn', 'rook', 'knight', 'bishop'];
+
+export function makeEmptyReserve(): Reserve {
+	return {
+		pawn: true,
+		rook: true,
+		knight: true,
+		bishop: true
+	};
+}
+
+export function coordKey(coord: Coord): string {
+	return `${coord.x},${coord.y}`;
+}
+
+export function isInsideBoard(coord: Coord): boolean {
+	return (
+		Number.isInteger(coord.x) &&
+		Number.isInteger(coord.y) &&
+		coord.x >= 0 &&
+		coord.y >= 0 &&
+		coord.x < BOARD_SIZE &&
+		coord.y < BOARD_SIZE
+	);
+}

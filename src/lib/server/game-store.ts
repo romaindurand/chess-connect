@@ -1,0 +1,293 @@
+import { createHmac, randomUUID } from 'node:crypto';
+
+import { applyPlayerMove, createInitialBoard, getLegalOptionsForColor } from './game-engine';
+import {
+	makeEmptyReserve,
+	type Color,
+	type GameState,
+	type GameView,
+	type PlayerMove,
+	type ServerEvent,
+	type ViewerRole
+} from '$lib/types/game';
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+const HEARTBEAT_MS = 15_000;
+const SECRET = process.env.CHESS_CONNECT_SECRET ?? randomUUID();
+
+interface SessionTokenPayload {
+	gameId: string;
+	color: Color;
+	rnd: string;
+}
+
+type Subscriber = (event: ServerEvent) => void;
+
+interface GameRecord {
+	state: GameState;
+	subscribers: Set<Subscriber>;
+}
+
+interface Store {
+	games: Map<string, GameRecord>;
+	queues: Map<string, Promise<void>>;
+	cleanupTimer: NodeJS.Timeout;
+	heartbeatTimer: NodeJS.Timeout;
+}
+
+declare global {
+	var __chessConnectStore: Store | undefined;
+}
+
+function signPayload(payload: SessionTokenPayload): string {
+	const raw = `${payload.gameId}:${payload.color}:${payload.rnd}`;
+	const signature = createHmac('sha256', SECRET).update(raw).digest('base64url');
+	return `${raw}:${signature}`;
+}
+
+function readToken(token: string): SessionTokenPayload | null {
+	const chunks = token.split(':');
+	if (chunks.length !== 4) {
+		return null;
+	}
+	const [gameId, color, rnd, signature] = chunks;
+	if (color !== 'white' && color !== 'black') {
+		return null;
+	}
+	const expected = createHmac('sha256', SECRET)
+		.update(`${gameId}:${color}:${rnd}`)
+		.digest('base64url');
+	if (expected !== signature) {
+		return null;
+	}
+	return {
+		gameId,
+		color,
+		rnd
+	};
+}
+
+function getStore(): Store {
+	if (globalThis.__chessConnectStore) {
+		return globalThis.__chessConnectStore;
+	}
+
+	const store: Store = {
+		games: new Map(),
+		queues: new Map(),
+		cleanupTimer: setInterval(() => {
+			const now = Date.now();
+			for (const [id, game] of store.games) {
+				if (now - game.state.lastActivityAt > DAY_MS) {
+					store.games.delete(id);
+					store.queues.delete(id);
+				}
+			}
+		}, 60_000),
+		heartbeatTimer: setInterval(() => {
+			const event: ServerEvent = { type: 'keepalive', at: Date.now() };
+			for (const game of store.games.values()) {
+				for (const subscriber of game.subscribers) {
+					subscriber(event);
+				}
+			}
+		}, HEARTBEAT_MS)
+	};
+
+	globalThis.__chessConnectStore = store;
+	return store;
+}
+
+function createNewState(
+	gameId: string,
+	creatorName: string
+): { state: GameState; creatorColor: Color } {
+	const creatorColor: Color = Math.random() < 0.5 ? 'white' : 'black';
+	const now = Date.now();
+	return {
+		creatorColor,
+		state: {
+			id: gameId,
+			status: 'waiting',
+			players: {
+				white: creatorColor === 'white' ? { name: creatorName, joinedAt: now } : null,
+				black: creatorColor === 'black' ? { name: creatorName, joinedAt: now } : null
+			},
+			board: createInitialBoard(),
+			reserves: {
+				white: makeEmptyReserve(),
+				black: makeEmptyReserve()
+			},
+			turn: 'white',
+			pliesPlayed: 0,
+			winner: null,
+			createdAt: now,
+			lastActivityAt: now,
+			version: 0
+		}
+	};
+}
+
+function emitSnapshot(record: GameRecord): void {
+	const event = {
+		type: 'snapshot',
+		game: toView(record.state, null)
+	} as const;
+	for (const subscriber of record.subscribers) {
+		subscriber(event);
+	}
+}
+
+export function cookieName(gameId: string): string {
+	return `cc_player_${gameId}`;
+}
+
+export function createGame(creatorName: string): { state: GameState; token: string; color: Color } {
+	const store = getStore();
+	const gameId = randomUUID().slice(0, 8);
+	const { state, creatorColor } = createNewState(gameId, creatorName);
+
+	store.games.set(gameId, {
+		state,
+		subscribers: new Set()
+	});
+
+	const token = signPayload({ gameId, color: creatorColor, rnd: randomUUID().slice(0, 12) });
+	return { state, token, color: creatorColor };
+}
+
+export function getGameOrThrow(gameId: string): GameRecord {
+	const game = getStore().games.get(gameId);
+	if (!game) {
+		throw new Error('Partie introuvable');
+	}
+	return game;
+}
+
+function queueMutation<T>(gameId: string, mutation: () => T): Promise<T> {
+	const store = getStore();
+	const previous = store.queues.get(gameId) ?? Promise.resolve();
+
+	let resolveDone: () => void;
+	const completion = new Promise<void>((resolve) => {
+		resolveDone = resolve;
+	});
+
+	const queued = previous
+		.then(() => completion)
+		.catch(() => completion)
+		.finally(() => {
+			if (store.queues.get(gameId) === queued) {
+				store.queues.delete(gameId);
+			}
+		});
+
+	store.queues.set(gameId, queued);
+
+	return previous.then(() => {
+		try {
+			return mutation();
+		} finally {
+			resolveDone!();
+		}
+	});
+}
+
+export async function joinGame(
+	gameId: string,
+	playerName: string
+): Promise<{ token: string; color: Color; state: GameState }> {
+	return queueMutation(gameId, () => {
+		const record = getGameOrThrow(gameId);
+		const now = Date.now();
+
+		let joinedColor: Color | null = null;
+		if (!record.state.players.white) {
+			record.state.players.white = { name: playerName, joinedAt: now };
+			joinedColor = 'white';
+		} else if (!record.state.players.black) {
+			record.state.players.black = { name: playerName, joinedAt: now };
+			joinedColor = 'black';
+		}
+
+		if (!joinedColor) {
+			throw new Error('La partie est complète');
+		}
+
+		record.state.status =
+			record.state.players.white && record.state.players.black ? 'active' : 'waiting';
+		record.state.lastActivityAt = now;
+		record.state.version += 1;
+
+		emitSnapshot(record);
+
+		return {
+			token: signPayload({ gameId, color: joinedColor, rnd: randomUUID().slice(0, 12) }),
+			color: joinedColor,
+			state: record.state
+		};
+	});
+}
+
+export async function playMove(
+	gameId: string,
+	token: string,
+	move: PlayerMove
+): Promise<GameState> {
+	const payload = readToken(token);
+	if (!payload || payload.gameId !== gameId) {
+		throw new Error('Session joueur invalide');
+	}
+
+	return queueMutation(gameId, () => {
+		const record = getGameOrThrow(gameId);
+		record.state = applyPlayerMove(record.state, payload.color, move);
+		emitSnapshot(record);
+		return record.state;
+	});
+}
+
+export function viewerRoleFromToken(gameId: string, token: string | undefined): ViewerRole {
+	if (!token) {
+		return getGameOrThrow(gameId).state.players.white && getGameOrThrow(gameId).state.players.black
+			? 'spectator'
+			: 'guest';
+	}
+	const payload = readToken(token);
+	if (!payload || payload.gameId !== gameId) {
+		return getGameOrThrow(gameId).state.players.white && getGameOrThrow(gameId).state.players.black
+			? 'spectator'
+			: 'guest';
+	}
+	return payload.color;
+}
+
+export function toView(state: GameState, viewerRole: ViewerRole | null): GameView {
+	const role = viewerRole ?? 'spectator';
+	const viewerColor: Color | null = role === 'white' || role === 'black' ? role : null;
+	return {
+		state,
+		viewerRole: role,
+		viewerColor,
+		joinAllowed: !state.players.white || !state.players.black,
+		legalOptions: viewerColor
+			? getLegalOptionsForColor(state, viewerColor)
+			: { byBoardFrom: {}, byReservePiece: { pawn: [], rook: [], knight: [], bishop: [] } }
+	};
+}
+
+export function getViewForRequest(gameId: string, token: string | undefined): GameView {
+	const record = getGameOrThrow(gameId);
+	record.state.lastActivityAt = Date.now();
+	const role = viewerRoleFromToken(gameId, token);
+	return toView(record.state, role);
+}
+
+export function subscribeToGame(gameId: string, subscriber: Subscriber): () => void {
+	const record = getGameOrThrow(gameId);
+	record.subscribers.add(subscriber);
+
+	return () => {
+		record.subscribers.delete(subscriber);
+	};
+}
