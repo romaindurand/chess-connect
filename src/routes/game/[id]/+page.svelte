@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { ChessBishop, ChessKnight, ChessPawn, ChessRook } from '@lucide/svelte';
 
 	import {
 		getGameViewRemote,
@@ -64,7 +65,9 @@
 
 	const topReserveColor = $derived('black' as const);
 	const bottomReserveColor = $derived('white' as const);
-	const topReserveIsMine = $derived(Boolean(game?.viewerColor && game.viewerColor === topReserveColor));
+	const topReserveIsMine = $derived(
+		Boolean(game?.viewerColor && game.viewerColor === topReserveColor)
+	);
 	const bottomReserveIsMine = $derived(
 		Boolean(game?.viewerColor && game.viewerColor === bottomReserveColor)
 	);
@@ -246,6 +249,25 @@
 		}
 		return 'Mode spectateur';
 	}
+
+	function pieceIcon(piece: PieceType): typeof ChessPawn {
+		if (piece === 'pawn') {
+			return ChessPawn;
+		}
+		if (piece === 'rook') {
+			return ChessRook;
+		}
+		if (piece === 'knight') {
+			return ChessKnight;
+		}
+		return ChessBishop;
+	}
+
+	function pieceChipClasses(owner: 'white' | 'black'): string {
+		return owner === 'white'
+			? 'border border-black bg-white text-black'
+			: 'border border-black bg-black text-white';
+	}
 </script>
 
 <main class="mx-auto max-w-3xl px-4 py-6">
@@ -298,6 +320,7 @@
 				<p class="mb-1 text-xs text-gray-500 uppercase">Réserve Noir</p>
 				<div class="flex flex-wrap gap-2">
 					{#each topReservePieces as piece (piece)}
+						{@const Icon = pieceIcon(piece)}
 						<button
 							type="button"
 							class={`rounded border px-2 py-1 text-sm ${topReserveIsMine && selectedReservePiece === piece ? 'ring-2 ring-black' : ''} ${!topReserveIsMine ? 'opacity-50' : ''}`}
@@ -309,21 +332,24 @@
 								hoveredReservePiece = null;
 							}}
 							disabled={!topReserveIsMine || !isMyTurn}
+							title={piece}
 						>
-							{piece}
+							<span class={`inline-flex rounded p-1 ${pieceChipClasses(topReserveColor)}`}>
+								<Icon class="h-8 w-8" />
+							</span>
 						</button>
 					{/each}
 				</div>
 			</div>
 
-			<div class="grid grid-cols-4 gap-2">
+			<div class="mx-auto grid w-3/4 grid-cols-4 gap-2">
 				{#each game.state.board as row, y (y)}
 					{#each row as cell, x (x)}
 						{@const coord = { x, y }}
 						{@const key = coordKey(coord)}
 						<button
 							type="button"
-							class={`aspect-square rounded border text-xs ${targetHints.has(key) ? 'border-black bg-gray-100' : 'border-gray-300'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''}`}
+							class={`aspect-square rounded border ${targetHints.has(key) ? 'border-black bg-emerald-100' : 'border-gray-300 bg-stone-100'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''}`}
 							onmouseenter={() => {
 								hoveredBoardFrom = isMyPiece(cell) ? coord : null;
 							}}
@@ -333,9 +359,10 @@
 							onclick={() => onCellClick(coord)}
 						>
 							{#if cell}
-								<span
-									>{cell.owner === 'white' ? 'W' : 'B'}-{cell.type.slice(0, 1).toUpperCase()}</span
-								>
+								{@const Icon = pieceIcon(cell.type)}
+								<span class={`inline-flex rounded p-1 ${pieceChipClasses(cell.owner)}`}>
+									<Icon class="h-10 w-10" />
+								</span>
 							{/if}
 						</button>
 					{/each}
@@ -346,6 +373,7 @@
 				<p class="mb-1 text-xs text-gray-500 uppercase">Réserve Blanc</p>
 				<div class="flex flex-wrap gap-2">
 					{#each bottomReservePieces as piece (piece)}
+						{@const Icon = pieceIcon(piece)}
 						<button
 							type="button"
 							class={`rounded border px-2 py-1 text-sm ${bottomReserveIsMine && selectedReservePiece === piece ? 'ring-2 ring-black' : ''} ${!bottomReserveIsMine ? 'opacity-50' : ''}`}
@@ -357,8 +385,11 @@
 								hoveredReservePiece = null;
 							}}
 							disabled={!bottomReserveIsMine || !isMyTurn}
+							title={piece}
 						>
-							{piece}
+							<span class={`inline-flex rounded p-1 ${pieceChipClasses(bottomReserveColor)}`}>
+								<Icon class="h-8 w-8" />
+							</span>
 						</button>
 					{/each}
 				</div>
