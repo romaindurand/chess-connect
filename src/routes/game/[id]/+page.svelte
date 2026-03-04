@@ -64,6 +64,26 @@
 
 	const topReserveColor = $derived('black' as const);
 	const bottomReserveColor = $derived('white' as const);
+	const topReserveIsMine = $derived(Boolean(game?.viewerColor && game.viewerColor === topReserveColor));
+	const bottomReserveIsMine = $derived(
+		Boolean(game?.viewerColor && game.viewerColor === bottomReserveColor)
+	);
+
+	const topReservePieces = $derived.by(() => {
+		const currentGame = game;
+		if (!currentGame) {
+			return [] as PieceType[];
+		}
+		return PIECES.filter((piece) => currentGame.state.reserves[topReserveColor][piece]);
+	});
+
+	const bottomReservePieces = $derived.by(() => {
+		const currentGame = game;
+		if (!currentGame) {
+			return [] as PieceType[];
+		}
+		return PIECES.filter((piece) => currentGame.state.reserves[bottomReserveColor][piece]);
+	});
 
 	async function refreshState(): Promise<void> {
 		try {
@@ -81,8 +101,8 @@
 		selectedReservePiece = null;
 	}
 
-	onMount(async () => {
-		await refreshState();
+	function connectEventStream(): void {
+		stream?.close();
 		stream = openGameEventStream(gameId, (event) => {
 			if (event.type === 'snapshot') {
 				game = event.game;
@@ -92,11 +112,23 @@
 						selectedBoardFrom = null;
 					}
 				}
+				if (
+					selectedReservePiece &&
+					event.game.viewerColor &&
+					!event.game.state.reserves[event.game.viewerColor][selectedReservePiece]
+				) {
+					selectedReservePiece = null;
+				}
 			}
 		});
 		stream.onerror = () => {
 			errorMessage = 'Connexion temps réel interrompue, reconnexion en cours...';
 		};
+	}
+
+	onMount(async () => {
+		await refreshState();
+		connectEventStream();
 	});
 
 	onDestroy(() => {
@@ -113,6 +145,7 @@
 
 		try {
 			game = await postGameActionRemote(gameId, { type: 'join', name });
+			connectEventStream();
 			joinName = '';
 			errorMessage = '';
 		} catch (error) {
@@ -182,8 +215,8 @@
 		}
 	}
 
-	function onReserveClick(piece: PieceType): void {
-		if (!game || !isMyTurn || !game.viewerColor) {
+	function onReserveClick(reserveColor: 'white' | 'black', piece: PieceType): void {
+		if (!game || !isMyTurn || !game.viewerColor || reserveColor !== game.viewerColor) {
 			return;
 		}
 		if (!game.state.reserves[game.viewerColor][piece]) {
@@ -264,18 +297,18 @@
 			<div>
 				<p class="mb-1 text-xs text-gray-500 uppercase">Réserve Noir</p>
 				<div class="flex flex-wrap gap-2">
-					{#each PIECES as piece (piece)}
+					{#each topReservePieces as piece (piece)}
 						<button
 							type="button"
-							class={`rounded border px-2 py-1 text-sm ${selectedReservePiece === piece ? 'ring-2 ring-black' : ''}`}
-							onclick={() => onReserveClick(piece)}
+							class={`rounded border px-2 py-1 text-sm ${topReserveIsMine && selectedReservePiece === piece ? 'ring-2 ring-black' : ''} ${!topReserveIsMine ? 'opacity-50' : ''}`}
+							onclick={() => onReserveClick(topReserveColor, piece)}
 							onmouseenter={() => {
 								hoveredReservePiece = topReserveColor === game?.viewerColor ? piece : null;
 							}}
 							onmouseleave={() => {
 								hoveredReservePiece = null;
 							}}
-							disabled={!game.state.reserves[topReserveColor][piece]}
+							disabled={!topReserveIsMine || !isMyTurn}
 						>
 							{piece}
 						</button>
@@ -312,18 +345,18 @@
 			<div>
 				<p class="mb-1 text-xs text-gray-500 uppercase">Réserve Blanc</p>
 				<div class="flex flex-wrap gap-2">
-					{#each PIECES as piece (piece)}
+					{#each bottomReservePieces as piece (piece)}
 						<button
 							type="button"
-							class={`rounded border px-2 py-1 text-sm ${selectedReservePiece === piece ? 'ring-2 ring-black' : ''}`}
-							disabled={!game.state.reserves[bottomReserveColor][piece]}
-							onclick={() => onReserveClick(piece)}
+							class={`rounded border px-2 py-1 text-sm ${bottomReserveIsMine && selectedReservePiece === piece ? 'ring-2 ring-black' : ''} ${!bottomReserveIsMine ? 'opacity-50' : ''}`}
+							onclick={() => onReserveClick(bottomReserveColor, piece)}
 							onmouseenter={() => {
 								hoveredReservePiece = bottomReserveColor === game?.viewerColor ? piece : null;
 							}}
 							onmouseleave={() => {
 								hoveredReservePiece = null;
 							}}
+							disabled={!bottomReserveIsMine || !isMyTurn}
 						>
 							{piece}
 						</button>
