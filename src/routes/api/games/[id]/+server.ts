@@ -1,7 +1,20 @@
 import { json } from '@sveltejs/kit';
 
-import { cookieName, getViewForRequest, joinGame, playMove } from '$lib/server/game-store';
-import type { GameActionPayload, JoinGamePayload, PlayMovePayload } from '$lib/types/game';
+import {
+	acceptRematch,
+	cookieName,
+	getViewForRequest,
+	joinGame,
+	playMove,
+	requestRematch
+} from '$lib/server/game-store';
+import type {
+	GameActionPayload,
+	JoinGamePayload,
+	PlayMovePayload,
+	RematchAcceptPayload,
+	RematchRequestPayload
+} from '$lib/types/game';
 import type { RequestHandler } from './$types';
 
 function parseActionPayload(body: unknown): GameActionPayload {
@@ -33,6 +46,18 @@ function parseActionPayload(body: unknown): GameActionPayload {
 			type: 'play',
 			move: playBody.move
 		} as PlayMovePayload;
+	}
+
+	if (body.type === 'rematch-request') {
+		return {
+			type: 'rematch-request'
+		} as RematchRequestPayload;
+	}
+
+	if (body.type === 'rematch-accept') {
+		return {
+			type: 'rematch-accept'
+		} as RematchAcceptPayload;
 	}
 
 	throw new Error("Type d'action inconnu");
@@ -73,7 +98,15 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 			return json({ error: 'Session joueur manquante' }, { status: 401 });
 		}
 
-		await playMove(gameId, token, payload.move);
+		if (payload.type === 'play') {
+			await playMove(gameId, token, payload.move);
+		}
+		if (payload.type === 'rematch-request') {
+			await requestRematch(gameId, token);
+		}
+		if (payload.type === 'rematch-accept') {
+			await acceptRematch(gameId, token);
+		}
 		const view = getViewForRequest(gameId, token);
 		return json(view);
 	} catch (error) {

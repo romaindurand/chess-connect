@@ -121,11 +121,27 @@ function createNewState(
 			turn: 'white',
 			pliesPlayed: 0,
 			winner: null,
+			bestOfWinner: null,
+			score: {
+				white: 0,
+				black: 0
+			},
+			gameNumber: 1,
+			bestOf: 3,
+			rematchRequestedBy: null,
 			createdAt: now,
 			lastActivityAt: now,
 			version: 0
 		}
 	};
+}
+
+function isBestOfFinished(state: GameState): boolean {
+	return Boolean(state.bestOfWinner || state.score.white >= 2 || state.score.black >= 2);
+}
+
+function oppositeColor(color: Color): Color {
+	return color === 'white' ? 'black' : 'white';
 }
 
 function emitSnapshot(record: GameRecord): void {
@@ -241,7 +257,102 @@ export async function playMove(
 
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
+		const beforeWinner = record.state.winner;
 		record.state = applyPlayerMove(record.state, payload.color, move);
+
+		if (!beforeWinner && record.state.winner) {
+			const winner = record.state.winner;
+			record.state.score[winner] += 1;
+			record.state.rematchRequestedBy = null;
+			if (record.state.score[winner] >= 2) {
+				record.state.bestOfWinner = winner;
+			}
+		}
+
+		emitSnapshot(record);
+		return record.state;
+	});
+}
+
+export async function requestRematch(gameId: string, token: string): Promise<GameState> {
+	const payload = readToken(token);
+	if (!payload || payload.gameId !== gameId) {
+		throw new Error('Session joueur invalide');
+	}
+
+	return queueMutation(gameId, () => {
+		const record = getGameOrThrow(gameId);
+		const state = record.state;
+
+		if (!state.winner || state.status !== 'finished') {
+			throw new Error("La manche en cours n'est pas terminée");
+		}
+		if (isBestOfFinished(state)) {
+			throw new Error('Le best of 3 est déjà terminé');
+		}
+
+		const loser = oppositeColor(state.winner);
+		if (payload.color !== loser) {
+			throw new Error('Seul le perdant peut proposer une revanche');
+		}
+		if (state.rematchRequestedBy) {
+			throw new Error('Une demande de revanche est déjà en attente');
+		}
+
+		state.rematchRequestedBy = payload.color;
+		state.lastActivityAt = Date.now();
+		state.version += 1;
+
+		emitSnapshot(record);
+		return state;
+	});
+}
+
+export async function acceptRematch(gameId: string, token: string): Promise<GameState> {
+	const payload = readToken(token);
+	if (!payload || payload.gameId !== gameId) {
+		throw new Error('Session joueur invalide');
+	}
+
+	return queueMutation(gameId, () => {
+		const record = getGameOrThrow(gameId);
+		const state = record.state;
+
+		if (!state.winner || state.status !== 'finished') {
+			throw new Error("La manche en cours n'est pas terminée");
+		}
+		if (isBestOfFinished(state)) {
+			throw new Error('Le best of 3 est déjà terminé');
+		}
+		if (!state.rematchRequestedBy) {
+			throw new Error('Aucune demande de revanche en attente');
+		}
+
+		const expectedAccepter = oppositeColor(state.rematchRequestedBy);
+		if (payload.color !== expectedAccepter) {
+			throw new Error("Seul l'adversaire peut accepter la revanche");
+		}
+		if (!state.players.white || !state.players.black) {
+			throw new Error('Deux joueurs sont requis pour lancer la revanche');
+		}
+
+		record.state = {
+			...state,
+			status: 'active',
+			board: createInitialBoard(),
+			reserves: {
+				white: makeEmptyReserve(),
+				black: makeEmptyReserve()
+			},
+			turn: 'white',
+			pliesPlayed: 0,
+			winner: null,
+			gameNumber: state.gameNumber + 1,
+			rematchRequestedBy: null,
+			lastActivityAt: Date.now(),
+			version: state.version + 1
+		};
+
 		emitSnapshot(record);
 		return record.state;
 	});

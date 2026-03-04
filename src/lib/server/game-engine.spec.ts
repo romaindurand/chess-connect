@@ -20,6 +20,14 @@ function makeActiveState(turn: Color = 'white'): GameState {
 		turn,
 		pliesPlayed: 0,
 		winner: null,
+		bestOfWinner: null,
+		score: {
+			white: 0,
+			black: 0
+		},
+		gameNumber: 1,
+		bestOf: 3,
+		rematchRequestedBy: null,
 		createdAt: now,
 		lastActivityAt: now,
 		version: 0

@@ -29,10 +29,7 @@ function isInside(coord: Coord): boolean {
 	return coord.x >= 0 && coord.y >= 0 && coord.x < BOARD_SIZE && coord.y < BOARD_SIZE;
 }
 
-function normalizePawnDirectionAtPosition(
-	pawnDirection: 1 | -1,
-	position: Coord
-): 1 | -1 {
+function normalizePawnDirectionAtPosition(pawnDirection: 1 | -1, position: Coord): 1 | -1 {
 	if (pawnDirection === -1 && position.y === 0) {
 		return 1;
 	}

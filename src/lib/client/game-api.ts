@@ -49,6 +49,14 @@ export async function playMoveRemote(gameId: string, payload: PlayMovePayload): 
 	return postGameActionRemote(gameId, payload);
 }
 
+export async function requestRematchRemote(gameId: string): Promise<GameView> {
+	return postGameActionRemote(gameId, { type: 'rematch-request' });
+}
+
+export async function acceptRematchRemote(gameId: string): Promise<GameView> {
+	return postGameActionRemote(gameId, { type: 'rematch-accept' });
+}
+
 export function openGameEventStream(
 	gameId: string,
 	onEvent: (event: ServerEvent) => void

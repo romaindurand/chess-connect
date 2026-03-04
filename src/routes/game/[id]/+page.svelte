@@ -1,12 +1,18 @@
 <script lang="ts">
 	import { onDestroy, onMount } from 'svelte';
+	import { goto } from '$app/navigation';
+	import { resolve } from '$app/paths';
+	import { fade, fly } from 'svelte/transition';
 	import { ChessBishop, ChessKnight, ChessPawn, ChessRook } from '@lucide/svelte';
+	import { Confetti } from 'svelte-confetti';
 
 	import {
+		acceptRematchRemote,
 		getGameViewRemote,
 		openGameEventStream,
 		playMoveRemote,
-		postGameActionRemote
+		postGameActionRemote,
+		requestRematchRemote
 	} from '$lib/client/game-api';
 	import {
 		coordKey,
@@ -30,6 +36,7 @@
 	let hoveredBoardFrom = $state<Coord | null>(null);
 	let hoveredReservePiece = $state<PieceType | null>(null);
 	let copying = $state(false);
+	let isSubmittingRematch = $state(false);
 
 	let stream: EventSource | null = null;
 
@@ -86,6 +93,67 @@
 			return [] as PieceType[];
 		}
 		return PIECES.filter((piece) => currentGame.state.reserves[bottomReserveColor][piece]);
+	});
+
+	const isGameFinished = $derived(Boolean(game?.state.status === 'finished' && game?.state.winner));
+
+	const canRequestRematch = $derived.by(() => {
+		if (!game || !game.viewerColor || !isGameFinished || game.state.bestOfWinner) {
+			return false;
+		}
+		if (game.state.rematchRequestedBy) {
+			return false;
+		}
+		if (!game.state.winner) {
+			return false;
+		}
+		return game.viewerColor !== game.state.winner;
+	});
+
+	const canAcceptRematch = $derived.by(() => {
+		if (!game || !game.viewerColor || !isGameFinished || game.state.bestOfWinner) {
+			return false;
+		}
+		if (!game.state.rematchRequestedBy) {
+			return false;
+		}
+		return game.viewerColor !== game.state.rematchRequestedBy;
+	});
+
+	const winnerModalTitle = $derived.by(() => {
+		if (!game || !isGameFinished || !game.state.winner) {
+			return '';
+		}
+
+		if (game.viewerRole === 'white' || game.viewerRole === 'black') {
+			if (game.viewerColor === game.state.winner) {
+				return 'Victoire 🎉';
+			}
+			return 'Défaite';
+		}
+
+		return `Partie terminée — ${game.state.winner === 'white' ? 'Blanc' : 'Noir'} gagne`;
+	});
+
+	const winnerModalSubtitle = $derived.by(() => {
+		if (!game || !isGameFinished) {
+			return '';
+		}
+
+		return `Score actuel: Blanc ${game.state.score.white} - Noir ${game.state.score.black}`;
+	});
+
+	const winnerDetailsLine = $derived.by(() => {
+		if (!game || !game.state.winner) {
+			return '';
+		}
+
+		const whiteName = game.state.players.white?.name ?? 'Joueur blanc';
+		const blackName = game.state.players.black?.name ?? 'Joueur noir';
+		const winnerName = game.state.winner === 'white' ? whiteName : blackName;
+		const winnerColor = game.state.winner === 'white' ? 'Blanc' : 'Noir';
+
+		return `Gagnant: ${winnerName} (${winnerColor})`;
 	});
 
 	async function refreshState(): Promise<void> {
@@ -164,6 +232,39 @@
 			setTimeout(() => {
 				copying = false;
 			}, 800);
+		}
+	}
+
+	async function onRequestRematch(): Promise<void> {
+		if (!game || isSubmittingRematch) {
+			return;
+		}
+
+		isSubmittingRematch = true;
+		try {
+			game = await requestRematchRemote(gameId);
+			errorMessage = '';
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Impossible de proposer une revanche';
+		} finally {
+			isSubmittingRematch = false;
+		}
+	}
+
+	async function onAcceptRematch(): Promise<void> {
+		if (!game || isSubmittingRematch) {
+			return;
+		}
+
+		isSubmittingRematch = true;
+		try {
+			game = await acceptRematchRemote(gameId);
+			resetSelection();
+			errorMessage = '';
+		} catch (error) {
+			errorMessage = error instanceof Error ? error.message : 'Impossible de démarrer la revanche';
+		} finally {
+			isSubmittingRematch = false;
 		}
 	}
 
@@ -322,11 +423,11 @@
 	{:else}
 		<section class="mb-4 grid grid-cols-2 gap-3 rounded border p-3 text-sm">
 			<div>
-				<p class="font-medium">Blanc</p>
+				<p class="font-medium">Blanc - {game.state.score.white}</p>
 				<p>{playerLabel('white')}</p>
 			</div>
 			<div>
-				<p class="font-medium">Noir</p>
+				<p class="font-medium">Noir - {game.state.score.black}</p>
 				<p>{playerLabel('black')}</p>
 			</div>
 		</section>
@@ -429,7 +530,70 @@
 				</div>
 			</div>
 		</div>
+	{/if}
 
+	{#if isGameFinished}
+		<div
+			style="position: fixed; top: -50px; left: 0; height: 100vh; width: 100vw; display: flex; justify-content: center; overflow: hidden; pointer-events: none; z-index: 40;"
+		>
+			<Confetti
+				x={[-5, 5]}
+				y={[0, 0.1]}
+				delay={[0, 1000]}
+				duration={3500}
+				amount={200}
+				fallDistance="100vh"
+				iterationCount={1}
+			/>
+		</div>
+
+		<div
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
+			transition:fade={{ duration: 180 }}
+		>
+			<div
+				class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
+				transition:fly={{ y: 16, duration: 220 }}
+			>
+				<h2 class="text-xl font-semibold">{winnerModalTitle}</h2>
+				{#if winnerDetailsLine}
+					<p class="mt-2 text-sm text-gray-700">{winnerDetailsLine}</p>
+				{/if}
+				<p class="mt-2 text-sm text-gray-700">{winnerModalSubtitle}</p>
+
+				{#if canRequestRematch}
+					<button
+						type="button"
+						onclick={onRequestRematch}
+						disabled={isSubmittingRematch}
+						class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+					>
+						{isSubmittingRematch ? 'Envoi...' : 'Proposer une revanche'}
+					</button>
+				{:else if canAcceptRematch}
+					<button
+						type="button"
+						onclick={onAcceptRematch}
+						disabled={isSubmittingRematch}
+						class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+					>
+						{isSubmittingRematch ? 'Démarrage...' : 'Accepter la revanche'}
+					</button>
+				{:else if game?.state.rematchRequestedBy}
+					<p class="mt-4 text-sm text-gray-700">Demande de revanche en attente...</p>
+				{:else if game?.state.bestOfWinner}
+					<p class="mt-4 text-sm text-gray-700">Ce match est terminé.</p>
+				{/if}
+
+				<button
+					type="button"
+					onclick={() => goto(resolve('/'))}
+					class="mt-4 rounded border px-4 py-2 text-sm font-medium"
+				>
+					Nouvelle partie
+				</button>
+			</div>
+		</div>
 	{/if}
 
 	{#if errorMessage}

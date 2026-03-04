@@ -37,6 +37,11 @@ export interface GameState {
 	turn: Color;
 	pliesPlayed: number;
 	winner: Color | null;
+	bestOfWinner: Color | null;
+	score: Record<Color, number>;
+	gameNumber: number;
+	bestOf: 3;
+	rematchRequestedBy: Color | null;
 	createdAt: number;
 	lastActivityAt: number;
 	version: number;
@@ -89,7 +94,19 @@ export interface PlayMovePayload {
 	move: PlayerMove;
 }
 
-export type GameActionPayload = JoinGamePayload | PlayMovePayload;
+export interface RematchRequestPayload {
+	type: 'rematch-request';
+}
+
+export interface RematchAcceptPayload {
+	type: 'rematch-accept';
+}
+
+export type GameActionPayload =
+	| JoinGamePayload
+	| PlayMovePayload
+	| RematchRequestPayload
+	| RematchAcceptPayload;
 
 export interface ApiErrorPayload {
 	error: string;
