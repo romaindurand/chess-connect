@@ -31,6 +31,8 @@ export interface PlayersByColor {
 export interface GameState {
 	id: string;
 	status: GameStatus;
+	inviter: PlayerInfo;
+	hostColor: Color | null;
 	players: PlayersByColor;
 	board: (PieceOnBoard | null)[][];
 	reserves: Record<Color, Reserve>;
@@ -56,6 +58,7 @@ export interface GameView {
 	state: GameState;
 	viewerRole: ViewerRole;
 	viewerColor: Color | null;
+	viewerIsInviter: boolean;
 	joinAllowed: boolean;
 	legalOptions: LegalOptions;
 }
@@ -81,7 +84,7 @@ export interface CreateGamePayload {
 export interface CreateGameResponse {
 	gameId: string;
 	url: string;
-	color: Color;
+	color: Color | null;
 }
 
 export interface JoinGamePayload {

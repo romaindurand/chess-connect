@@ -346,10 +346,10 @@
 		if (game.viewerRole === 'white' || game.viewerRole === 'black') {
 			return `Vous êtes ${game.viewerRole === 'white' ? 'Blanc' : 'Noir'}`;
 		}
-		if (game.viewerRole === 'guest') {
-			return 'Invitation en attente';
+		if (game.viewerRole === 'spectator') {
+			return 'Mode spectateur';
 		}
-		return 'Mode spectateur';
+		return '';
 	}
 
 	function turnLineText(): string {
@@ -421,19 +421,24 @@
 	{:else if !game}
 		<p class="text-red-600">{errorMessage || 'Partie introuvable'}</p>
 	{:else}
-		<section class="mb-4 grid grid-cols-2 gap-3 rounded border p-3 text-sm">
-			<div>
-				<p class="font-medium">Blanc - {game.state.score.white}</p>
-				<p>{playerLabel('white')}</p>
-			</div>
-			<div>
-				<p class="font-medium">Noir - {game.state.score.black}</p>
-				<p>{playerLabel('black')}</p>
-			</div>
-		</section>
+		{#if game.state.status !== 'waiting'}
+			<section class="mb-4 grid grid-cols-2 gap-3 rounded border p-3 text-sm">
+				<div>
+					<p class="font-medium">Blanc - {game.state.score.white}</p>
+					<p>{playerLabel('white')}</p>
+				</div>
+				<div>
+					<p class="font-medium">Noir - {game.state.score.black}</p>
+					<p>{playerLabel('black')}</p>
+				</div>
+			</section>
+		{/if}
 
-		{#if game.viewerRole === 'guest' && game.joinAllowed}
+		{#if game.viewerRole === 'guest' && game.joinAllowed && !game.viewerIsInviter}
 			<form class="mb-4 flex flex-wrap items-end gap-3 rounded border p-3" onsubmit={onJoin}>
+				<p class="w-full text-sm text-gray-700">
+					Invitation en attente — {game.state.inviter.name} vous invite à rejoindre la partie.
+				</p>
 				<label class="grow space-y-2">
 					<span class="text-sm font-medium">Votre pseudo</span>
 					<input

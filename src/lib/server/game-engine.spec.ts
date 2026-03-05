@@ -8,6 +8,8 @@ function makeActiveState(turn: Color = 'white'): GameState {
 	return {
 		id: 'game-test',
 		status: 'active',
+		inviter: { name: 'Alice', joinedAt: now },
+		hostColor: 'white',
 		players: {
 			white: { name: 'Alice', joinedAt: now },
 			black: { name: 'Bob', joinedAt: now }

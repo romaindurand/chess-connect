@@ -17,7 +17,8 @@ const SECRET = process.env.CHESS_CONNECT_SECRET ?? randomUUID();
 
 interface SessionTokenPayload {
 	gameId: string;
-	color: Color;
+	kind: 'host' | 'player';
+	color: Color | null;
 	rnd: string;
 }
 
@@ -40,29 +41,37 @@ declare global {
 }
 
 function signPayload(payload: SessionTokenPayload): string {
-	const raw = `${payload.gameId}:${payload.color}:${payload.rnd}`;
+	const color = payload.color ?? 'none';
+	const raw = `${payload.gameId}:${payload.kind}:${color}:${payload.rnd}`;
 	const signature = createHmac('sha256', SECRET).update(raw).digest('base64url');
 	return `${raw}:${signature}`;
 }
 
 function readToken(token: string): SessionTokenPayload | null {
 	const chunks = token.split(':');
-	if (chunks.length !== 4) {
+	if (chunks.length !== 5) {
 		return null;
 	}
-	const [gameId, color, rnd, signature] = chunks;
-	if (color !== 'white' && color !== 'black') {
+	const [gameId, kind, rawColor, rnd, signature] = chunks;
+	if (kind !== 'host' && kind !== 'player') {
+		return null;
+	}
+	if (rawColor !== 'white' && rawColor !== 'black' && rawColor !== 'none') {
+		return null;
+	}
+	if (kind === 'player' && rawColor === 'none') {
 		return null;
 	}
 	const expected = createHmac('sha256', SECRET)
-		.update(`${gameId}:${color}:${rnd}`)
+		.update(`${gameId}:${kind}:${rawColor}:${rnd}`)
 		.digest('base64url');
 	if (expected !== signature) {
 		return null;
 	}
 	return {
 		gameId,
-		color,
+		kind,
+		color: rawColor === 'none' ? null : rawColor,
 		rnd
 	};
 }
@@ -98,20 +107,17 @@ function getStore(): Store {
 	return store;
 }
 
-function createNewState(
-	gameId: string,
-	creatorName: string
-): { state: GameState; creatorColor: Color } {
-	const creatorColor: Color = Math.random() < 0.5 ? 'white' : 'black';
+function createNewState(gameId: string, creatorName: string): { state: GameState } {
 	const now = Date.now();
 	return {
-		creatorColor,
 		state: {
 			id: gameId,
 			status: 'waiting',
+			inviter: { name: creatorName, joinedAt: now },
+			hostColor: null,
 			players: {
-				white: creatorColor === 'white' ? { name: creatorName, joinedAt: now } : null,
-				black: creatorColor === 'black' ? { name: creatorName, joinedAt: now } : null
+				white: null,
+				black: null
 			},
 			board: createInitialBoard(),
 			reserves: {
@@ -158,18 +164,27 @@ export function cookieName(gameId: string): string {
 	return `cc_player_${gameId}`;
 }
 
-export function createGame(creatorName: string): { state: GameState; token: string; color: Color } {
+export function createGame(creatorName: string): {
+	state: GameState;
+	token: string;
+	color: Color | null;
+} {
 	const store = getStore();
 	const gameId = randomUUID().slice(0, 8);
-	const { state, creatorColor } = createNewState(gameId, creatorName);
+	const { state } = createNewState(gameId, creatorName);
 
 	store.games.set(gameId, {
 		state,
 		subscribers: new Set()
 	});
 
-	const token = signPayload({ gameId, color: creatorColor, rnd: randomUUID().slice(0, 12) });
-	return { state, token, color: creatorColor };
+	const token = signPayload({
+		gameId,
+		kind: 'host',
+		color: null,
+		rnd: randomUUID().slice(0, 12)
+	});
+	return { state, token, color: null };
 }
 
 export function getGameOrThrow(gameId: string): GameRecord {
@@ -215,31 +230,30 @@ export async function joinGame(
 ): Promise<{ token: string; color: Color; state: GameState }> {
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
+		if (record.state.status !== 'waiting') {
+			throw new Error('La partie est déjà démarrée');
+		}
 		const now = Date.now();
+		const hostColor: Color = Math.random() < 0.5 ? 'white' : 'black';
+		const guestColor: Color = hostColor === 'white' ? 'black' : 'white';
 
-		let joinedColor: Color | null = null;
-		if (!record.state.players.white) {
-			record.state.players.white = { name: playerName, joinedAt: now };
-			joinedColor = 'white';
-		} else if (!record.state.players.black) {
-			record.state.players.black = { name: playerName, joinedAt: now };
-			joinedColor = 'black';
-		}
-
-		if (!joinedColor) {
-			throw new Error('La partie est complète');
-		}
-
-		record.state.status =
-			record.state.players.white && record.state.players.black ? 'active' : 'waiting';
+		record.state.players[hostColor] = { ...record.state.inviter };
+		record.state.players[guestColor] = { name: playerName, joinedAt: now };
+		record.state.hostColor = hostColor;
+		record.state.status = 'active';
 		record.state.lastActivityAt = now;
 		record.state.version += 1;
 
 		emitSnapshot(record);
 
 		return {
-			token: signPayload({ gameId, color: joinedColor, rnd: randomUUID().slice(0, 12) }),
-			color: joinedColor,
+			token: signPayload({
+				gameId,
+				kind: 'player',
+				color: guestColor,
+				rnd: randomUUID().slice(0, 12)
+			}),
+			color: guestColor,
 			state: record.state
 		};
 	});
@@ -257,8 +271,13 @@ export async function playMove(
 
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
+		const actorColor: Color | null =
+			payload.kind === 'player' ? payload.color : record.state.hostColor;
+		if (!actorColor) {
+			throw new Error('Session joueur invalide');
+		}
 		const beforeWinner = record.state.winner;
-		record.state = applyPlayerMove(record.state, payload.color, move);
+		record.state = applyPlayerMove(record.state, actorColor, move);
 
 		if (!beforeWinner && record.state.winner) {
 			const winner = record.state.winner;
@@ -283,6 +302,10 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
 		const state = record.state;
+		const actorColor: Color | null = payload.kind === 'player' ? payload.color : state.hostColor;
+		if (!actorColor) {
+			throw new Error('Session joueur invalide');
+		}
 
 		if (!state.winner || state.status !== 'finished') {
 			throw new Error("La manche en cours n'est pas terminée");
@@ -292,14 +315,14 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 		}
 
 		const loser = oppositeColor(state.winner);
-		if (payload.color !== loser) {
+		if (actorColor !== loser) {
 			throw new Error('Seul le perdant peut proposer une revanche');
 		}
 		if (state.rematchRequestedBy) {
 			throw new Error('Une demande de revanche est déjà en attente');
 		}
 
-		state.rematchRequestedBy = payload.color;
+		state.rematchRequestedBy = actorColor;
 		state.lastActivityAt = Date.now();
 		state.version += 1;
 
@@ -317,6 +340,10 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
 		const state = record.state;
+		const actorColor: Color | null = payload.kind === 'player' ? payload.color : state.hostColor;
+		if (!actorColor) {
+			throw new Error('Session joueur invalide');
+		}
 
 		if (!state.winner || state.status !== 'finished') {
 			throw new Error("La manche en cours n'est pas terminée");
@@ -329,7 +356,7 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 		}
 
 		const expectedAccepter = oppositeColor(state.rematchRequestedBy);
-		if (payload.color !== expectedAccepter) {
+		if (actorColor !== expectedAccepter) {
 			throw new Error("Seul l'adversaire peut accepter la revanche");
 		}
 		if (!state.players.white || !state.players.black) {
@@ -370,17 +397,29 @@ export function viewerRoleFromToken(gameId: string, token: string | undefined): 
 			? 'spectator'
 			: 'guest';
 	}
-	return payload.color;
+	if (payload.kind === 'player' && payload.color) {
+		return payload.color;
+	}
+	if (payload.kind === 'host') {
+		const hostColor = getGameOrThrow(gameId).state.hostColor;
+		return hostColor ?? 'guest';
+	}
+	return 'guest';
 }
 
-export function toView(state: GameState, viewerRole: ViewerRole | null): GameView {
+export function toView(
+	state: GameState,
+	viewerRole: ViewerRole | null,
+	viewerIsInviter = false
+): GameView {
 	const role = viewerRole ?? 'spectator';
 	const viewerColor: Color | null = role === 'white' || role === 'black' ? role : null;
 	return {
 		state,
 		viewerRole: role,
 		viewerColor,
-		joinAllowed: !state.players.white || !state.players.black,
+		viewerIsInviter,
+		joinAllowed: (!state.players.white || !state.players.black) && !viewerIsInviter,
 		legalOptions: viewerColor
 			? getLegalOptionsForColor(state, viewerColor)
 			: { byBoardFrom: {}, byReservePiece: { pawn: [], rook: [], knight: [], bishop: [] } }
@@ -390,8 +429,10 @@ export function toView(state: GameState, viewerRole: ViewerRole | null): GameVie
 export function getViewForRequest(gameId: string, token: string | undefined): GameView {
 	const record = getGameOrThrow(gameId);
 	record.state.lastActivityAt = Date.now();
+	const payload = token ? readToken(token) : null;
+	const viewerIsInviter = Boolean(payload && payload.gameId === gameId && payload.kind === 'host');
 	const role = viewerRoleFromToken(gameId, token);
-	return toView(record.state, role);
+	return toView(record.state, role, viewerIsInviter);
 }
 
 export function subscribeToGame(gameId: string, subscriber: Subscriber): () => void {
