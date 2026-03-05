@@ -2,9 +2,9 @@
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { fade, fly } from 'svelte/transition';
 	import { ChessBishop, ChessKnight, ChessPawn, ChessRook } from '@lucide/svelte';
 	import { Confetti } from 'svelte-confetti';
+	import GameDialog from '$lib/components/GameDialog.svelte';
 
 	import {
 		acceptRematchRemote,
@@ -37,6 +37,7 @@
 	let hoveredReservePiece = $state<PieceType | null>(null);
 	let copying = $state(false);
 	let isSubmittingRematch = $state(false);
+	let showRulesModal = $state(false);
 
 	let stream: EventSource | null = null;
 
@@ -411,9 +412,18 @@
 				</p>
 			{/if}
 		</div>
-		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={copyInviteLink}>
-			{copying ? 'Lien copié' : 'Copier le lien'}
-		</button>
+		<div class="flex items-center gap-2">
+			<button
+				class="rounded border px-3 py-2 text-sm"
+				type="button"
+				onclick={() => (showRulesModal = true)}
+			>
+				Règles
+			</button>
+			<button class="rounded border px-3 py-2 text-sm" type="button" onclick={copyInviteLink}>
+				{copying ? 'Lien copié' : 'Copier le lien'}
+			</button>
+		</div>
 	</header>
 
 	{#if loading}
@@ -551,55 +561,62 @@
 				iterationCount={1}
 			/>
 		</div>
-
-		<div
-			class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4"
-			transition:fade={{ duration: 180 }}
-		>
-			<div
-				class="w-full max-w-md rounded-lg bg-white p-6 shadow-xl"
-				transition:fly={{ y: 16, duration: 220 }}
-			>
-				<h2 class="text-xl font-semibold">{winnerModalTitle}</h2>
-				{#if winnerDetailsLine}
-					<p class="mt-2 text-sm text-gray-700">{winnerDetailsLine}</p>
-				{/if}
-				<p class="mt-2 text-sm text-gray-700">{winnerModalSubtitle}</p>
-
-				{#if canRequestRematch}
-					<button
-						type="button"
-						onclick={onRequestRematch}
-						disabled={isSubmittingRematch}
-						class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-					>
-						{isSubmittingRematch ? 'Envoi...' : 'Proposer une revanche'}
-					</button>
-				{:else if canAcceptRematch}
-					<button
-						type="button"
-						onclick={onAcceptRematch}
-						disabled={isSubmittingRematch}
-						class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-					>
-						{isSubmittingRematch ? 'Démarrage...' : 'Accepter la revanche'}
-					</button>
-				{:else if game?.state.rematchRequestedBy}
-					<p class="mt-4 text-sm text-gray-700">Demande de revanche en attente...</p>
-				{:else if game?.state.bestOfWinner}
-					<p class="mt-4 text-sm text-gray-700">Ce match est terminé.</p>
-				{/if}
-
-				<button
-					type="button"
-					onclick={() => goto(resolve('/'))}
-					class="mt-4 rounded border px-4 py-2 text-sm font-medium"
-				>
-					Nouvelle partie
-				</button>
-			</div>
-		</div>
 	{/if}
+
+	<GameDialog
+		open={showRulesModal}
+		closable={true}
+		title="Règles"
+		onClose={() => (showRulesModal = false)}
+	>
+		<div class="space-y-2">
+			<p>La partie se joue sur un plateau 4x4.</p>
+			<p>Les 6 premiers demi-coups servent uniquement à poser les pièces depuis la réserve.</p>
+			<p>Ensuite, les pièces se déplacent comme aux échecs, avec capture autorisée.</p>
+			<p>Un pion qui atteint un bord repart dans l'autre sens au coup suivant.</p>
+			<p>Une pièce capturée retourne dans la réserve de son propriétaire.</p>
+			<p>Vous gagnez en alignant 4 de vos pièces (ligne, colonne ou diagonale).</p>
+		</div>
+	</GameDialog>
+
+	<GameDialog open={isGameFinished} closable={false} title={winnerModalTitle}>
+		{#if winnerDetailsLine}
+			<p class="mt-2">{winnerDetailsLine}</p>
+		{/if}
+		<p class="mt-2">{winnerModalSubtitle}</p>
+
+		{#if canRequestRematch}
+			<button
+				type="button"
+				onclick={onRequestRematch}
+				disabled={isSubmittingRematch}
+				class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+			>
+				{isSubmittingRematch ? 'Envoi...' : 'Proposer une revanche'}
+			</button>
+		{:else if canAcceptRematch}
+			<button
+				type="button"
+				onclick={onAcceptRematch}
+				disabled={isSubmittingRematch}
+				class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+			>
+				{isSubmittingRematch ? 'Démarrage...' : 'Accepter la revanche'}
+			</button>
+		{:else if game?.state.rematchRequestedBy}
+			<p class="mt-4">Demande de revanche en attente...</p>
+		{:else if game?.state.bestOfWinner}
+			<p class="mt-4">Ce match est terminé.</p>
+		{/if}
+
+		<button
+			type="button"
+			onclick={() => goto(resolve('/'))}
+			class="mt-4 rounded border px-4 py-2 text-sm font-medium"
+		>
+			Nouvelle partie
+		</button>
+	</GameDialog>
 
 	{#if errorMessage}
 		<p class="mt-3 text-sm text-red-600">{errorMessage}</p>

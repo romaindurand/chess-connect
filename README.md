@@ -1,42 +1,7 @@
-# sv
+# Chess Connect
 
-Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).
+Chess Connect is a turn-based multiplayer game that combines chess and connect four. Players take turns placing their pieces on a chessboard, aiming to connect four of their pieces in a row while also trying to outmaneuver their opponent with chess-like strategies.
 
-## Creating a project
+This is a SvelteKit application that serves as the frontend and backend for the game. The server manages game state, player interactions, and real-time updates, while the client provides an interactive interface for players to enjoy the game.
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```sh
-# create a new project
-npx sv create my-app
-```
-
-To recreate this project with the same configuration:
-
-```sh
-# recreate this project
-pnpm dlx sv@0.12.5 create --template minimal --types ts --add prettier eslint vitest="usages:unit" tailwindcss="plugins:typography,forms" sveltekit-adapter="adapter:node" mcp="ide:vscode+setup:remote" --install pnpm chess-connect
-```
-
-## Developing
-
-Once you've created a project and installed dependencies with `npm install` (or `pnpm install` or `yarn`), start a development server:
-
-```sh
-npm run dev
-
-# or start the server and open the app in a new browser tab
-npm run dev -- --open
-```
-
-## Building
-
-To create a production version of your app:
-
-```sh
-npm run build
-```
-
-You can preview the production build with `npm run preview`.
-
-> To deploy your app, you may need to install an [adapter](https://svelte.dev/docs/kit/adapters) for your target environment.
+This project is mostly a playground for me to experiment with SvelteKit and local-llms.
