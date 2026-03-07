@@ -1,5 +1,5 @@
 import { SvelteSet } from 'svelte/reactivity';
-import { coordKey, PIECES, type Coord, type GameView, type PieceType } from '$lib/types/game';
+import { coordKey, PIECES, type Color, type Coord, type GameView, type PieceType } from '$lib/types/game';
 
 interface GameViewFactoryInput {
 	getGameId: () => string;
@@ -14,6 +14,7 @@ interface GameViewFactoryInput {
 	getCopying: () => boolean;
 	getShowRulesModal: () => boolean;
 	getIsSubmittingRematch: () => boolean;
+	getNowMs: () => number;
 }
 
 export function createGameView(input: GameViewFactoryInput) {
@@ -170,6 +171,9 @@ export function createGameView(input: GameViewFactoryInput) {
 			return '';
 		}
 		const turnNumber = Math.floor(game.state.pliesPlayed / 2) + 1;
+		if (game.state.timeControlEnabled) {
+			return `Tour ${turnNumber}`;
+		}
 		const isViewerTurn = game.viewerColor === game.state.turn;
 		return `Tour ${turnNumber} — ${isViewerTurn ? "C'est à votre tour de jouer" : "C'est à l'adversaire de jouer"}`;
 	});
@@ -184,6 +188,33 @@ export function createGameView(input: GameViewFactoryInput) {
 		}
 		return game.viewerColor === game.state.turn;
 	});
+
+	const hasTimeControl = $derived.by(() => {
+		const game = input.getGame();
+		return Boolean(game?.state.timeControlEnabled && game.state.timeRemainingMs);
+	});
+
+	const whiteTimeRemainingMs = $derived.by(() => {
+		return getRemainingClockMs('white');
+	});
+
+	const blackTimeRemainingMs = $derived.by(() => {
+		return getRemainingClockMs('black');
+	});
+
+	function getRemainingClockMs(color: Color): number | null {
+		const game = input.getGame();
+		if (!game || !game.state.timeControlEnabled || !game.state.timeRemainingMs) {
+			return null;
+		}
+
+		let remaining = game.state.timeRemainingMs[color];
+		if (game.state.status === 'active' && game.state.turn === color && game.state.turnStartedAt !== null) {
+			remaining -= input.getNowMs() - game.state.turnStartedAt;
+		}
+
+		return Math.max(0, Math.floor(remaining));
+	}
 
 	return {
 		get gameId() {
@@ -264,6 +295,15 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get isViewerTurnNow() {
 			return isViewerTurnNow;
+		},
+		get hasTimeControl() {
+			return hasTimeControl;
+		},
+		get whiteTimeRemainingMs() {
+			return whiteTimeRemainingMs;
+		},
+		get blackTimeRemainingMs() {
+			return blackTimeRemainingMs;
 		}
 	};
 }

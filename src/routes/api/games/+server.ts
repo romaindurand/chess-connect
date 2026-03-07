@@ -8,7 +8,8 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 	if (!body || typeof body !== 'object' || !('name' in body)) {
 		throw new Error('Payload invalide');
 	}
-	const nameValue = body.name;
+	const input = body as { name: unknown; timeLimitMinutes?: unknown };
+	const nameValue = input.name;
 	if (typeof nameValue !== 'string') {
 		throw new Error('Le nom est obligatoire');
 	}
@@ -16,13 +17,30 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 	if (name.length < 2 || name.length > 24) {
 		throw new Error('Le nom doit contenir entre 2 et 24 caractères');
 	}
-	return { name };
+
+	if (input.timeLimitMinutes === undefined) {
+		return { name };
+	}
+
+	if (typeof input.timeLimitMinutes !== 'number' || !Number.isInteger(input.timeLimitMinutes)) {
+		throw new Error('La limite de temps doit être un entier');
+	}
+	if (input.timeLimitMinutes < 1 || input.timeLimitMinutes > 30) {
+		throw new Error('La limite de temps doit être entre 1 et 30 minutes');
+	}
+
+	return {
+		name,
+		timeLimitMinutes: input.timeLimitMinutes
+	};
 }
 
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	try {
 		const payload = parseCreatePayload(await request.json());
-		const { state, token, color } = createGame(payload.name);
+		const { state, token, color } = createGame(payload.name, {
+			timeLimitMinutes: payload.timeLimitMinutes
+		});
 		cookies.set(cookieName(state.id), token, {
 			path: '/',
 			httpOnly: true,

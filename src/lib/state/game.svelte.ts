@@ -14,6 +14,7 @@ export function createGameState(getGameId: () => string) {
 	let copying = $state(false);
 	let isSubmittingRematch = $state(false);
 	let showRulesModal = $state(false);
+	let nowMs = $state(Date.now());
 
 	let stream: EventSource | null = null;
 
@@ -48,6 +49,9 @@ export function createGameState(getGameId: () => string) {
 		getStream: () => stream,
 		setStream: (nextStream) => {
 			stream = nextStream;
+		},
+		setNowMs: (nextNowMs) => {
+			nowMs = nextNowMs;
 		}
 	});
 
@@ -63,7 +67,8 @@ export function createGameState(getGameId: () => string) {
 		getSelectedReservePiece: () => selectedReservePiece,
 		getCopying: () => copying,
 		getShowRulesModal: () => showRulesModal,
-		getIsSubmittingRematch: () => isSubmittingRematch
+		getIsSubmittingRematch: () => isSubmittingRematch,
+		getNowMs: () => nowMs
 	});
 
 	const actions = createGameActions({

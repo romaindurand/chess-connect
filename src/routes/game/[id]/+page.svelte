@@ -45,6 +45,11 @@
 				blackName={state.view.game.state.players.black?.name ?? 'En attente'}
 				whiteScore={state.view.game.state.score.white}
 				blackScore={state.view.game.state.score.black}
+				hasTimeControl={state.view.hasTimeControl}
+				timeControlPerPlayerSeconds={state.view.game.state.timeControlPerPlayerSeconds}
+				whiteTimeRemainingMs={state.view.whiteTimeRemainingMs}
+				blackTimeRemainingMs={state.view.blackTimeRemainingMs}
+				activeTurn={state.view.game.state.turn}
 			/>
 		{/if}
 

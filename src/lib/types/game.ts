@@ -43,6 +43,10 @@ export interface GameState {
 	score: Record<Color, number>;
 	gameNumber: number;
 	bestOf: 3;
+	timeControlEnabled: boolean;
+	timeControlPerPlayerSeconds: number | null;
+	timeRemainingMs: Record<Color, number> | null;
+	turnStartedAt: number | null;
 	rematchRequestedBy: Color | null;
 	createdAt: number;
 	lastActivityAt: number;
@@ -79,6 +83,7 @@ export type PlayerMove = PlaceMove | BoardMove;
 
 export interface CreateGamePayload {
 	name: string;
+	timeLimitMinutes?: number;
 }
 
 export interface CreateGameResponse {

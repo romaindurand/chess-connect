@@ -14,6 +14,7 @@ import {
 const DAY_MS = 24 * 60 * 60 * 1000;
 const HEARTBEAT_MS = 15_000;
 const SECRET = process.env.CHESS_CONNECT_SECRET ?? randomUUID();
+const SECOND_MS = 1000;
 
 interface SessionTokenPayload {
 	gameId: string;
@@ -94,8 +95,13 @@ function getStore(): Store {
 			}
 		}, 60_000),
 		heartbeatTimer: setInterval(() => {
-			const event: ServerEvent = { type: 'keepalive', at: Date.now() };
+			const now = Date.now();
+			const event: ServerEvent = { type: 'keepalive', at: now };
 			for (const game of store.games.values()) {
+				if (applyTimeoutIfExpired(game, now)) {
+					emitSnapshot(game);
+					continue;
+				}
 				for (const subscriber of game.subscribers) {
 					subscriber(event);
 				}
@@ -107,8 +113,22 @@ function getStore(): Store {
 	return store;
 }
 
-function createNewState(gameId: string, creatorName: string): { state: GameState } {
+function createNewState(
+	gameId: string,
+	creatorName: string,
+	options?: { timeLimitMinutes?: number }
+): { state: GameState } {
 	const now = Date.now();
+	const timeControlPerPlayerSeconds =
+		options?.timeLimitMinutes !== undefined ? options.timeLimitMinutes * 60 : null;
+	const timeControlEnabled = timeControlPerPlayerSeconds !== null;
+	const timeRemainingMs =
+		timeControlPerPlayerSeconds !== null
+			? {
+					white: timeControlPerPlayerSeconds * SECOND_MS,
+					black: timeControlPerPlayerSeconds * SECOND_MS
+				}
+			: null;
 	return {
 		state: {
 			id: gameId,
@@ -134,12 +154,58 @@ function createNewState(gameId: string, creatorName: string): { state: GameState
 			},
 			gameNumber: 1,
 			bestOf: 3,
+			timeControlEnabled,
+			timeControlPerPlayerSeconds,
+			timeRemainingMs,
+			turnStartedAt: null,
 			rematchRequestedBy: null,
 			createdAt: now,
 			lastActivityAt: now,
 			version: 0
 		}
 	};
+}
+
+function getRemainingTurnMs(state: GameState, color: Color, now: number): number | null {
+	if (!state.timeControlEnabled || !state.timeRemainingMs) {
+		return null;
+	}
+	let remaining = state.timeRemainingMs[color];
+	if (state.status === 'active' && state.turn === color && state.turnStartedAt !== null) {
+		remaining -= now - state.turnStartedAt;
+	}
+	return Math.max(0, remaining);
+}
+
+function finalizeWinner(record: GameRecord, winner: Color, now: number): void {
+	record.state.winner = winner;
+	record.state.status = 'finished';
+	record.state.turnStartedAt = null;
+	record.state.rematchRequestedBy = null;
+	record.state.lastActivityAt = now;
+	record.state.version += 1;
+
+	record.state.score[winner] += 1;
+	if (record.state.score[winner] >= 2) {
+		record.state.bestOfWinner = winner;
+	}
+}
+
+function applyTimeoutIfExpired(record: GameRecord, now: number): boolean {
+	const state = record.state;
+	if (!state.timeControlEnabled || !state.timeRemainingMs || state.status !== 'active' || state.winner) {
+		return false;
+	}
+
+	const activeColor = state.turn;
+	const remaining = getRemainingTurnMs(state, activeColor, now);
+	if (remaining === null || remaining > 0) {
+		return false;
+	}
+
+	state.timeRemainingMs[activeColor] = 0;
+	finalizeWinner(record, oppositeColor(activeColor), now);
+	return true;
 }
 
 function isBestOfFinished(state: GameState): boolean {
@@ -164,14 +230,17 @@ export function cookieName(gameId: string): string {
 	return `cc_player_${gameId}`;
 }
 
-export function createGame(creatorName: string): {
+export function createGame(
+	creatorName: string,
+	options?: { timeLimitMinutes?: number }
+): {
 	state: GameState;
 	token: string;
 	color: Color | null;
 } {
 	const store = getStore();
 	const gameId = randomUUID().slice(0, 8);
-	const { state } = createNewState(gameId, creatorName);
+	const { state } = createNewState(gameId, creatorName, options);
 
 	store.games.set(gameId, {
 		state,
@@ -241,6 +310,7 @@ export async function joinGame(
 		record.state.players[guestColor] = { name: playerName, joinedAt: now };
 		record.state.hostColor = hostColor;
 		record.state.status = 'active';
+		record.state.turnStartedAt = record.state.timeControlEnabled ? now : null;
 		record.state.lastActivityAt = now;
 		record.state.version += 1;
 
@@ -271,21 +341,35 @@ export async function playMove(
 
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
+		const now = Date.now();
+		if (applyTimeoutIfExpired(record, now)) {
+			emitSnapshot(record);
+			return record.state;
+		}
+
 		const actorColor: Color | null =
 			payload.kind === 'player' ? payload.color : record.state.hostColor;
 		if (!actorColor) {
 			throw new Error('Session joueur invalide');
 		}
-		const beforeWinner = record.state.winner;
+
+		if (record.state.timeControlEnabled && record.state.timeRemainingMs) {
+			const remaining = getRemainingTurnMs(record.state, actorColor, now);
+			if (remaining === null || remaining <= 0) {
+				record.state.timeRemainingMs[actorColor] = 0;
+				finalizeWinner(record, oppositeColor(actorColor), now);
+				emitSnapshot(record);
+				return record.state;
+			}
+			record.state.timeRemainingMs[actorColor] = remaining;
+		}
+
 		record.state = applyPlayerMove(record.state, actorColor, move);
 
-		if (!beforeWinner && record.state.winner) {
-			const winner = record.state.winner;
-			record.state.score[winner] += 1;
-			record.state.rematchRequestedBy = null;
-			if (record.state.score[winner] >= 2) {
-				record.state.bestOfWinner = winner;
-			}
+		if (record.state.winner) {
+			finalizeWinner(record, record.state.winner, now);
+		} else if (record.state.timeControlEnabled) {
+			record.state.turnStartedAt = now;
 		}
 
 		emitSnapshot(record);
@@ -375,6 +459,13 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 			pliesPlayed: 0,
 			winner: null,
 			gameNumber: state.gameNumber + 1,
+			timeRemainingMs: state.timeControlPerPlayerSeconds
+				? {
+						white: state.timeControlPerPlayerSeconds * SECOND_MS,
+						black: state.timeControlPerPlayerSeconds * SECOND_MS
+					}
+				: null,
+			turnStartedAt: state.timeControlEnabled ? Date.now() : null,
 			rematchRequestedBy: null,
 			lastActivityAt: Date.now(),
 			version: state.version + 1
@@ -428,7 +519,9 @@ export function toView(
 
 export function getViewForRequest(gameId: string, token: string | undefined): GameView {
 	const record = getGameOrThrow(gameId);
-	record.state.lastActivityAt = Date.now();
+	const now = Date.now();
+	applyTimeoutIfExpired(record, now);
+	record.state.lastActivityAt = now;
 	const payload = token ? readToken(token) : null;
 	const viewerIsInviter = Boolean(payload && payload.gameId === gameId && payload.kind === 'host');
 	const role = viewerRoleFromToken(gameId, token);
