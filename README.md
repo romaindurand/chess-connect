@@ -15,6 +15,6 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [ ] pas de coups qui se répètent
 - [ ] créer une IA
 - [ ] matchmaking
-- [ ] alterné pour la revanche
+- [x] couleurs alternées pour la revanche
 - [ ] choix noir/blanc dans les options
 - [ ] n'importe quel joueur doit pouvoir proposer une revanche

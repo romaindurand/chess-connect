@@ -1,6 +1,14 @@
 import { describe, expect, it } from 'vitest';
 
-import { createGame, getGameOrThrow, joinGame, playMove } from './game-store';
+import {
+	acceptRematch,
+	createGame,
+	getGameOrThrow,
+	joinGame,
+	playMove,
+	requestRematch,
+	viewerRoleFromToken
+} from './game-store';
 
 describe('game-store time control', () => {
 	it('creates a timed game with clocks initialized per player', () => {
@@ -48,4 +56,44 @@ describe('game-store time control', () => {
 		expect(record.state.timeRemainingMs?.white).toBe(0);
 		expect(record.state.board[0][0]).toBeNull();
 	});
+
+	it('alternates colors between players on each accepted rematch', async () => {
+		const { state, token: hostToken } = createGame('Alice');
+		const joinResult = await joinGame(state.id, 'Bob');
+		const playerToken = joinResult.token;
+		const record = getGameOrThrow(state.id);
+
+		const initialHostColor = record.state.hostColor;
+		expect(initialHostColor === 'white' || initialHostColor === 'black').toBe(true);
+		if (!initialHostColor) {
+			throw new Error('host color should be assigned after join');
+		}
+
+		for (let index = 0; index < 2; index += 1) {
+			const currentHostColor = record.state.hostColor;
+			if (!currentHostColor) {
+				throw new Error('host color should exist before rematch');
+			}
+
+			record.state.status = 'finished';
+			record.state.winner = oppositeColor(currentHostColor);
+			record.state.rematchRequestedBy = null;
+
+			await requestRematch(state.id, hostToken);
+			await acceptRematch(state.id, playerToken);
+
+			const expectedHostColor = oppositeColor(currentHostColor);
+			expect(record.state.hostColor).toBe(expectedHostColor);
+			expect(record.state.players[record.state.hostColor!]?.name).toBe('Alice');
+			expect(record.state.players[oppositeColor(record.state.hostColor!)]?.name).toBe('Bob');
+			expect(viewerRoleFromToken(state.id, hostToken)).toBe(record.state.hostColor);
+			expect(viewerRoleFromToken(state.id, playerToken)).toBe(oppositeColor(record.state.hostColor!));
+		}
+
+		expect(record.state.hostColor).toBe(initialHostColor);
+	});
 });
+
+function oppositeColor(color: 'white' | 'black'): 'white' | 'black' {
+	return color === 'white' ? 'black' : 'white';
+}

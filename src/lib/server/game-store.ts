@@ -303,6 +303,16 @@ function oppositeColor(color: Color): Color {
 	return color === 'white' ? 'black' : 'white';
 }
 
+function resolveActorColor(state: GameState, payload: SessionTokenPayload): Color | null {
+	if (payload.kind === 'host') {
+		return state.hostColor;
+	}
+	if (state.hostColor) {
+		return oppositeColor(state.hostColor);
+	}
+	return payload.color;
+}
+
 function emitSnapshot(record: GameRecord): void {
 	const event = {
 		type: 'snapshot',
@@ -434,8 +444,7 @@ export async function playMove(
 			return record.state;
 		}
 
-		const actorColor: Color | null =
-			payload.kind === 'player' ? payload.color : record.state.hostColor;
+		const actorColor = resolveActorColor(record.state, payload);
 		if (!actorColor) {
 			throw new Error('Session joueur invalide');
 		}
@@ -478,7 +487,7 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
 		const state = record.state;
-		const actorColor: Color | null = payload.kind === 'player' ? payload.color : state.hostColor;
+		const actorColor = resolveActorColor(state, payload);
 		if (!actorColor) {
 			throw new Error('Session joueur invalide');
 		}
@@ -516,7 +525,7 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
 		const state = record.state;
-		const actorColor: Color | null = payload.kind === 'player' ? payload.color : state.hostColor;
+		const actorColor = resolveActorColor(state, payload);
 		if (!actorColor) {
 			throw new Error('Session joueur invalide');
 		}
@@ -539,9 +548,28 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 			throw new Error('Deux joueurs sont requis pour lancer la revanche');
 		}
 
+		const previousHostColor = state.hostColor;
+		if (!previousHostColor) {
+			throw new Error('Couleur hote indisponible');
+		}
+		const nextHostColor = oppositeColor(previousHostColor);
+		const hostPlayer = state.players[previousHostColor];
+		const guestPlayer = state.players[oppositeColor(previousHostColor)];
+		if (!hostPlayer || !guestPlayer) {
+			throw new Error('Deux joueurs sont requis pour lancer la revanche');
+		}
+		const nextPlayers: GameState['players'] = {
+			white: null,
+			black: null
+		};
+		nextPlayers[nextHostColor] = hostPlayer;
+		nextPlayers[oppositeColor(nextHostColor)] = guestPlayer;
+
 		record.state = {
 			...state,
 			status: 'active',
+			hostColor: nextHostColor,
+			players: nextPlayers,
 			board: createInitialBoard(),
 			reserves: {
 				white: makeEmptyReserve(),
@@ -582,7 +610,8 @@ export function viewerRoleFromToken(gameId: string, token: string | undefined): 
 			: 'guest';
 	}
 	if (payload.kind === 'player' && payload.color) {
-		return payload.color;
+		const hostColor = getGameOrThrow(gameId).state.hostColor;
+		return hostColor ? oppositeColor(hostColor) : payload.color;
 	}
 	if (payload.kind === 'host') {
 		const hostColor = getGameOrThrow(gameId).state.hostColor;
