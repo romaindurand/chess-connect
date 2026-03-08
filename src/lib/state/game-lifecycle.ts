@@ -1,5 +1,7 @@
 import { getGameViewRemote, openGameEventStream } from '$lib/client/game-api';
 import { tick } from 'svelte';
+import moveSoundUrl from '$lib/assets/move.mp3';
+import captureSoundUrl from '$lib/assets/capture.mp3';
 import {
 	BOARD_SIZE,
 	coordKey,
@@ -35,7 +37,26 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 	let nowTicker: ReturnType<typeof setInterval> | null = null;
 	let snapshotQueue = Promise.resolve();
 	let deferredSnapshot: GameView | null = null;
+	let deferredSnapshotSound: 'move' | 'capture' | null = null;
 	let deferredFlushTimer: ReturnType<typeof setTimeout> | null = null;
+	let moveAudio: HTMLAudioElement | null = null;
+	let captureAudio: HTMLAudioElement | null = null;
+
+	function playSoundEffect(kind: 'move' | 'capture'): void {
+		if (typeof Audio === 'undefined') {
+			return;
+		}
+
+		const audio =
+			kind === 'capture'
+				? (captureAudio ??= new Audio(captureSoundUrl))
+				: (moveAudio ??= new Audio(moveSoundUrl));
+
+		audio.currentTime = 0;
+		void audio.play().catch(() => {
+			// Ignore autoplay/policy errors.
+		});
+	}
 
 	function clearTransitionMarkers(): void {
 		input.setActivePieceTransitionName(null);
@@ -63,6 +84,8 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 				fromBoard?: Coord;
 				toBoard: Coord;
 				fromReserve?: { owner: Color; piece: PieceType };
+				moverColor: Color;
+				sound: 'move' | 'capture';
 		  }
 		| null {
 		if (nextGame.state.pliesPlayed !== previousGame.state.pliesPlayed + 1) {
@@ -97,7 +120,13 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		}
 
 		if (fromBoard) {
-			return { fromBoard, toBoard };
+			const capturedBefore = previousGame.state.board[toBoard.y][toBoard.x];
+			return {
+				fromBoard,
+				toBoard,
+				moverColor,
+				sound: capturedBefore ? 'capture' : 'move'
+			};
 		}
 
 		const placedPiece = nextGame.state.board[toBoard.y][toBoard.x];
@@ -110,26 +139,30 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			fromReserve: {
 				owner: moverColor,
 				piece: placedPiece.type
-			}
+			},
+			moverColor,
+			sound: 'move'
 		};
 	}
 
-	async function applySnapshotWithTransition(nextGame: GameView): Promise<void> {
+	async function applySnapshotWithTransition(
+		nextGame: GameView
+	): Promise<'move' | 'capture' | null> {
 		const previousGame = input.getGame();
 		if (!previousGame) {
 			input.setGame(nextGame);
-			return;
+			return null;
 		}
 
 		const markers = detectSnapshotTransition(previousGame, nextGame);
 		if (!markers) {
 			input.setGame(nextGame);
-			return;
+			return null;
 		}
 
 		if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
 			input.setGame(nextGame);
-			return;
+			return markers.sound;
 		}
 
 		const transitionName = `piece-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
@@ -150,10 +183,18 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 
 		await transition.finished.catch(() => undefined);
 		clearTransitionMarkers();
+		return markers.sound;
 	}
 
-	async function processSnapshot(snapshot: GameView): Promise<void> {
-		await applySnapshotWithTransition(snapshot);
+	async function processSnapshot(
+		snapshot: GameView,
+		fallbackSound: 'move' | 'capture' | null = null
+	): Promise<void> {
+		const inferredSound = await applySnapshotWithTransition(snapshot);
+		const soundToPlay = inferredSound ?? fallbackSound;
+		if (soundToPlay) {
+			playSoundEffect(soundToPlay);
+		}
 
 		const selectedBoardFrom = input.getSelectedBoardFrom();
 		if (selectedBoardFrom) {
@@ -190,8 +231,10 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			}
 
 			const snapshot = deferredSnapshot;
+			const snapshotSound = deferredSnapshotSound;
 			deferredSnapshot = null;
-			snapshotQueue = snapshotQueue.then(() => processSnapshot(snapshot));
+			deferredSnapshotSound = null;
+			snapshotQueue = snapshotQueue.then(() => processSnapshot(snapshot, snapshotSound));
 		}, 16);
 	}
 
@@ -218,12 +261,16 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			if (event.type === 'snapshot') {
 				snapshotQueue = snapshotQueue.then(async () => {
 					if (input.getActivePieceTransitionName()) {
+						const currentGame = input.getGame();
+						deferredSnapshotSound = currentGame
+							? (detectSnapshotTransition(currentGame, event.game)?.sound ?? null)
+							: null;
 						deferredSnapshot = event.game;
 						scheduleDeferredSnapshotFlush();
 						return;
 					}
 
-					await processSnapshot(event.game);
+					await processSnapshot(event.game, null);
 				});
 			}
 		});
@@ -262,6 +309,7 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			deferredFlushTimer = null;
 		}
 		deferredSnapshot = null;
+		deferredSnapshotSound = null;
 	}
 
 	return {

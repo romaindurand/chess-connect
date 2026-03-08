@@ -25,7 +25,7 @@
 		<h1 class="text-2xl font-semibold">Partie {gameId}</h1>
 		<p class="text-sm text-gray-600">{roleText}</p>
 		{#if turnLineText}
-			<p class={`text-sm ${isViewerTurnNow ? 'font-bold text-gray-900' : 'text-gray-700'}`}>
+			<p class={`text-sm ${isViewerTurnNow ? 'font-bold text-gray-900' : 'text-gray-700'} h-5`}>
 				{turnLineText}
 			</p>
 		{/if}

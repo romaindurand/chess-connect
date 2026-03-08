@@ -1,7 +1,5 @@
 import { playMoveRemote, postGameActionRemote, requestRematchRemote, acceptRematchRemote } from '$lib/client/game-api';
 import { tick } from 'svelte';
-import moveSoundUrl from '$lib/assets/move.mp3';
-import captureSoundUrl from '$lib/assets/capture.mp3';
 import {
 	coordKey,
 	type Color,
@@ -40,25 +38,6 @@ interface GameActionsFactoryInput {
 }
 
 export function createGameActions(input: GameActionsFactoryInput) {
-	let moveAudio: HTMLAudioElement | null = null;
-	let captureAudio: HTMLAudioElement | null = null;
-
-	function playSoundEffect(kind: 'move' | 'capture'): void {
-		if (typeof Audio === 'undefined') {
-			return;
-		}
-
-		const audio =
-			kind === 'capture'
-				? (captureAudio ??= new Audio(captureSoundUrl))
-				: (moveAudio ??= new Audio(moveSoundUrl));
-
-		audio.currentTime = 0;
-		void audio.play().catch(() => {
-			// Ignore playback failures (browser policy, missing decoder).
-		});
-	}
-
 	function resetSelection(): void {
 		input.setSelectedBoardFrom(null);
 		input.setSelectedReservePiece(null);
@@ -250,7 +229,6 @@ export function createGameActions(input: GameActionsFactoryInput) {
 							}
 						}
 					);
-					playSoundEffect('move');
 					resetSelection();
 				} catch (error) {
 					input.setErrorMessage(error instanceof Error ? error.message : 'Coup invalide');
@@ -273,7 +251,6 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			}
 			if (input.getTargetHints().has(coordKey(coord))) {
 				try {
-					const isCapture = Boolean(cell);
 					await playMoveWithPieceTransition(
 						{
 							type: 'play',
@@ -284,7 +261,6 @@ export function createGameActions(input: GameActionsFactoryInput) {
 							toBoard: coord
 						}
 					);
-					playSoundEffect(isCapture ? 'capture' : 'move');
 					resetSelection();
 				} catch (error) {
 					input.setErrorMessage(error instanceof Error ? error.message : 'Coup invalide');
