@@ -3,7 +3,9 @@
 	import type { PieceType } from '$lib/types/game';
 
 	interface Props {
-		label: string;
+		playerName: string;
+		playerScore: number;
+		isActiveTurn: boolean;
 		reserveColor: 'white' | 'black';
 		pieces: PieceType[];
 		isMine: boolean;
@@ -16,7 +18,9 @@
 	}
 
 	let {
-		label,
+		playerName,
+		playerScore,
+		isActiveTurn,
 		reserveColor,
 		pieces,
 		isMine,
@@ -48,9 +52,9 @@
 	}
 </script>
 
-<div class="rounded border border-gray-300 p-2">
-	<p class="mb-1 text-xs text-gray-500 uppercase">{label}</p>
-	<div class="flex h-14 flex-wrap content-start gap-2 overflow-hidden">
+<div class={`rounded p-2 ${isActiveTurn ? 'border-2 border-black' : 'border border-gray-300'}`}>
+	<p class="mb-1 text-xs font-medium text-gray-700">{playerName} - {playerScore}</p>
+	<div class="p-2 flex h-16 flex-wrap content-start gap-2 overflow-hidden">
 		{#each pieces as piece (piece)}
 			{@const Icon = pieceIcon(piece)}
 			<button

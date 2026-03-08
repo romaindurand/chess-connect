@@ -6,7 +6,6 @@
 	import BoardGrid from '$lib/components/game/BoardGrid.svelte';
 	import GameHeader from '$lib/components/game/GameHeader.svelte';
 	import InvitationJoinCard from '$lib/components/game/InvitationJoinCard.svelte';
-	import PlayerScoreCard from '$lib/components/game/PlayerScoreCard.svelte';
 	import ReserveRow from '$lib/components/game/ReserveRow.svelte';
 	import GameDialog from '$lib/components/GameDialog.svelte';
 	import { createGameState } from '$lib/state/game.svelte';
@@ -39,20 +38,6 @@
 	{:else if !state.view.game}
 		<p class="text-red-600">{state.view.errorMessage || 'Partie introuvable'}</p>
 	{:else}
-		{#if state.view.game.state.status !== 'waiting'}
-			<PlayerScoreCard
-				whiteName={state.view.game.state.players.white?.name ?? 'En attente'}
-				blackName={state.view.game.state.players.black?.name ?? 'En attente'}
-				whiteScore={state.view.game.state.score.white}
-				blackScore={state.view.game.state.score.black}
-				hasTimeControl={state.view.hasTimeControl}
-				timeControlPerPlayerSeconds={state.view.game.state.timeControlPerPlayerSeconds}
-				whiteTimeRemainingMs={state.view.whiteTimeRemainingMs}
-				blackTimeRemainingMs={state.view.blackTimeRemainingMs}
-				activeTurn={state.view.game.state.turn}
-			/>
-		{/if}
-
 		{#if state.view.game.viewerRole === 'guest' && state.view.game.joinAllowed && !state.view.game.viewerIsInviter}
 			<InvitationJoinCard
 				inviterName={state.view.game.state.inviter.name}
@@ -62,7 +47,9 @@
 
 		<div class="space-y-3">
 			<ReserveRow
-				label="Réserve Noir"
+				playerName={state.view.game.state.players.black?.name ?? 'En attente'}
+				playerScore={state.view.game.state.score.black}
+				isActiveTurn={state.view.game.state.status === 'active' && state.view.game.state.turn === 'black'}
 				reserveColor={state.view.topReserveColor}
 				pieces={state.view.topReservePieces}
 				isMine={state.view.topReserveIsMine}
@@ -85,7 +72,9 @@
 			/>
 
 			<ReserveRow
-				label="Réserve Blanc"
+				playerName={state.view.game.state.players.white?.name ?? 'En attente'}
+				playerScore={state.view.game.state.score.white}
+				isActiveTurn={state.view.game.state.status === 'active' && state.view.game.state.turn === 'white'}
 				reserveColor={state.view.bottomReserveColor}
 				pieces={state.view.bottomReservePieces}
 				isMine={state.view.bottomReserveIsMine}
