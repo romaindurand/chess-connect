@@ -53,7 +53,7 @@
 </script>
 
 <div class={`rounded p-2 ${isActiveTurn ? 'border-2 border-black' : 'border border-gray-300'}`}>
-	<p class="mb-1 text-xs font-medium text-gray-700">{playerName} - {playerScore}</p>
+	<p class="mb-1 text-gray-700">{playerName} - {playerScore}</p>
 	<div class="p-2 flex h-16 flex-wrap content-start gap-2 overflow-hidden">
 		{#each pieces as piece (piece)}
 			{@const Icon = pieceIcon(piece)}

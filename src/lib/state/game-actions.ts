@@ -255,6 +255,12 @@ export function createGameActions(input: GameActionsFactoryInput) {
 				} catch (error) {
 					input.setErrorMessage(error instanceof Error ? error.message : 'Coup invalide');
 				}
+				return;
+			}
+
+			if (isMyPiece(cell)) {
+				input.setSelectedReservePiece(null);
+				input.setSelectedBoardFrom(coord);
 			}
 			return;
 		}
