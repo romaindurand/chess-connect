@@ -1,3 +1,8 @@
 @import 'tailwindcss';
 @plugin '@tailwindcss/forms';
 @plugin '@tailwindcss/typography';
+
+::view-transition-group(*) {
+	animation-duration: 500ms;
+	animation-timing-function: ease-in-out;
+}

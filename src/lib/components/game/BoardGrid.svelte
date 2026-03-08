@@ -9,9 +9,18 @@
 		onCellEnter: (coord: Coord, cell: PieceOnBoard | null) => void;
 		onCellLeave: () => void;
 		onCellClick: (coord: Coord) => void;
+		pieceTransitionName: (coord: Coord) => string | null;
 	}
 
-	let { board, targetHints, selectedBoardFrom, onCellEnter, onCellLeave, onCellClick }: Props =
+	let {
+		board,
+		targetHints,
+		selectedBoardFrom,
+		onCellEnter,
+		onCellLeave,
+		onCellClick,
+		pieceTransitionName
+	}: Props =
 		$props();
 
 	function pieceIcon(piece: PieceType): typeof ChessPawn {
@@ -48,7 +57,10 @@
 			>
 				{#if cell}
 					{@const Icon = pieceIcon(cell.type)}
-					<span class={`inline-flex rounded p-1 ${pieceChipClasses(cell.owner)}`}>
+					<span
+						class={`inline-flex rounded p-1 ${pieceChipClasses(cell.owner)}`}
+						style={`view-transition-name: ${pieceTransitionName(coord) ?? 'none'};`}
+					>
 						<Icon class="h-10 w-10" />
 					</span>
 				{/if}

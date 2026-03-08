@@ -15,6 +15,10 @@ interface GameViewFactoryInput {
 	getShowRulesModal: () => boolean;
 	getIsSubmittingRematch: () => boolean;
 	getNowMs: () => number;
+	getActivePieceTransitionName: () => string | null;
+	getTransitionFromBoardKey: () => string | null;
+	getTransitionToBoardKey: () => string | null;
+	getTransitionReserveKey: () => string | null;
 }
 
 export function createGameView(input: GameViewFactoryInput) {
@@ -216,6 +220,27 @@ export function createGameView(input: GameViewFactoryInput) {
 		return Math.max(0, Math.floor(remaining));
 	}
 
+	function boardPieceTransitionName(coord: Coord): string | null {
+		const name = input.getActivePieceTransitionName();
+		if (!name) {
+			return null;
+		}
+		const key = coordKey(coord);
+		if (key === input.getTransitionFromBoardKey() || key === input.getTransitionToBoardKey()) {
+			return name;
+		}
+		return null;
+	}
+
+	function reservePieceTransitionName(owner: Color, piece: PieceType): string | null {
+		const name = input.getActivePieceTransitionName();
+		if (!name) {
+			return null;
+		}
+		const reserveKey = `${owner}:${piece}`;
+		return reserveKey === input.getTransitionReserveKey() ? name : null;
+	}
+
 	return {
 		get gameId() {
 			return input.getGameId();
@@ -304,6 +329,8 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get blackTimeRemainingMs() {
 			return blackTimeRemainingMs;
-		}
+		},
+		boardPieceTransitionName,
+		reservePieceTransitionName
 	};
 }

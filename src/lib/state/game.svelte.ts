@@ -15,6 +15,10 @@ export function createGameState(getGameId: () => string) {
 	let isSubmittingRematch = $state(false);
 	let showRulesModal = $state(false);
 	let nowMs = $state(Date.now());
+	let activePieceTransitionName = $state<string | null>(null);
+	let transitionFromBoardKey = $state<string | null>(null);
+	let transitionToBoardKey = $state<string | null>(null);
+	let transitionReserveKey = $state<string | null>(null);
 
 	let stream: EventSource | null = null;
 
@@ -68,7 +72,11 @@ export function createGameState(getGameId: () => string) {
 		getCopying: () => copying,
 		getShowRulesModal: () => showRulesModal,
 		getIsSubmittingRematch: () => isSubmittingRematch,
-		getNowMs: () => nowMs
+		getNowMs: () => nowMs,
+		getActivePieceTransitionName: () => activePieceTransitionName,
+		getTransitionFromBoardKey: () => transitionFromBoardKey,
+		getTransitionToBoardKey: () => transitionToBoardKey,
+		getTransitionReserveKey: () => transitionReserveKey
 	});
 
 	const actions = createGameActions({
@@ -105,6 +113,18 @@ export function createGameState(getGameId: () => string) {
 		},
 		setShowRulesModal: (open) => {
 			showRulesModal = open;
+		},
+		setActivePieceTransitionName: (name) => {
+			activePieceTransitionName = name;
+		},
+		setTransitionFromBoardKey: (key) => {
+			transitionFromBoardKey = key;
+		},
+		setTransitionToBoardKey: (key) => {
+			transitionToBoardKey = key;
+		},
+		setTransitionReserveKey: (key) => {
+			transitionReserveKey = key;
 		},
 		getIsMyTurn: () => view.isMyTurn,
 		getTargetHints: () => view.targetHints,

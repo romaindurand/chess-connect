@@ -12,6 +12,7 @@
 		onClick: (reserveColor: 'white' | 'black', piece: PieceType) => void;
 		onEnter: (reserveColor: 'white' | 'black', piece: PieceType) => void;
 		onLeave: () => void;
+		pieceTransitionName: (owner: 'white' | 'black', piece: PieceType) => string | null;
 	}
 
 	let {
@@ -23,7 +24,8 @@
 		selectedPiece,
 		onClick,
 		onEnter,
-		onLeave
+		onLeave,
+		pieceTransitionName
 	}: Props = $props();
 
 	function pieceIcon(piece: PieceType): typeof ChessPawn {
@@ -60,7 +62,10 @@
 				disabled={!isMine || !isMyTurn}
 				title={piece}
 			>
-				<span class={`inline-flex rounded p-1 ${pieceChipClasses(reserveColor)}`}>
+				<span
+					class={`inline-flex rounded p-1 ${pieceChipClasses(reserveColor)}`}
+					style={`view-transition-name: ${pieceTransitionName(reserveColor, piece) ?? 'none'};`}
+				>
 					<Icon class="h-8 w-8" />
 				</span>
 			</button>

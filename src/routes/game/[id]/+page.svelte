@@ -71,6 +71,7 @@
 				onClick={state.actions.onReserveClick}
 				onEnter={state.actions.onReserveHover}
 				onLeave={state.actions.clearReserveHover}
+				pieceTransitionName={state.view.reservePieceTransitionName}
 			/>
 
 			<BoardGrid
@@ -80,6 +81,7 @@
 				onCellEnter={state.actions.onBoardHover}
 				onCellLeave={state.actions.clearBoardHover}
 				onCellClick={state.actions.onCellClick}
+				pieceTransitionName={state.view.boardPieceTransitionName}
 			/>
 
 			<ReserveRow
@@ -92,6 +94,7 @@
 				onClick={state.actions.onReserveClick}
 				onEnter={state.actions.onReserveHover}
 				onLeave={state.actions.clearReserveHover}
+				pieceTransitionName={state.view.reservePieceTransitionName}
 			/>
 		</div>
 	{/if}

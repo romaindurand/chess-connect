@@ -1,5 +1,6 @@
 import { playMoveRemote, postGameActionRemote, requestRematchRemote, acceptRematchRemote } from '$lib/client/game-api';
-import { coordKey, type Coord, type GameView, type PieceOnBoard, type PieceType } from '$lib/types/game';
+import { tick } from 'svelte';
+import { coordKey, type Coord, type GameView, type PieceOnBoard, type PieceType, type PlayMovePayload } from '$lib/types/game';
 
 interface GameActionsFactoryInput {
 	getGameId: () => string;
@@ -18,6 +19,10 @@ interface GameActionsFactoryInput {
 	getIsSubmittingRematch: () => boolean;
 	setIsSubmittingRematch: (submitting: boolean) => void;
 	setShowRulesModal: (open: boolean) => void;
+	setActivePieceTransitionName: (name: string | null) => void;
+	setTransitionFromBoardKey: (key: string | null) => void;
+	setTransitionToBoardKey: (key: string | null) => void;
+	setTransitionReserveKey: (key: string | null) => void;
 	getIsMyTurn: () => boolean;
 	getTargetHints: () => Set<string>;
 	reconnectEventStream: () => void;
@@ -27,6 +32,64 @@ export function createGameActions(input: GameActionsFactoryInput) {
 	function resetSelection(): void {
 		input.setSelectedBoardFrom(null);
 		input.setSelectedReservePiece(null);
+	}
+
+	function clearTransitionMarkers(): void {
+		input.setActivePieceTransitionName(null);
+		input.setTransitionFromBoardKey(null);
+		input.setTransitionToBoardKey(null);
+		input.setTransitionReserveKey(null);
+	}
+
+	async function playMoveWithPieceTransition(
+		payload: PlayMovePayload,
+		markers: {
+			fromBoard?: Coord;
+			toBoard: Coord;
+			fromReserve?: { owner: 'white' | 'black'; piece: PieceType };
+		}
+	): Promise<GameView> {
+		if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
+			const updatedGame = await playMoveRemote(input.getGameId(), payload);
+			input.setGame(updatedGame);
+			clearTransitionMarkers();
+			return updatedGame;
+		}
+
+		const transitionName = `piece-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+		input.setActivePieceTransitionName(transitionName);
+		input.setTransitionFromBoardKey(markers.fromBoard ? coordKey(markers.fromBoard) : null);
+		input.setTransitionToBoardKey(coordKey(markers.toBoard));
+		input.setTransitionReserveKey(
+			markers.fromReserve ? `${markers.fromReserve.owner}:${markers.fromReserve.piece}` : null
+		);
+
+		await tick();
+
+		let updatedGame: GameView | null = null;
+		let moveError: unknown = null;
+
+		const transition = document.startViewTransition(async () => {
+			try {
+				updatedGame = await playMoveRemote(input.getGameId(), payload);
+				input.setGame(updatedGame);
+			} catch (error) {
+				moveError = error;
+			}
+		});
+
+		await transition.finished.catch(() => undefined);
+		clearTransitionMarkers();
+
+		if (moveError) {
+			throw moveError;
+		}
+
+		if (!updatedGame) {
+			throw new Error('Coup invalide');
+		}
+
+		return updatedGame;
 	}
 
 	function isMyPiece(cell: PieceOnBoard | null): boolean {
@@ -137,11 +200,23 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		if (selectedReservePiece) {
 			if (input.getTargetHints().has(coordKey(coord))) {
 				try {
-					const updatedGame = await playMoveRemote(input.getGameId(), {
+					const viewerColor = game.viewerColor;
+					if (!viewerColor) {
+						return;
+					}
+					await playMoveWithPieceTransition(
+						{
 						type: 'play',
 						move: { kind: 'place', piece: selectedReservePiece, to: coord }
-					});
-					input.setGame(updatedGame);
+						},
+						{
+							toBoard: coord,
+							fromReserve: {
+								owner: viewerColor,
+								piece: selectedReservePiece
+							}
+						}
+					);
 					resetSelection();
 				} catch (error) {
 					input.setErrorMessage(error instanceof Error ? error.message : 'Coup invalide');
@@ -158,11 +233,16 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			}
 			if (input.getTargetHints().has(coordKey(coord))) {
 				try {
-					const updatedGame = await playMoveRemote(input.getGameId(), {
-						type: 'play',
-						move: { kind: 'move', from: selectedBoardFrom, to: coord }
-					});
-					input.setGame(updatedGame);
+					await playMoveWithPieceTransition(
+						{
+							type: 'play',
+							move: { kind: 'move', from: selectedBoardFrom, to: coord }
+						},
+						{
+							fromBoard: selectedBoardFrom,
+							toBoard: coord
+						}
+					);
 					resetSelection();
 				} catch (error) {
 					input.setErrorMessage(error instanceof Error ? error.message : 'Coup invalide');
