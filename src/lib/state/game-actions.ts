@@ -2,7 +2,15 @@ import { playMoveRemote, postGameActionRemote, requestRematchRemote, acceptRemat
 import { tick } from 'svelte';
 import moveSoundUrl from '$lib/assets/move.mp3';
 import captureSoundUrl from '$lib/assets/capture.mp3';
-import { coordKey, type Coord, type GameView, type PieceOnBoard, type PieceType, type PlayMovePayload } from '$lib/types/game';
+import {
+	coordKey,
+	type Color,
+	type Coord,
+	type GameView,
+	type PieceOnBoard,
+	type PieceType,
+	type PlayMovePayload
+} from '$lib/types/game';
 
 interface GameActionsFactoryInput {
 	getGameId: () => string;
@@ -25,6 +33,7 @@ interface GameActionsFactoryInput {
 	setTransitionFromBoardKey: (key: string | null) => void;
 	setTransitionToBoardKey: (key: string | null) => void;
 	setTransitionReserveKey: (key: string | null) => void;
+	setTransitionMovingOwner: (owner: Color | null) => void;
 	getIsMyTurn: () => boolean;
 	getTargetHints: () => Set<string>;
 	reconnectEventStream: () => void;
@@ -60,6 +69,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		input.setTransitionFromBoardKey(null);
 		input.setTransitionToBoardKey(null);
 		input.setTransitionReserveKey(null);
+		input.setTransitionMovingOwner(null);
 	}
 
 	async function playMoveWithPieceTransition(
@@ -84,6 +94,8 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		input.setTransitionReserveKey(
 			markers.fromReserve ? `${markers.fromReserve.owner}:${markers.fromReserve.piece}` : null
 		);
+		const movingOwner = markers.fromReserve?.owner ?? input.getGame()?.viewerColor ?? null;
+		input.setTransitionMovingOwner(movingOwner);
 
 		await tick();
 

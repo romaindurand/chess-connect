@@ -19,6 +19,7 @@ interface GameViewFactoryInput {
 	getTransitionFromBoardKey: () => string | null;
 	getTransitionToBoardKey: () => string | null;
 	getTransitionReserveKey: () => string | null;
+	getTransitionMovingOwner: () => Color | null;
 }
 
 export function createGameView(input: GameViewFactoryInput) {
@@ -223,6 +224,15 @@ export function createGameView(input: GameViewFactoryInput) {
 	function boardPieceTransitionName(coord: Coord): string | null {
 		const name = input.getActivePieceTransitionName();
 		if (!name) {
+			return null;
+		}
+		const game = input.getGame();
+		if (!game) {
+			return null;
+		}
+		const cell = game.state.board[coord.y][coord.x];
+		const movingOwner = input.getTransitionMovingOwner();
+		if (!cell || !movingOwner || cell.owner !== movingOwner) {
 			return null;
 		}
 		const key = coordKey(coord);

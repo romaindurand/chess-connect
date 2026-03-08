@@ -1,4 +1,4 @@
-import { type Coord, type GameView, type PieceType } from '$lib/types/game';
+import { type Color, type Coord, type GameView, type PieceType } from '$lib/types/game';
 import { createGameActions } from '$lib/state/game-actions';
 import { createGameLifecycle } from '$lib/state/game-lifecycle';
 import { createGameView } from '$lib/state/game-view.svelte';
@@ -19,6 +19,7 @@ export function createGameState(getGameId: () => string) {
 	let transitionFromBoardKey = $state<string | null>(null);
 	let transitionToBoardKey = $state<string | null>(null);
 	let transitionReserveKey = $state<string | null>(null);
+	let transitionMovingOwner = $state<Color | null>(null);
 
 	let stream: EventSource | null = null;
 
@@ -41,6 +42,7 @@ export function createGameState(getGameId: () => string) {
 		setSelectedReservePiece: (piece) => {
 			selectedReservePiece = piece;
 		},
+		getGame: () => game,
 		setGame: (nextGame) => {
 			game = nextGame;
 		},
@@ -56,6 +58,22 @@ export function createGameState(getGameId: () => string) {
 		},
 		setNowMs: (nextNowMs) => {
 			nowMs = nextNowMs;
+		},
+		getActivePieceTransitionName: () => activePieceTransitionName,
+		setActivePieceTransitionName: (name) => {
+			activePieceTransitionName = name;
+		},
+		setTransitionFromBoardKey: (key) => {
+			transitionFromBoardKey = key;
+		},
+		setTransitionToBoardKey: (key) => {
+			transitionToBoardKey = key;
+		},
+		setTransitionReserveKey: (key) => {
+			transitionReserveKey = key;
+		},
+		setTransitionMovingOwner: (owner) => {
+			transitionMovingOwner = owner;
 		}
 	});
 
@@ -76,7 +94,8 @@ export function createGameState(getGameId: () => string) {
 		getActivePieceTransitionName: () => activePieceTransitionName,
 		getTransitionFromBoardKey: () => transitionFromBoardKey,
 		getTransitionToBoardKey: () => transitionToBoardKey,
-		getTransitionReserveKey: () => transitionReserveKey
+		getTransitionReserveKey: () => transitionReserveKey,
+		getTransitionMovingOwner: () => transitionMovingOwner
 	});
 
 	const actions = createGameActions({
@@ -125,6 +144,9 @@ export function createGameState(getGameId: () => string) {
 		},
 		setTransitionReserveKey: (key) => {
 			transitionReserveKey = key;
+		},
+		setTransitionMovingOwner: (owner) => {
+			transitionMovingOwner = owner;
 		},
 		getIsMyTurn: () => view.isMyTurn,
 		getTargetHints: () => view.targetHints,
