@@ -48,14 +48,14 @@
 	}
 </script>
 
-<div>
+<div class="rounded border border-gray-300 p-2">
 	<p class="mb-1 text-xs text-gray-500 uppercase">{label}</p>
-	<div class="flex flex-wrap gap-2">
+	<div class="flex h-14 flex-wrap content-start gap-2 overflow-hidden">
 		{#each pieces as piece (piece)}
 			{@const Icon = pieceIcon(piece)}
 			<button
 				type="button"
-				class={`rounded border px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black' : ''} ${!isMine ? 'opacity-50' : ''}`}
+				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black' : ''} ${!isMine ? 'opacity-50' : ''}`}
 				onclick={() => onClick(reserveColor, piece)}
 				onmouseenter={() => onEnter(reserveColor, piece)}
 				onmouseleave={onLeave}

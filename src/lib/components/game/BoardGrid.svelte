@@ -54,7 +54,7 @@
 			{/each}
 		</div>
 
-		<div class="grid grid-cols-4 gap-2">
+		<div class="grid grid-cols-4 gap-2 mb-8">
 			{#each board as row, y (y)}
 				{#each row as cell, x (x)}
 					{@const coord = { x, y }}
