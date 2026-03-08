@@ -3,9 +3,12 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { applyPlayerMove, createInitialBoard, getLegalOptionsForColor } from './game-engine';
 import {
 	makeEmptyReserve,
+	type Coord,
 	type Color,
+	type HistorySnapshot,
 	type GameState,
 	type GameView,
+	type MoveHistoryEntry,
 	type PlayerMove,
 	type ServerEvent,
 	type ViewerRole
@@ -158,10 +161,94 @@ function createNewState(
 			timeControlPerPlayerSeconds,
 			timeRemainingMs,
 			turnStartedAt: null,
+			moveHistory: [],
 			rematchRequestedBy: null,
 			createdAt: now,
 			lastActivityAt: now,
 			version: 0
+		}
+	};
+}
+
+function cloneBoard(board: GameState['board']): GameState['board'] {
+	return board.map((row) => row.map((cell) => (cell ? { ...cell } : null)));
+}
+
+function cloneReserves(reserves: GameState['reserves']): GameState['reserves'] {
+	return {
+		white: { ...reserves.white },
+		black: { ...reserves.black }
+	};
+}
+
+function snapshotOf(state: GameState): HistorySnapshot {
+	return {
+		board: cloneBoard(state.board),
+		reserves: cloneReserves(state.reserves),
+		turn: state.turn,
+		pliesPlayed: state.pliesPlayed,
+		status: state.status,
+		winner: state.winner
+	};
+}
+
+function square(coord: Coord): string {
+	return `${String.fromCharCode(65 + coord.x)}${4 - coord.y}`;
+}
+
+function pieceLetter(type: 'pawn' | 'rook' | 'knight' | 'bishop'): string {
+	if (type === 'rook') {
+		return 'R';
+	}
+	if (type === 'knight') {
+		return 'N';
+	}
+	if (type === 'bishop') {
+		return 'B';
+	}
+	return 'P';
+}
+
+function buildHistoryEntry(
+	before: GameState,
+	after: GameState,
+	actorColor: Color,
+	move: PlayerMove
+): MoveHistoryEntry {
+	const ply = after.pliesPlayed;
+	const shortPly = Math.floor((ply + 1) / 2);
+	const prefix = `${shortPly}.${actorColor === 'white' ? '' : '...'} `;
+
+	if (move.kind === 'place') {
+		return {
+			ply,
+			notation: `${prefix}${pieceLetter(move.piece)}@${square(move.to)}`,
+			before: snapshotOf(before),
+			after: snapshotOf(after),
+			transition: {
+				moverColor: actorColor,
+				toBoard: move.to,
+				fromReserve: { owner: actorColor, piece: move.piece },
+				sound: 'move'
+			}
+		};
+	}
+
+	const movingPiece = before.board[move.from.y][move.from.x];
+	const capturedPiece = before.board[move.to.y][move.to.x];
+	const movingType = movingPiece?.type ?? 'pawn';
+	const sep = capturedPiece ? 'x' : '-';
+
+	return {
+		ply,
+		notation: `${prefix}${pieceLetter(movingType)}${square(move.from)}${sep}${square(move.to)}`,
+		before: snapshotOf(before),
+		after: snapshotOf(after),
+		transition: {
+			moverColor: actorColor,
+			fromBoard: move.from,
+			toBoard: move.to,
+			sound: capturedPiece ? 'capture' : 'move'
 		}
 	};
 }
@@ -364,7 +451,12 @@ export async function playMove(
 			record.state.timeRemainingMs[actorColor] = remaining;
 		}
 
+		const beforeMoveState = record.state;
 		record.state = applyPlayerMove(record.state, actorColor, move);
+		record.state.moveHistory = [
+			...beforeMoveState.moveHistory,
+			buildHistoryEntry(beforeMoveState, record.state, actorColor, move)
+		];
 
 		if (record.state.winner) {
 			finalizeWinner(record, record.state.winner, now);
@@ -458,6 +550,7 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 			turn: 'white',
 			pliesPlayed: 0,
 			winner: null,
+			moveHistory: [],
 			gameNumber: state.gameNumber + 1,
 			timeRemainingMs: state.timeControlPerPlayerSeconds
 				? {

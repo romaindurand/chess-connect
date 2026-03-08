@@ -1,4 +1,4 @@
-import { type Color, type Coord, type GameView, type PieceType } from '$lib/types/game';
+import { type Color, type Coord, type GameView, type HistorySnapshot, type PieceType } from '$lib/types/game';
 import { createGameActions } from '$lib/state/game-actions';
 import { createGameLifecycle } from '$lib/state/game-lifecycle';
 import { createGameView } from '$lib/state/game-view.svelte';
@@ -20,6 +20,9 @@ export function createGameState(getGameId: () => string) {
 	let transitionToBoardKey = $state<string | null>(null);
 	let transitionReserveKey = $state<string | null>(null);
 	let transitionMovingOwner = $state<Color | null>(null);
+	let showHistoryPanel = $state(false);
+	let historyStep = $state<number | null>(null);
+	let historySnapshot = $state<HistorySnapshot | null>(null);
 
 	let stream: EventSource | null = null;
 
@@ -74,6 +77,13 @@ export function createGameState(getGameId: () => string) {
 		},
 		setTransitionMovingOwner: (owner) => {
 			transitionMovingOwner = owner;
+		},
+		getHistoryStep: () => historyStep,
+		setHistoryStep: (step) => {
+			historyStep = step;
+		},
+		setHistorySnapshot: (snapshot) => {
+			historySnapshot = snapshot;
 		}
 	});
 
@@ -95,7 +105,10 @@ export function createGameState(getGameId: () => string) {
 		getTransitionFromBoardKey: () => transitionFromBoardKey,
 		getTransitionToBoardKey: () => transitionToBoardKey,
 		getTransitionReserveKey: () => transitionReserveKey,
-		getTransitionMovingOwner: () => transitionMovingOwner
+		getTransitionMovingOwner: () => transitionMovingOwner,
+		getShowHistoryPanel: () => showHistoryPanel,
+		getHistoryStep: () => historyStep,
+		getHistorySnapshot: () => historySnapshot
 	});
 
 	const actions = createGameActions({
@@ -147,6 +160,18 @@ export function createGameState(getGameId: () => string) {
 		},
 		setTransitionMovingOwner: (owner) => {
 			transitionMovingOwner = owner;
+		},
+		getShowHistoryPanel: () => showHistoryPanel,
+		setShowHistoryPanel: (open) => {
+			showHistoryPanel = open;
+		},
+		getHistoryStep: () => historyStep,
+		setHistoryStep: (step) => {
+			historyStep = step;
+		},
+		getHistorySnapshot: () => historySnapshot,
+		setHistorySnapshot: (snapshot) => {
+			historySnapshot = snapshot;
 		},
 		getIsMyTurn: () => view.isMyTurn,
 		getTargetHints: () => view.targetHints,

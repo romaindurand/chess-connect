@@ -1,10 +1,14 @@
 <script lang="ts">
+	import { History } from '@lucide/svelte';
+
 	interface Props {
 		gameId: string;
 		roleText: string;
 		turnLineText: string;
 		isViewerTurnNow: boolean;
 		copying: boolean;
+		historyOpen: boolean;
+		onToggleHistory: () => void;
 		onShowRules: () => void;
 		onCopyInvite: () => void;
 	}
@@ -15,6 +19,8 @@
 		turnLineText,
 		isViewerTurnNow,
 		copying,
+		historyOpen,
+		onToggleHistory,
 		onShowRules,
 		onCopyInvite
 	}: Props = $props();
@@ -31,6 +37,12 @@
 		{/if}
 	</div>
 	<div class="flex items-center gap-2">
+		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onToggleHistory}>
+			<span class="inline-flex items-center gap-2">
+				<History class="h-4 w-4" />
+				{historyOpen ? 'Masquer historique' : 'Historique'}
+			</span>
+		</button>
 		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onShowRules}
 			>Règles</button
 		>

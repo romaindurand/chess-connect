@@ -6,6 +6,7 @@
 	import BoardGrid from '$lib/components/game/BoardGrid.svelte';
 	import GameHeader from '$lib/components/game/GameHeader.svelte';
 	import InvitationJoinCard from '$lib/components/game/InvitationJoinCard.svelte';
+	import MoveHistoryPanel from '$lib/components/game/MoveHistoryPanel.svelte';
 	import ReserveRow from '$lib/components/game/ReserveRow.svelte';
 	import GameDialog from '$lib/components/GameDialog.svelte';
 	import { createGameState } from '$lib/state/game.svelte';
@@ -29,6 +30,8 @@
 		turnLineText={state.view.turnLineText}
 		isViewerTurnNow={state.view.isViewerTurnNow}
 		copying={state.view.copying}
+		historyOpen={state.view.showHistoryPanel}
+		onToggleHistory={state.actions.toggleHistoryPanel}
 		onShowRules={() => state.actions.setShowRulesModal(true)}
 		onCopyInvite={() => state.actions.copyInviteLink(window.location.href)}
 	/>
@@ -49,7 +52,7 @@
 			<ReserveRow
 				playerName={state.view.game.state.players.black?.name ?? 'En attente'}
 				playerScore={state.view.game.state.score.black}
-				isActiveTurn={state.view.game.state.status === 'active' && state.view.game.state.turn === 'black'}
+				isActiveTurn={state.view.displayTurn === 'black'}
 				reserveColor={state.view.topReserveColor}
 				pieces={state.view.topReservePieces}
 				isMine={state.view.topReserveIsMine}
@@ -61,20 +64,34 @@
 				pieceTransitionName={state.view.reservePieceTransitionName}
 			/>
 
-			<BoardGrid
-				board={state.view.game.state.board}
-				targetHints={state.view.targetHints}
-				selectedBoardFrom={state.view.selectedBoardFrom}
-				onCellEnter={state.actions.onBoardHover}
-				onCellLeave={state.actions.clearBoardHover}
-				onCellClick={state.actions.onCellClick}
-				pieceTransitionName={state.view.boardPieceTransitionName}
-			/>
+			<div class={`grid gap-3 ${state.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem]' : 'grid-cols-1'}`}>
+				<BoardGrid
+					board={state.view.displayBoard}
+					targetHints={state.view.targetHints}
+					selectedBoardFrom={state.view.selectedBoardFrom}
+					onCellEnter={state.actions.onBoardHover}
+					onCellLeave={state.actions.clearBoardHover}
+					onCellClick={state.actions.onCellClick}
+					pieceTransitionName={state.view.boardPieceTransitionName}
+				/>
+
+				{#if state.view.showHistoryPanel}
+					<MoveHistoryPanel
+						entries={state.view.historyEntries}
+						selectedMoveIndex={state.view.historySelectedMoveIndex}
+						onSelectMove={state.actions.playHistoryMove}
+						onJumpFirst={state.actions.jumpToHistoryFirst}
+						onJumpPrevious={state.actions.jumpToHistoryPrevious}
+						onJumpNext={state.actions.jumpToHistoryNext}
+						onJumpLast={state.actions.jumpToHistoryLast}
+					/>
+				{/if}
+			</div>
 
 			<ReserveRow
 				playerName={state.view.game.state.players.white?.name ?? 'En attente'}
 				playerScore={state.view.game.state.score.white}
-				isActiveTurn={state.view.game.state.status === 'active' && state.view.game.state.turn === 'white'}
+				isActiveTurn={state.view.displayTurn === 'white'}
 				reserveColor={state.view.bottomReserveColor}
 				pieces={state.view.bottomReservePieces}
 				isMine={state.view.bottomReserveIsMine}

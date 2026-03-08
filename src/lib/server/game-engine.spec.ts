@@ -33,6 +33,7 @@ function makeActiveState(turn: Color = 'white'): GameState {
 		timeControlPerPlayerSeconds: null,
 		timeRemainingMs: null,
 		turnStartedAt: null,
+		moveHistory: [],
 		rematchRequestedBy: null,
 		createdAt: now,
 		lastActivityAt: now,

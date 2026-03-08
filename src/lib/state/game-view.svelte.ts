@@ -1,5 +1,13 @@
 import { SvelteSet } from 'svelte/reactivity';
-import { coordKey, PIECES, type Color, type Coord, type GameView, type PieceType } from '$lib/types/game';
+import {
+	coordKey,
+	PIECES,
+	type Color,
+	type Coord,
+	type GameView,
+	type HistorySnapshot,
+	type PieceType
+} from '$lib/types/game';
 
 interface GameViewFactoryInput {
 	getGameId: () => string;
@@ -20,11 +28,22 @@ interface GameViewFactoryInput {
 	getTransitionToBoardKey: () => string | null;
 	getTransitionReserveKey: () => string | null;
 	getTransitionMovingOwner: () => Color | null;
+	getShowHistoryPanel: () => boolean;
+	getHistoryStep: () => number | null;
+	getHistorySnapshot: () => HistorySnapshot | null;
 }
 
 export function createGameView(input: GameViewFactoryInput) {
 	const topReserveColor = $derived('black' as const);
 	const bottomReserveColor = $derived('white' as const);
+
+	const displayedState = $derived.by(() => {
+		const historySnapshot = input.getHistorySnapshot();
+		if (historySnapshot) {
+			return historySnapshot;
+		}
+		return input.getGame()?.state ?? null;
+	});
 
 	const topReserveIsMine = $derived.by(() => {
 		const game = input.getGame();
@@ -37,22 +56,43 @@ export function createGameView(input: GameViewFactoryInput) {
 	});
 
 	const topReservePieces = $derived.by(() => {
-		const game = input.getGame();
-		if (!game) {
+		const state = displayedState;
+		if (!state) {
 			return [] as PieceType[];
 		}
-		return PIECES.filter((piece) => game.state.reserves[topReserveColor][piece]);
+		return PIECES.filter((piece) => state.reserves[topReserveColor][piece]);
 	});
 
 	const bottomReservePieces = $derived.by(() => {
-		const game = input.getGame();
-		if (!game) {
+		const state = displayedState;
+		if (!state) {
 			return [] as PieceType[];
 		}
-		return PIECES.filter((piece) => game.state.reserves[bottomReserveColor][piece]);
+		return PIECES.filter((piece) => state.reserves[bottomReserveColor][piece]);
 	});
 
+	const displayBoard = $derived.by(() => displayedState?.board ?? []);
+	const displayTurn = $derived.by(() => displayedState?.turn ?? 'white');
+
+	const historyEntries = $derived.by(() => input.getGame()?.state.moveHistory ?? []);
+	const isHistoryMode = $derived.by(() => {
+		const step = input.getHistoryStep();
+		return step !== null && step < historyEntries.length;
+	});
+	const historyStep = $derived.by(() => input.getHistoryStep());
+	const historySelectedMoveIndex = $derived.by(() => {
+		const step = historyStep;
+		if (step === null || step === 0) {
+			return null;
+		}
+		return step - 1;
+	});
+	const showHistoryPanel = $derived.by(() => input.getShowHistoryPanel());
+
 	const targetHints = $derived.by(() => {
+		if (isHistoryMode) {
+			return new SvelteSet<string>();
+		}
 		const game = input.getGame();
 		if (!game) {
 			return new SvelteSet<string>();
@@ -86,6 +126,9 @@ export function createGameView(input: GameViewFactoryInput) {
 	});
 
 	const isMyTurn = $derived.by(() => {
+		if (isHistoryMode) {
+			return false;
+		}
 		const game = input.getGame();
 		return Boolean(game && game.viewerColor === game.state.turn && game.state.status === 'active');
 	});
@@ -226,11 +269,11 @@ export function createGameView(input: GameViewFactoryInput) {
 		if (!name) {
 			return null;
 		}
-		const game = input.getGame();
-		if (!game) {
+		const state = displayedState;
+		if (!state) {
 			return null;
 		}
-		const cell = game.state.board[coord.y][coord.x];
+		const cell = state.board[coord.y][coord.x];
 		const movingOwner = input.getTransitionMovingOwner();
 		if (!cell || !movingOwner || cell.owner !== movingOwner) {
 			return null;
@@ -289,6 +332,12 @@ export function createGameView(input: GameViewFactoryInput) {
 		get bottomReservePieces() {
 			return bottomReservePieces;
 		},
+		get displayBoard() {
+			return displayBoard;
+		},
+		get displayTurn() {
+			return displayTurn;
+		},
 		get targetHints() {
 			return targetHints;
 		},
@@ -339,6 +388,21 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get blackTimeRemainingMs() {
 			return blackTimeRemainingMs;
+		},
+		get showHistoryPanel() {
+			return showHistoryPanel;
+		},
+		get historyEntries() {
+			return historyEntries;
+		},
+		get historyStep() {
+			return historyStep;
+		},
+		get historySelectedMoveIndex() {
+			return historySelectedMoveIndex;
+		},
+		get isHistoryMode() {
+			return isHistoryMode;
 		},
 		boardPieceTransitionName,
 		reservePieceTransitionName

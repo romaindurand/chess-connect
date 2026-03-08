@@ -10,7 +10,7 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 ## TODO
 - [x] animation des pieces
 - [x] son des pieces
-- [ ] historique
+- [x] historique
 - [x] coordonnées des cases
 - [ ] pas de coups qui se répètent
 - [ ] créer une IA

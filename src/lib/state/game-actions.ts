@@ -1,10 +1,13 @@
 import { playMoveRemote, postGameActionRemote, requestRematchRemote, acceptRematchRemote } from '$lib/client/game-api';
+import { getSnapshotForHistoryStep, shouldFollowLiveEdge } from '$lib/state/history-live';
 import { tick } from 'svelte';
 import {
 	coordKey,
 	type Color,
 	type Coord,
 	type GameView,
+	type HistorySnapshot,
+	type MoveHistoryEntry,
 	type PieceOnBoard,
 	type PieceType,
 	type PlayMovePayload
@@ -32,6 +35,12 @@ interface GameActionsFactoryInput {
 	setTransitionToBoardKey: (key: string | null) => void;
 	setTransitionReserveKey: (key: string | null) => void;
 	setTransitionMovingOwner: (owner: Color | null) => void;
+	getShowHistoryPanel: () => boolean;
+	setShowHistoryPanel: (open: boolean) => void;
+	getHistoryStep: () => number | null;
+	setHistoryStep: (step: number | null) => void;
+	getHistorySnapshot: () => HistorySnapshot | null;
+	setHistorySnapshot: (snapshot: HistorySnapshot | null) => void;
 	getIsMyTurn: () => boolean;
 	getTargetHints: () => Set<string>;
 	reconnectEventStream: () => void;
@@ -43,12 +52,82 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		input.setSelectedReservePiece(null);
 	}
 
+	function clearHistoryPreview(): void {
+		input.setHistoryStep(null);
+		input.setHistorySnapshot(null);
+	}
+
 	function clearTransitionMarkers(): void {
 		input.setActivePieceTransitionName(null);
 		input.setTransitionFromBoardKey(null);
 		input.setTransitionToBoardKey(null);
 		input.setTransitionReserveKey(null);
 		input.setTransitionMovingOwner(null);
+	}
+
+	function historyEntries(): MoveHistoryEntry[] {
+		return input.getGame()?.state.moveHistory ?? [];
+	}
+
+	function isHistoryPreviewMode(): boolean {
+		const step = input.getHistoryStep();
+		return step !== null && step < historyEntries().length;
+	}
+
+	function snapshotAtStep(step: number): HistorySnapshot | null {
+		return getSnapshotForHistoryStep(historyEntries(), step);
+	}
+
+	function goToHistoryStep(step: number): void {
+		const entries = historyEntries();
+		if (entries.length === 0 || step < 0 || step > entries.length) {
+			return;
+		}
+		const snapshot = snapshotAtStep(step);
+		resetSelection();
+		input.setHistoryStep(step);
+		input.setHistorySnapshot(snapshot);
+	}
+
+	async function playHistoryMove(moveIndex: number): Promise<void> {
+		const entries = historyEntries();
+		const entry = entries[moveIndex];
+		if (!entry) {
+			return;
+		}
+
+		resetSelection();
+		input.setHistoryStep(moveIndex);
+		input.setHistorySnapshot(entry.before);
+
+		if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
+			input.setHistoryStep(moveIndex + 1);
+			input.setHistorySnapshot(getSnapshotForHistoryStep(entries, moveIndex + 1));
+			return;
+		}
+
+		const transitionName = `history-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
+		input.setActivePieceTransitionName(transitionName);
+		input.setTransitionFromBoardKey(
+			entry.transition.fromBoard ? coordKey(entry.transition.fromBoard) : null
+		);
+		input.setTransitionToBoardKey(coordKey(entry.transition.toBoard));
+		input.setTransitionReserveKey(
+			entry.transition.fromReserve
+				? `${entry.transition.fromReserve.owner}:${entry.transition.fromReserve.piece}`
+				: null
+		);
+		input.setTransitionMovingOwner(entry.transition.moverColor);
+
+		await tick();
+
+		const transition = document.startViewTransition(() => {
+			input.setHistoryStep(moveIndex + 1);
+			input.setHistorySnapshot(getSnapshotForHistoryStep(entries, moveIndex + 1));
+		});
+
+		await transition.finished.catch(() => undefined);
+		clearTransitionMarkers();
 	}
 
 	async function playMoveWithPieceTransition(
@@ -59,9 +138,19 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			fromReserve?: { owner: 'white' | 'black'; piece: PieceType };
 		}
 	): Promise<GameView> {
+		const previousMoveHistoryLength = input.getGame()?.state.moveHistory.length ?? 0;
+		const followLiveHistory = shouldFollowLiveEdge(
+			input.getHistoryStep(),
+			previousMoveHistoryLength
+		);
+
 		if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
 			const updatedGame = await playMoveRemote(input.getGameId(), payload);
 			input.setGame(updatedGame);
+			if (followLiveHistory) {
+				input.setHistoryStep(updatedGame.state.moveHistory.length);
+				input.setHistorySnapshot(null);
+			}
 			clearTransitionMarkers();
 			return updatedGame;
 		}
@@ -85,6 +174,10 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			try {
 				updatedGame = await playMoveRemote(input.getGameId(), payload);
 				input.setGame(updatedGame);
+				if (followLiveHistory) {
+					input.setHistoryStep(updatedGame.state.moveHistory.length);
+					input.setHistorySnapshot(null);
+				}
 			} catch (error) {
 				moveError = error;
 			}
@@ -202,6 +295,9 @@ export function createGameActions(input: GameActionsFactoryInput) {
 
 	async function onCellClick(coord: Coord): Promise<void> {
 		const game = input.getGame();
+		if (isHistoryPreviewMode()) {
+			return;
+		}
 		if (!game || !input.getIsMyTurn()) {
 			return;
 		}
@@ -277,6 +373,9 @@ export function createGameActions(input: GameActionsFactoryInput) {
 
 	function onReserveClick(reserveColor: 'white' | 'black', piece: PieceType): void {
 		const game = input.getGame();
+		if (isHistoryPreviewMode()) {
+			return;
+		}
 		if (!game || !input.getIsMyTurn() || !game.viewerColor || reserveColor !== game.viewerColor) {
 			return;
 		}
@@ -293,6 +392,44 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		input.setShowRulesModal(open);
 	}
 
+	function toggleHistoryPanel(): void {
+		const nextOpen = !input.getShowHistoryPanel();
+		input.setShowHistoryPanel(nextOpen);
+		if (!nextOpen) {
+			clearHistoryPreview();
+		}
+	}
+
+	function jumpToHistoryFirst(): void {
+		goToHistoryStep(0);
+	}
+
+	function jumpToHistoryPrevious(): void {
+		const entries = historyEntries();
+		if (entries.length === 0) {
+			return;
+		}
+		const current = input.getHistoryStep() ?? entries.length;
+		goToHistoryStep(Math.max(0, current - 1));
+	}
+
+	function jumpToHistoryNext(): void {
+		const entries = historyEntries();
+		if (entries.length === 0) {
+			return;
+		}
+		const current = input.getHistoryStep() ?? entries.length;
+		goToHistoryStep(Math.min(entries.length, current + 1));
+	}
+
+	function jumpToHistoryLast(): void {
+		const entries = historyEntries();
+		if (entries.length === 0) {
+			return;
+		}
+		goToHistoryStep(entries.length);
+	}
+
 	return {
 		onJoin,
 		copyInviteLink,
@@ -304,6 +441,12 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		clearReserveHover,
 		onCellClick,
 		onReserveClick,
-		setShowRulesModal
+		setShowRulesModal,
+		toggleHistoryPanel,
+		playHistoryMove,
+		jumpToHistoryFirst,
+		jumpToHistoryPrevious,
+		jumpToHistoryNext,
+		jumpToHistoryLast
 	};
 }

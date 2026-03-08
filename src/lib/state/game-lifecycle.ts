@@ -2,12 +2,14 @@ import { getGameViewRemote, openGameEventStream } from '$lib/client/game-api';
 import { tick } from 'svelte';
 import moveSoundUrl from '$lib/assets/move.mp3';
 import captureSoundUrl from '$lib/assets/capture.mp3';
+import { shouldFollowLiveEdge } from '$lib/state/history-live';
 import {
 	BOARD_SIZE,
 	coordKey,
 	type Color,
 	type Coord,
 	type GameView,
+	type HistorySnapshot,
 	type PieceOnBoard,
 	type PieceType
 } from '$lib/types/game';
@@ -31,6 +33,9 @@ interface GameLifecycleFactoryInput {
 	setTransitionToBoardKey: (key: string | null) => void;
 	setTransitionReserveKey: (key: string | null) => void;
 	setTransitionMovingOwner: (owner: Color | null) => void;
+	getHistoryStep: () => number | null;
+	setHistoryStep: (step: number | null) => void;
+	setHistorySnapshot: (snapshot: HistorySnapshot | null) => void;
 }
 
 export function createGameLifecycle(input: GameLifecycleFactoryInput) {
@@ -190,10 +195,22 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		snapshot: GameView,
 		fallbackSound: 'move' | 'capture' | null = null
 	): Promise<void> {
+		const previousMoveHistoryLength = input.getGame()?.state.moveHistory.length ?? 0;
+		const resumeLiveHistory = shouldFollowLiveEdge(
+			input.getHistoryStep(),
+			previousMoveHistoryLength
+		);
+
 		const inferredSound = await applySnapshotWithTransition(snapshot);
 		const soundToPlay = inferredSound ?? fallbackSound;
 		if (soundToPlay) {
 			playSoundEffect(soundToPlay);
+		}
+
+		if (resumeLiveHistory) {
+			const nextLength = snapshot.state.moveHistory.length;
+			input.setHistoryStep(nextLength);
+			input.setHistorySnapshot(null);
 		}
 
 		const selectedBoardFrom = input.getSelectedBoardFrom();

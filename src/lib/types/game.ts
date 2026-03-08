@@ -47,10 +47,36 @@ export interface GameState {
 	timeControlPerPlayerSeconds: number | null;
 	timeRemainingMs: Record<Color, number> | null;
 	turnStartedAt: number | null;
+	moveHistory: MoveHistoryEntry[];
 	rematchRequestedBy: Color | null;
 	createdAt: number;
 	lastActivityAt: number;
 	version: number;
+}
+
+export interface HistorySnapshot {
+	board: (PieceOnBoard | null)[][];
+	reserves: Record<Color, Reserve>;
+	turn: Color;
+	pliesPlayed: number;
+	status: GameStatus;
+	winner: Color | null;
+}
+
+export interface MoveHistoryTransition {
+	moverColor: Color;
+	toBoard: Coord;
+	fromBoard?: Coord;
+	fromReserve?: { owner: Color; piece: PieceType };
+	sound: 'move' | 'capture';
+}
+
+export interface MoveHistoryEntry {
+	ply: number;
+	notation: string;
+	before: HistorySnapshot;
+	after: HistorySnapshot;
+	transition: MoveHistoryTransition;
 }
 
 export interface LegalOptions {
