@@ -1,14 +1,20 @@
 <script lang="ts">
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
+	import { onMount } from 'svelte';
 
 	import { createGameRemote } from '$lib/client/game-api';
+	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
 
 	let name = $state('');
 	let timeControlEnabled = $state(false);
 	let timeLimitMinutes = $state(5);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
+
+	onMount(() => {
+		name = loadPlayerName();
+	});
 
 	async function onCreateGame(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
@@ -33,6 +39,7 @@
 				name: trimmed,
 				timeLimitMinutes: timeControlEnabled ? timeLimitMinutes : undefined
 			});
+			savePlayerName(trimmed);
 			await goto(resolve(`/game/${result.gameId}`));
 		} catch (error) {
 			errorMessage = error instanceof Error ? error.message : 'Impossible de créer la partie';

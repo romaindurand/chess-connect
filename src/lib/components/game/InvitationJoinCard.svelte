@@ -1,4 +1,7 @@
 <script lang="ts">
+	import { onMount } from 'svelte';
+	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
+
 	interface Props {
 		inviterName: string;
 		onJoin: (name: string) => Promise<boolean>;
@@ -8,11 +11,17 @@
 
 	let name = $state('');
 
+	onMount(() => {
+		name = loadPlayerName();
+	});
+
 	async function submit(event: SubmitEvent): Promise<void> {
 		event.preventDefault();
-		const success = await onJoin(name);
+		const trimmed = name.trim();
+		const success = await onJoin(trimmed);
 		if (success) {
-			name = '';
+			savePlayerName(trimmed);
+			name = trimmed;
 		}
 	}
 </script>
