@@ -36,6 +36,21 @@ interface GameLifecycleFactoryInput {
 	getHistoryStep: () => number | null;
 	setHistoryStep: (step: number | null) => void;
 	setHistorySnapshot: (snapshot: HistorySnapshot | null) => void;
+	setShowRepetitionDrawModal: (open: boolean) => void;
+}
+
+function isAutomaticDrawRoundReset(previousGame: GameView | null, nextGame: GameView): boolean {
+	if (!previousGame) {
+		return false;
+	}
+	return (
+		previousGame.state.status === 'active' &&
+		!previousGame.state.winner &&
+		previousGame.state.moveHistory.length > 0 &&
+		nextGame.state.status === 'active' &&
+		nextGame.state.gameNumber === previousGame.state.gameNumber + 1 &&
+		nextGame.state.moveHistory.length === 0
+	);
 }
 
 export function createGameLifecycle(input: GameLifecycleFactoryInput) {
@@ -195,6 +210,8 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		snapshot: GameView,
 		fallbackSound: 'move' | 'capture' | null = null
 	): Promise<void> {
+		const previousGame = input.getGame();
+		const showDrawModal = isAutomaticDrawRoundReset(previousGame, snapshot);
 		const previousMoveHistoryLength = input.getGame()?.state.moveHistory.length ?? 0;
 		const resumeLiveHistory = shouldFollowLiveEdge(
 			input.getHistoryStep(),
@@ -205,6 +222,10 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		const soundToPlay = inferredSound ?? fallbackSound;
 		if (soundToPlay) {
 			playSoundEffect(soundToPlay);
+		}
+
+		if (showDrawModal) {
+			input.setShowRepetitionDrawModal(true);
 		}
 
 		if (resumeLiveHistory) {

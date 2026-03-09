@@ -23,6 +23,7 @@ export function createGameState(getGameId: () => string) {
 	let showHistoryPanel = $state(false);
 	let historyStep = $state<number | null>(null);
 	let historySnapshot = $state<HistorySnapshot | null>(null);
+	let showRepetitionDrawModal = $state(false);
 
 	let stream: EventSource | null = null;
 
@@ -84,6 +85,9 @@ export function createGameState(getGameId: () => string) {
 		},
 		setHistorySnapshot: (snapshot) => {
 			historySnapshot = snapshot;
+		},
+		setShowRepetitionDrawModal: (open) => {
+			showRepetitionDrawModal = open;
 		}
 	});
 
@@ -109,6 +113,8 @@ export function createGameState(getGameId: () => string) {
 		getShowHistoryPanel: () => showHistoryPanel,
 		getHistoryStep: () => historyStep,
 		getHistorySnapshot: () => historySnapshot
+		,
+		getShowRepetitionDrawModal: () => showRepetitionDrawModal
 	});
 
 	const actions = createGameActions({
@@ -172,6 +178,9 @@ export function createGameState(getGameId: () => string) {
 		getHistorySnapshot: () => historySnapshot,
 		setHistorySnapshot: (snapshot) => {
 			historySnapshot = snapshot;
+		},
+		setShowRepetitionDrawModal: (open) => {
+			showRepetitionDrawModal = open;
 		},
 		getIsMyTurn: () => view.isMyTurn,
 		getTargetHints: () => view.targetHints,

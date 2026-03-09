@@ -31,6 +31,7 @@ interface GameViewFactoryInput {
 	getShowHistoryPanel: () => boolean;
 	getHistoryStep: () => number | null;
 	getHistorySnapshot: () => HistorySnapshot | null;
+	getShowRepetitionDrawModal: () => boolean;
 }
 
 export function createGameView(input: GameViewFactoryInput) {
@@ -88,6 +89,7 @@ export function createGameView(input: GameViewFactoryInput) {
 		return step - 1;
 	});
 	const showHistoryPanel = $derived.by(() => input.getShowHistoryPanel());
+	const showRepetitionDrawModal = $derived.by(() => input.getShowRepetitionDrawModal());
 
 	const targetHints = $derived.by(() => {
 		if (isHistoryMode) {
@@ -180,6 +182,9 @@ export function createGameView(input: GameViewFactoryInput) {
 		}
 		return `Score actuel: Blanc ${game.state.score.white} - Noir ${game.state.score.black}`;
 	});
+
+	const repetitionDrawModalTitle = $derived('Egalite par repetition');
+	const repetitionDrawModalSubtitle = $derived('La meme position est apparue 3 fois. Nouvelle manche prete avec couleurs inversees.');
 
 	const winnerDetailsLine = $derived.by(() => {
 		const game = input.getGame();
@@ -391,6 +396,15 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get showHistoryPanel() {
 			return showHistoryPanel;
+		},
+		get showRepetitionDrawModal() {
+			return showRepetitionDrawModal;
+		},
+		get repetitionDrawModalTitle() {
+			return repetitionDrawModalTitle;
+		},
+		get repetitionDrawModalSubtitle() {
+			return repetitionDrawModalSubtitle;
 		},
 		get historyEntries() {
 			return historyEntries;

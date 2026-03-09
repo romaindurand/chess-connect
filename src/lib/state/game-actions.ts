@@ -41,6 +41,7 @@ interface GameActionsFactoryInput {
 	setHistoryStep: (step: number | null) => void;
 	getHistorySnapshot: () => HistorySnapshot | null;
 	setHistorySnapshot: (snapshot: HistorySnapshot | null) => void;
+	setShowRepetitionDrawModal: (open: boolean) => void;
 	getIsMyTurn: () => boolean;
 	getTargetHints: () => Set<string>;
 	reconnectEventStream: () => void;
@@ -392,6 +393,10 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		input.setShowRulesModal(open);
 	}
 
+	function setShowRepetitionDrawModal(open: boolean): void {
+		input.setShowRepetitionDrawModal(open);
+	}
+
 	function toggleHistoryPanel(): void {
 		const nextOpen = !input.getShowHistoryPanel();
 		input.setShowHistoryPanel(nextOpen);
@@ -442,6 +447,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		onCellClick,
 		onReserveClick,
 		setShowRulesModal,
+		setShowRepetitionDrawModal,
 		toggleHistoryPanel,
 		playHistoryMove,
 		jumpToHistoryFirst,

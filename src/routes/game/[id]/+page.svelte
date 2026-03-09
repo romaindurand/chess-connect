@@ -173,6 +173,16 @@
 		</button>
 	</GameDialog>
 
+	<GameDialog
+		open={state.view.showRepetitionDrawModal}
+		closable={true}
+		title={state.view.repetitionDrawModalTitle}
+		onClose={() => state.actions.setShowRepetitionDrawModal(false)}
+	>
+		<p class="mt-2">{state.view.repetitionDrawModalSubtitle}</p>
+		<p class="mt-2">Score inchangé, couleurs inversées, nouvelle manche déjà prête.</p>
+	</GameDialog>
+
 	{#if state.view.errorMessage}
 		<p class="mt-3 text-sm text-red-600">{state.view.errorMessage}</p>
 	{/if}

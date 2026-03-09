@@ -303,6 +303,98 @@ function oppositeColor(color: Color): Color {
 	return color === 'white' ? 'black' : 'white';
 }
 
+function pieceToken(cell: GameState['board'][number][number]): string {
+	if (!cell) {
+		return '.';
+	}
+	const owner = cell.owner === 'white' ? 'w' : 'b';
+	const type = cell.type[0];
+	const direction = cell.pawnDirection === 1 ? 'd' : 'u';
+	return `${owner}${type}${direction}`;
+}
+
+function positionKeyFromSnapshot(snapshot: HistorySnapshot): string {
+	const boardKey = snapshot.board.map((row) => row.map(pieceToken).join(',')).join('/');
+	const reservesKey = (['white', 'black'] as const)
+		.map((color) => {
+			const reserve = snapshot.reserves[color];
+			return `${color}:${reserve.pawn ? 1 : 0}${reserve.rook ? 1 : 0}${reserve.knight ? 1 : 0}${reserve.bishop ? 1 : 0}`;
+		})
+		.join('|');
+	return `${boardKey}|${reservesKey}|turn:${snapshot.turn}`;
+}
+
+function hasThreefoldRepetition(moveHistory: MoveHistoryEntry[]): boolean {
+	if (moveHistory.length < 3) {
+		return false;
+	}
+
+	const latest = moveHistory[moveHistory.length - 1]?.after;
+	if (!latest) {
+		return false;
+	}
+	const targetKey = positionKeyFromSnapshot(latest);
+	let occurrences = 0;
+
+	for (const entry of moveHistory) {
+		if (positionKeyFromSnapshot(entry.after) === targetKey) {
+			occurrences += 1;
+			if (occurrences >= 3) {
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+function createNextRoundState(state: GameState, swapColors: boolean): GameState {
+	const previousHostColor = state.hostColor;
+	if (!previousHostColor) {
+		throw new Error('Couleur hote indisponible');
+	}
+	const nextHostColor = swapColors ? oppositeColor(previousHostColor) : previousHostColor;
+	const hostPlayer = state.players[previousHostColor];
+	const guestPlayer = state.players[oppositeColor(previousHostColor)];
+	if (!hostPlayer || !guestPlayer) {
+		throw new Error('Deux joueurs sont requis pour lancer la manche suivante');
+	}
+
+	const nextPlayers: GameState['players'] = {
+		white: null,
+		black: null
+	};
+	nextPlayers[nextHostColor] = hostPlayer;
+	nextPlayers[oppositeColor(nextHostColor)] = guestPlayer;
+
+	return {
+		...state,
+		status: 'active',
+		hostColor: nextHostColor,
+		players: nextPlayers,
+		board: createInitialBoard(),
+		reserves: {
+			white: makeEmptyReserve(),
+			black: makeEmptyReserve()
+		},
+		turn: 'white',
+		pliesPlayed: 0,
+		winner: null,
+		moveHistory: [],
+		gameNumber: state.gameNumber + 1,
+		timeRemainingMs: state.timeControlPerPlayerSeconds
+			? {
+					white: state.timeControlPerPlayerSeconds * SECOND_MS,
+					black: state.timeControlPerPlayerSeconds * SECOND_MS
+			  }
+			: null,
+		turnStartedAt: state.timeControlEnabled ? Date.now() : null,
+		rematchRequestedBy: null,
+		lastActivityAt: Date.now(),
+		version: state.version + 1
+	};
+}
+
 function resolveActorColor(state: GameState, payload: SessionTokenPayload): Color | null {
 	if (payload.kind === 'host') {
 		return state.hostColor;
@@ -469,6 +561,8 @@ export async function playMove(
 
 		if (record.state.winner) {
 			finalizeWinner(record, record.state.winner, now);
+		} else if (hasThreefoldRepetition(record.state.moveHistory)) {
+			record.state = createNextRoundState(record.state, true);
 		} else if (record.state.timeControlEnabled) {
 			record.state.turnStartedAt = now;
 		}
@@ -548,49 +642,7 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 			throw new Error('Deux joueurs sont requis pour lancer la revanche');
 		}
 
-		const previousHostColor = state.hostColor;
-		if (!previousHostColor) {
-			throw new Error('Couleur hote indisponible');
-		}
-		const nextHostColor = oppositeColor(previousHostColor);
-		const hostPlayer = state.players[previousHostColor];
-		const guestPlayer = state.players[oppositeColor(previousHostColor)];
-		if (!hostPlayer || !guestPlayer) {
-			throw new Error('Deux joueurs sont requis pour lancer la revanche');
-		}
-		const nextPlayers: GameState['players'] = {
-			white: null,
-			black: null
-		};
-		nextPlayers[nextHostColor] = hostPlayer;
-		nextPlayers[oppositeColor(nextHostColor)] = guestPlayer;
-
-		record.state = {
-			...state,
-			status: 'active',
-			hostColor: nextHostColor,
-			players: nextPlayers,
-			board: createInitialBoard(),
-			reserves: {
-				white: makeEmptyReserve(),
-				black: makeEmptyReserve()
-			},
-			turn: 'white',
-			pliesPlayed: 0,
-			winner: null,
-			moveHistory: [],
-			gameNumber: state.gameNumber + 1,
-			timeRemainingMs: state.timeControlPerPlayerSeconds
-				? {
-						white: state.timeControlPerPlayerSeconds * SECOND_MS,
-						black: state.timeControlPerPlayerSeconds * SECOND_MS
-					}
-				: null,
-			turnStartedAt: state.timeControlEnabled ? Date.now() : null,
-			rematchRequestedBy: null,
-			lastActivityAt: Date.now(),
-			version: state.version + 1
-		};
+		record.state = createNextRoundState(state, true);
 
 		emitSnapshot(record);
 		return record.state;

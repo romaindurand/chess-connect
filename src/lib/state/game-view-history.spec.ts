@@ -120,7 +120,8 @@ describe('game view history interactions', () => {
 			getTransitionMovingOwner: () => null,
 			getShowHistoryPanel: () => true,
 			getHistoryStep: () => historyStep,
-			getHistorySnapshot: () => game.state.moveHistory[1].after
+			getHistorySnapshot: () => game.state.moveHistory[1].after,
+			getShowRepetitionDrawModal: () => false
 		});
 
 		expect(view.isMyTurn).toBe(true);

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import type { GameState } from '$lib/types/game';
 
 import {
 	acceptRematch,
@@ -91,6 +92,115 @@ describe('game-store time control', () => {
 		}
 
 		expect(record.state.hostColor).toBe(initialHostColor);
+	});
+
+	it('auto-resets the round on third repeated position without changing score', async () => {
+		const { state, token: hostToken } = createGame('Alice');
+		const joinResult = await joinGame(state.id, 'Bob');
+		const record = getGameOrThrow(state.id);
+
+		const actorToken = viewerRoleFromToken(state.id, hostToken) === 'white' ? hostToken : joinResult.token;
+		const actorColor = viewerRoleFromToken(state.id, actorToken);
+		if (actorColor !== 'white' && actorColor !== 'black') {
+			throw new Error('expected player role');
+		}
+
+		const opponentColor = oppositeColor(actorColor);
+		const initialHostColor = record.state.hostColor;
+		if (!initialHostColor) {
+			throw new Error('host color should be assigned after join');
+		}
+
+		const emptyBoard = (): GameState['board'] =>
+			Array.from({ length: 4 }, () => Array.from({ length: 4 }, () => null));
+		const boardBefore = emptyBoard();
+		boardBefore[0][0] = { type: 'rook', owner: actorColor, pawnDirection: 1 };
+		boardBefore[3][3] = { type: 'rook', owner: opponentColor, pawnDirection: -1 };
+
+		const boardAfter = emptyBoard();
+		boardAfter[1][0] = { type: 'rook', owner: actorColor, pawnDirection: 1 };
+		boardAfter[3][3] = { type: 'rook', owner: opponentColor, pawnDirection: -1 };
+
+		record.state.status = 'active';
+		record.state.turn = actorColor;
+		record.state.winner = null;
+		record.state.pliesPlayed = 6;
+		record.state.moveHistory = [
+			{
+				ply: 5,
+				notation: '3. test',
+				before: {
+					board: boardBefore,
+					reserves: record.state.reserves,
+					turn: actorColor,
+					pliesPlayed: 5,
+					status: 'active',
+					winner: null
+				},
+				after: {
+					board: boardAfter,
+					reserves: record.state.reserves,
+					turn: opponentColor,
+					pliesPlayed: 6,
+					status: 'active',
+					winner: null
+				},
+				transition: {
+					moverColor: actorColor,
+					fromBoard: { x: 0, y: 0 },
+					toBoard: { x: 0, y: 1 },
+					sound: 'move'
+				}
+			},
+			{
+				ply: 6,
+				notation: '3... test',
+				before: {
+					board: boardBefore,
+					reserves: record.state.reserves,
+					turn: actorColor,
+					pliesPlayed: 5,
+					status: 'active',
+					winner: null
+				},
+				after: {
+					board: boardAfter,
+					reserves: record.state.reserves,
+					turn: opponentColor,
+					pliesPlayed: 6,
+					status: 'active',
+					winner: null
+				},
+				transition: {
+					moverColor: actorColor,
+					fromBoard: { x: 0, y: 0 },
+					toBoard: { x: 0, y: 1 },
+					sound: 'move'
+				}
+			}
+		];
+		record.state.board = boardBefore;
+
+		const initialScore = { ...record.state.score };
+		const initialGameNumber = record.state.gameNumber;
+
+		await playMove(state.id, actorToken, {
+			kind: 'move',
+			from: { x: 0, y: 0 },
+			to: { x: 0, y: 1 }
+		});
+
+		expect(record.state.status).toBe('active');
+		expect(record.state.winner).toBeNull();
+		expect(record.state.score).toEqual(initialScore);
+		expect(record.state.hostColor).toBe(oppositeColor(initialHostColor));
+		expect(record.state.gameNumber).toBe(initialGameNumber + 1);
+		expect(record.state.moveHistory).toEqual([]);
+		expect(record.state.pliesPlayed).toBe(0);
+		expect(record.state.turn).toBe('white');
+		expect(record.state.reserves.white).toEqual({ pawn: true, rook: true, knight: true, bishop: true });
+		expect(record.state.reserves.black).toEqual({ pawn: true, rook: true, knight: true, bishop: true });
+		expect(record.state.board.flat().every((cell) => cell === null)).toBe(true);
 	});
 });
 
