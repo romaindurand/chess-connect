@@ -1,31 +1,61 @@
-## Project Configuration
+# Project Guidelines
 
-- **Language**: TypeScript
-- **Package Manager**: pnpm
-- **Add-ons**: prettier, eslint, vitest, tailwindcss, sveltekit-adapter, mcp
+## Code Style
+- Language: TypeScript with Svelte 5 and SvelteKit 2.
+- Package manager: use `pnpm` for installs and scripts.
+- Keep formatting and linting consistent with project tools: Prettier + ESLint.
+- Prefer small, explicit functions for rules/state transitions over large mixed-responsibility blocks.
 
----
+## Architecture
+- `src/lib/types/game.ts`: shared domain contract for client/server.
+- `src/lib/server/*`: authoritative game logic and persistence (`game-engine.ts`, `game-store.ts`).
+- `src/lib/state/*`: client-side orchestration and derived view state.
+- `src/lib/components/*`: presentation only; route business behavior through `state` and server APIs.
+- `src/routes/api/games/*`: REST + SSE surface used by the client.
 
-You are able to use the Svelte MCP server, where you have access to comprehensive Svelte 5 and SvelteKit documentation. Here's how to use the available tools effectively:
+Server is the source of truth for game state. Avoid optimistic client-side mutations that bypass API/SSE flow.
 
-## Available MCP Tools:
+## Build and Test
+- Install: `pnpm install`
+- Dev server: `pnpm dev`
+- Type and Svelte checks: `pnpm check`
+- Lint: `pnpm lint`
+- Unit tests (watch): `pnpm test:unit`
+- Unit tests (single run): `pnpm test`
+- Production build: `pnpm build`
 
-### 1. list-sections
+Preferred verification before completion: `pnpm check && pnpm lint && pnpm test`.
 
-Use this FIRST to discover all available documentation sections. Returns a structured list with titles, use_cases, and paths.
-When asked about Svelte or SvelteKit topics, ALWAYS use this tool at the start of the chat to find relevant sections.
+## Conventions
+- Keep game rules in `src/lib/server/game-engine.ts`; do not duplicate move validation in UI.
+- Keep API-side session/token behavior centralized in `src/lib/server/game-store.ts`.
+- Use existing state factory patterns in `src/lib/state/*` (`createGameActions`, `createGameView`, `createGameLifecycle`).
+- Maintain French user-facing copy unless asked to introduce localization changes.
+- Board assumptions are currently tuned for `BOARD_SIZE = 4`; treat dimension changes as cross-cutting.
+- For stable auth tokens across restarts, set `CHESS_CONNECT_SECRET` in non-local environments.
 
-### 2. get-documentation
+## Svelte MCP Workflow
+When asked Svelte/SvelteKit questions, follow this sequence:
 
-Retrieves full documentation content for specific sections. Accepts single or multiple sections.
-After calling the list-sections tool, you MUST analyze the returned documentation sections (especially the use_cases field) and then use the get-documentation tool to fetch ALL documentation sections that are relevant for the user's task.
+1. `list-sections`: run first to discover relevant documentation sections.
+2. `get-documentation`: fetch all sections relevant to the task based on `use_cases`.
+3. `svelte-autofixer`: run on any Svelte code before presenting it; iterate until clean.
+4. `playground-link`: only after user confirmation, and never when code is written to project files.
 
-### 3. svelte-autofixer
+## Multi-Agent Compatibility
+These rules are intentionally duplicated in root instructions so agents that do not scan `.github/instructions` still discover project constraints.
 
-Analyzes Svelte code and returns issues and suggestions.
-You MUST use this tool whenever writing Svelte code before sending it to the user. Keep calling it until no issues or suggestions are returned.
+Backend scope: `src/lib/server/**`, `src/routes/api/**`, `src/lib/types/game.ts`.
+- Keep rules/state authority on the server; never rely on client-side rule enforcement.
+- Centralize game rules in `src/lib/server/game-engine.ts`.
+- Centralize tokens/sessions/cookies in `src/lib/server/game-store.ts`.
+- Keep API payload compatibility aligned with client lifecycle/SSE consumers.
+- For backend behavior changes, add or update focused `src/lib/server/*.spec.ts` tests.
 
-### 4. playground-link
+Frontend scope: `src/lib/components/**`, `src/lib/state/**`, `src/routes/game/**`, `src/routes/+page.svelte`, `src/routes/+layout.svelte`.
+- Keep components presentation-only; put behavior in state factories and API flow.
+- Reuse `createGameActions`, `createGameView`, `createGameLifecycle` patterns.
+- Do not introduce optimistic client mutations that bypass API/SSE updates.
+- Preserve French copy unless localization work is explicitly requested.
 
-Generates a Svelte Playground link with the provided code.
-After completing the code, ask the user if they want a playground link. Only call this tool after user confirmation and NEVER if code was written to files in their project.
+Companion Copilot-specific files are available in `.github/instructions/backend.instructions.md` and `.github/instructions/frontend.instructions.md`.
