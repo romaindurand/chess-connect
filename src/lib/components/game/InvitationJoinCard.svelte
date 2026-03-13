@@ -4,10 +4,11 @@
 
 	interface Props {
 		inviterName: string;
+		options: string[];
 		onJoin: (name: string) => Promise<boolean>;
 	}
 
-	let { inviterName, onJoin }: Props = $props();
+	let { inviterName, options, onJoin }: Props = $props();
 
 	let name = $state('');
 
@@ -30,6 +31,16 @@
 	<p class="w-full text-sm text-gray-700">
 		Invitation en attente — {inviterName} vous invite à rejoindre la partie.
 	</p>
+	{#if options.length > 0}
+		<div class="w-full rounded border border-gray-200 bg-gray-50 p-2 text-xs text-gray-700">
+			<p class="font-medium">Options de la partie</p>
+			<ul class="mt-1 list-inside list-disc space-y-1">
+				{#each options as option (option)}
+					<li>{option}</li>
+				{/each}
+			</ul>
+		</div>
+	{/if}
 	<label class="grow space-y-2">
 		<span class="text-sm font-medium">Votre pseudo</span>
 		<input

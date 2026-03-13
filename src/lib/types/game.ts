@@ -28,11 +28,23 @@ export interface PlayersByColor {
 	black: PlayerInfo | null;
 }
 
+export type GameOptionValue = string | number | boolean | null;
+
+export interface GameOptions {
+	timeLimitMinutes: number | null;
+	[key: string]: GameOptionValue;
+}
+
+export const DEFAULT_GAME_OPTIONS: GameOptions = {
+	timeLimitMinutes: null
+};
+
 export interface GameState {
 	id: string;
 	status: GameStatus;
 	inviter: PlayerInfo;
 	hostColor: Color | null;
+	options: GameOptions;
 	players: PlayersByColor;
 	board: (PieceOnBoard | null)[][];
 	reserves: Record<Color, Reserve>;

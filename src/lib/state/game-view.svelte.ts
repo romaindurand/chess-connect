@@ -1,4 +1,5 @@
 import { SvelteSet } from 'svelte/reactivity';
+import { listNonDefaultGameOptions } from '$lib/game-options';
 import {
 	coordKey,
 	PIECES,
@@ -90,6 +91,13 @@ export function createGameView(input: GameViewFactoryInput) {
 	});
 	const showHistoryPanel = $derived.by(() => input.getShowHistoryPanel());
 	const showRepetitionDrawModal = $derived.by(() => input.getShowRepetitionDrawModal());
+	const invitationOptions = $derived.by(() => {
+		const game = input.getGame();
+		if (!game) {
+			return [] as string[];
+		}
+		return listNonDefaultGameOptions(game.state.options);
+	});
 
 	const targetHints = $derived.by(() => {
 		if (isHistoryMode) {
@@ -396,6 +404,9 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get showHistoryPanel() {
 			return showHistoryPanel;
+		},
+		get invitationOptions() {
+			return invitationOptions;
 		},
 		get showRepetitionDrawModal() {
 			return showRepetitionDrawModal;

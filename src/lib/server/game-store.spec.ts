@@ -15,6 +15,7 @@ describe('game-store time control', () => {
 	it('creates a timed game with clocks initialized per player', () => {
 		const { state } = createGame('Alice', { timeLimitMinutes: 5 });
 
+		expect(state.options.timeLimitMinutes).toBe(5);
 		expect(state.timeControlEnabled).toBe(true);
 		expect(state.timeControlPerPlayerSeconds).toBe(300);
 		expect(state.timeRemainingMs).toEqual({ white: 300_000, black: 300_000 });

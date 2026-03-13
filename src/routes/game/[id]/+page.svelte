@@ -44,6 +44,7 @@
 		{#if state.view.game.viewerRole === 'guest' && state.view.game.joinAllowed && !state.view.game.viewerIsInviter}
 			<InvitationJoinCard
 				inviterName={state.view.game.state.inviter.name}
+				options={state.view.invitationOptions}
 				onJoin={state.actions.onJoin}
 			/>
 		{/if}

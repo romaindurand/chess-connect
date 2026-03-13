@@ -2,10 +2,12 @@ import { createHmac, randomUUID } from 'node:crypto';
 
 import { applyPlayerMove, createInitialBoard, getLegalOptionsForColor } from './game-engine';
 import {
+	DEFAULT_GAME_OPTIONS,
 	makeEmptyReserve,
 	type Coord,
 	type Color,
 	type HistorySnapshot,
+	type GameOptions,
 	type GameState,
 	type GameView,
 	type MoveHistoryEntry,
@@ -124,6 +126,10 @@ function createNewState(
 	const now = Date.now();
 	const timeControlPerPlayerSeconds =
 		options?.timeLimitMinutes !== undefined ? options.timeLimitMinutes * 60 : null;
+	const gameOptions: GameOptions = {
+		...DEFAULT_GAME_OPTIONS,
+		timeLimitMinutes: options?.timeLimitMinutes ?? DEFAULT_GAME_OPTIONS.timeLimitMinutes
+	};
 	const timeControlEnabled = timeControlPerPlayerSeconds !== null;
 	const timeRemainingMs =
 		timeControlPerPlayerSeconds !== null
@@ -138,6 +144,7 @@ function createNewState(
 			status: 'waiting',
 			inviter: { name: creatorName, joinedAt: now },
 			hostColor: null,
+			options: gameOptions,
 			players: {
 				white: null,
 				black: null

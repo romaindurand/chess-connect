@@ -42,6 +42,7 @@ function createGame(): GameView {
 			status: 'active',
 			inviter: { name: 'A', joinedAt: 1 },
 			hostColor: 'white',
+			options: { timeLimitMinutes: null },
 			players: {
 				white: { name: 'A', joinedAt: 1 },
 				black: { name: 'B', joinedAt: 2 }
