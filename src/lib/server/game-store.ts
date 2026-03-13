@@ -592,11 +592,6 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 		if (isBestOfFinished(state)) {
 			throw new Error('Le best of 3 est déjà terminé');
 		}
-
-		const loser = oppositeColor(state.winner);
-		if (actorColor !== loser) {
-			throw new Error('Seul le perdant peut proposer une revanche');
-		}
 		if (state.rematchRequestedBy) {
 			throw new Error('Une demande de revanche est déjà en attente');
 		}

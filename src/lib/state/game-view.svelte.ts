@@ -148,7 +148,7 @@ export function createGameView(input: GameViewFactoryInput) {
 		if (game.state.rematchRequestedBy || !game.state.winner) {
 			return false;
 		}
-		return game.viewerColor !== game.state.winner;
+		return true;
 	});
 
 	const canAcceptRematch = $derived.by(() => {

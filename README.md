@@ -17,4 +17,4 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [ ] matchmaking
 - [x] couleurs alternées pour la revanche
 - [ ] choix noir/blanc dans les options
-- [ ] n'importe quel joueur doit pouvoir proposer une revanche
+- [x] n'importe quel joueur doit pouvoir proposer une revanche

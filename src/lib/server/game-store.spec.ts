@@ -94,6 +94,31 @@ describe('game-store time control', () => {
 		expect(record.state.hostColor).toBe(initialHostColor);
 	});
 
+	it('allows winner to request a rematch', async () => {
+		const { state, token: hostToken } = createGame('Alice');
+		const joinResult = await joinGame(state.id, 'Bob');
+		const playerToken = joinResult.token;
+		const record = getGameOrThrow(state.id);
+
+		const hostColor = record.state.hostColor;
+		expect(hostColor === 'white' || hostColor === 'black').toBe(true);
+		if (!hostColor) {
+			throw new Error('host color should be assigned after join');
+		}
+
+		record.state.status = 'finished';
+		record.state.winner = hostColor;
+		record.state.rematchRequestedBy = null;
+
+		await requestRematch(state.id, hostToken);
+		expect(record.state.rematchRequestedBy).toBe(hostColor);
+
+		record.state.rematchRequestedBy = null;
+		record.state.winner = oppositeColor(hostColor);
+		await requestRematch(state.id, playerToken);
+		expect(record.state.rematchRequestedBy).toBe(oppositeColor(hostColor));
+	});
+
 	it('auto-resets the round on third repeated position without changing score', async () => {
 		const { state, token: hostToken } = createGame('Alice');
 		const joinResult = await joinGame(state.id, 'Bob');
