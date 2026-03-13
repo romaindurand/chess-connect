@@ -65,7 +65,9 @@
 				pieceTransitionName={state.view.reservePieceTransitionName}
 			/>
 
-			<div class={`grid gap-3 ${state.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem]' : 'grid-cols-1'}`}>
+			<div
+				class={`grid gap-3 ${state.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem]' : 'grid-cols-1'}`}
+			>
 				<BoardGrid
 					board={state.view.displayBoard}
 					targetHints={state.view.targetHints}

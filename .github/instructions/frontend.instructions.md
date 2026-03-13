@@ -1,8 +1,9 @@
 ---
-description: "Use when editing Svelte UI, client state orchestration, game page behavior, or event-driven rendering. Covers presentation boundaries, state factories, and UX consistency."
-name: "Frontend State And UI Rules"
-applyTo: "src/lib/components/**, src/lib/state/**, src/routes/game/**, src/routes/+page.svelte, src/routes/+layout.svelte"
+description: 'Use when editing Svelte UI, client state orchestration, game page behavior, or event-driven rendering. Covers presentation boundaries, state factories, and UX consistency.'
+name: 'Frontend State And UI Rules'
+applyTo: 'src/lib/components/**, src/lib/state/**, src/routes/game/**, src/routes/+page.svelte, src/routes/+layout.svelte'
 ---
+
 # Frontend Guidelines
 
 - Keep `src/lib/components/**` presentation-focused. Route behavior and side effects through `src/lib/state/**` and API clients.

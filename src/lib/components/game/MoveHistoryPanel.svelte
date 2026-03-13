@@ -64,7 +64,9 @@
 			{#each groupedRows as row (row.turn)}
 				{@const whiteMove = row.white}
 				{@const blackMove = row.black}
-				<div class="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)] border-b border-gray-100 last:border-b-0">
+				<div
+					class="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)] border-b border-gray-100 last:border-b-0"
+				>
 					<div class="px-2 py-2 text-[11px] font-medium text-gray-500">{row.turn}.</div>
 
 					{#if whiteMove}
@@ -95,7 +97,12 @@
 		{/if}
 	</div>
 	<div class="mt-2 grid grid-cols-4 gap-2">
-		<button type="button" class="rounded border p-2" onclick={onJumpFirst} aria-label="Premier coup">
+		<button
+			type="button"
+			class="rounded border p-2"
+			onclick={onJumpFirst}
+			aria-label="Premier coup"
+		>
 			<ChevronsLeft class="mx-auto h-4 w-4" />
 		</button>
 		<button
@@ -106,12 +113,7 @@
 		>
 			<ChevronLeft class="mx-auto h-4 w-4" />
 		</button>
-		<button
-			type="button"
-			class="rounded border p-2"
-			onclick={onJumpNext}
-			aria-label="Coup suivant"
-		>
+		<button type="button" class="rounded border p-2" onclick={onJumpNext} aria-label="Coup suivant">
 			<ChevronRight class="mx-auto h-4 w-4" />
 		</button>
 		<button type="button" class="rounded border p-2" onclick={onJumpLast} aria-label="Dernier coup">

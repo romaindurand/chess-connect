@@ -116,7 +116,9 @@ export function createGameView(input: GameViewFactoryInput) {
 
 		const hoveredReservePiece = input.getHoveredReservePiece();
 		if (hoveredReservePiece) {
-			return new SvelteSet((game.legalOptions.byReservePiece[hoveredReservePiece] ?? []).map(coordKey));
+			return new SvelteSet(
+				(game.legalOptions.byReservePiece[hoveredReservePiece] ?? []).map(coordKey)
+			);
 		}
 
 		const selectedBoardFrom = input.getSelectedBoardFrom();
@@ -192,7 +194,9 @@ export function createGameView(input: GameViewFactoryInput) {
 	});
 
 	const repetitionDrawModalTitle = $derived('Egalite par repetition');
-	const repetitionDrawModalSubtitle = $derived('La meme position est apparue 3 fois. Nouvelle manche prete avec couleurs inversees.');
+	const repetitionDrawModalSubtitle = $derived(
+		'La meme position est apparue 3 fois. Nouvelle manche prete avec couleurs inversees.'
+	);
 
 	const winnerDetailsLine = $derived.by(() => {
 		const game = input.getGame();
@@ -270,7 +274,11 @@ export function createGameView(input: GameViewFactoryInput) {
 		}
 
 		let remaining = game.state.timeRemainingMs[color];
-		if (game.state.status === 'active' && game.state.turn === color && game.state.turnStartedAt !== null) {
+		if (
+			game.state.status === 'active' &&
+			game.state.turn === color &&
+			game.state.turnStartedAt !== null
+		) {
 			remaining -= input.getNowMs() - game.state.turnStartedAt;
 		}
 

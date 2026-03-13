@@ -6,8 +6,8 @@ This is a SvelteKit application that serves as the frontend and backend for the 
 
 This project is mostly a playground for me to experiment with SvelteKit and local-llms.
 
-
 ## TODO
+
 - [x] animation des pieces
 - [x] son des pieces
 - [x] historique

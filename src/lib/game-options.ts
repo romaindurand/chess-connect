@@ -1,6 +1,16 @@
 import { DEFAULT_GAME_OPTIONS, type GameOptions, type GameOptionValue } from '$lib/types/game';
 
 function humanizeOptionKey(key: string): string {
+	if (key === 'opponentType') {
+		return "Type d'adversaire";
+	}
+	if (key === 'hostColor') {
+		return 'Couleur choisie';
+	}
+	if (key === 'aiDifficulty') {
+		return 'Niveau IA';
+	}
+
 	const withSpaces = key
 		.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
 		.replace(/_/g, ' ')
@@ -9,6 +19,22 @@ function humanizeOptionKey(key: string): string {
 }
 
 function formatOptionValue(key: string, value: GameOptionValue): string {
+	if (key === 'opponentType' && typeof value === 'string') {
+		return value === 'ai' ? 'IA' : 'Humain';
+	}
+	if (key === 'hostColor' && typeof value === 'string') {
+		if (value === 'white') {
+			return 'Blanc';
+		}
+		if (value === 'black') {
+			return 'Noir';
+		}
+		return 'Aléatoire';
+	}
+	if (key === 'aiDifficulty' && typeof value === 'string') {
+		return value === 'baseline' ? 'Baseline' : value;
+	}
+
 	if (typeof value === 'boolean') {
 		return value ? 'Oui' : 'Non';
 	}
@@ -24,7 +50,7 @@ function formatOptionValue(key: string, value: GameOptionValue): string {
 	if (value === null) {
 		return 'Aucun';
 	}
-	return value;
+	return value ?? '';
 }
 
 export function listNonDefaultGameOptions(options: GameOptions): string[] {

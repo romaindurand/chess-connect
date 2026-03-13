@@ -1,4 +1,10 @@
-import { type Color, type Coord, type GameView, type HistorySnapshot, type PieceType } from '$lib/types/game';
+import {
+	type Color,
+	type Coord,
+	type GameView,
+	type HistorySnapshot,
+	type PieceType
+} from '$lib/types/game';
 import { createGameActions } from '$lib/state/game-actions';
 import { createGameLifecycle } from '$lib/state/game-lifecycle';
 import { createGameView } from '$lib/state/game-view.svelte';
@@ -112,8 +118,7 @@ export function createGameState(getGameId: () => string) {
 		getTransitionMovingOwner: () => transitionMovingOwner,
 		getShowHistoryPanel: () => showHistoryPanel,
 		getHistoryStep: () => historyStep,
-		getHistorySnapshot: () => historySnapshot
-		,
+		getHistorySnapshot: () => historySnapshot,
 		getShowRepetitionDrawModal: () => showRepetitionDrawModal
 	});
 

@@ -1,9 +1,12 @@
 export const BOARD_SIZE = 4;
 
 export type Color = 'white' | 'black';
+export type HostColorPreference = Color | 'random';
 export type PieceType = 'pawn' | 'rook' | 'knight' | 'bishop';
 export type ViewerRole = Color | 'guest' | 'spectator';
 export type GameStatus = 'waiting' | 'active' | 'finished';
+export type OpponentType = 'human' | 'ai';
+export type AiDifficulty = 'baseline';
 
 export interface Coord {
 	x: number;
@@ -28,15 +31,21 @@ export interface PlayersByColor {
 	black: PlayerInfo | null;
 }
 
-export type GameOptionValue = string | number | boolean | null;
+export type GameOptionValue = string | number | boolean | null | undefined;
 
 export interface GameOptions {
 	timeLimitMinutes: number | null;
+	opponentType?: OpponentType;
+	hostColor?: HostColorPreference;
+	aiDifficulty?: AiDifficulty;
 	[key: string]: GameOptionValue;
 }
 
 export const DEFAULT_GAME_OPTIONS: GameOptions = {
-	timeLimitMinutes: null
+	timeLimitMinutes: null,
+	opponentType: 'human',
+	hostColor: 'random',
+	aiDifficulty: 'baseline'
 };
 
 export interface GameState {
@@ -122,6 +131,9 @@ export type PlayerMove = PlaceMove | BoardMove;
 export interface CreateGamePayload {
 	name: string;
 	timeLimitMinutes?: number;
+	opponentType?: OpponentType;
+	hostColor?: HostColorPreference;
+	aiDifficulty?: AiDifficulty;
 }
 
 export interface CreateGameResponse {

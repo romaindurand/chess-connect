@@ -8,7 +8,13 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 	if (!body || typeof body !== 'object' || !('name' in body)) {
 		throw new Error('Payload invalide');
 	}
-	const input = body as { name: unknown; timeLimitMinutes?: unknown };
+	const input = body as {
+		name: unknown;
+		timeLimitMinutes?: unknown;
+		opponentType?: unknown;
+		hostColor?: unknown;
+		aiDifficulty?: unknown;
+	};
 	const nameValue = input.name;
 	if (typeof nameValue !== 'string') {
 		throw new Error('Le nom est obligatoire');
@@ -18,8 +24,23 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 		throw new Error('Le nom doit contenir entre 2 et 24 caractères');
 	}
 
+	const opponentType = input.opponentType ?? 'human';
+	if (opponentType !== 'human' && opponentType !== 'ai') {
+		throw new Error("Le type d'adversaire est invalide");
+	}
+
+	const hostColor = input.hostColor ?? 'random';
+	if (hostColor !== 'white' && hostColor !== 'black' && hostColor !== 'random') {
+		throw new Error('La couleur choisie est invalide');
+	}
+
+	const aiDifficulty = input.aiDifficulty ?? 'baseline';
+	if (aiDifficulty !== 'baseline') {
+		throw new Error("Le niveau d'IA est invalide");
+	}
+
 	if (input.timeLimitMinutes === undefined) {
-		return { name };
+		return { name, opponentType, hostColor, aiDifficulty };
 	}
 
 	if (typeof input.timeLimitMinutes !== 'number' || !Number.isInteger(input.timeLimitMinutes)) {
@@ -31,7 +52,10 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 
 	return {
 		name,
-		timeLimitMinutes: input.timeLimitMinutes
+		timeLimitMinutes: input.timeLimitMinutes,
+		opponentType,
+		hostColor,
+		aiDifficulty
 	};
 }
 
@@ -39,7 +63,10 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	try {
 		const payload = parseCreatePayload(await request.json());
 		const { state, token, color } = createGame(payload.name, {
-			timeLimitMinutes: payload.timeLimitMinutes
+			timeLimitMinutes: payload.timeLimitMinutes,
+			opponentType: payload.opponentType,
+			hostColor: payload.hostColor,
+			aiDifficulty: payload.aiDifficulty
 		});
 		cookies.set(cookieName(state.id), token, {
 			path: '/',

@@ -4,7 +4,9 @@ import { listNonDefaultGameOptions } from '$lib/game-options';
 describe('game options listing', () => {
 	it('returns only non-default options', () => {
 		expect(listNonDefaultGameOptions({ timeLimitMinutes: null })).toEqual([]);
-		expect(listNonDefaultGameOptions({ timeLimitMinutes: 5 })).toEqual(['Time limit minutes: 5 min']);
+		expect(listNonDefaultGameOptions({ timeLimitMinutes: 5 })).toEqual([
+			'Time limit minutes: 5 min'
+		]);
 	});
 
 	it('includes future options automatically when not at default', () => {
@@ -13,9 +15,16 @@ describe('game options listing', () => {
 			allowTakeback: true,
 			maxHints: 3
 		};
-		expect(listNonDefaultGameOptions(options)).toEqual([
-			'Allow takeback: Oui',
-			'Max hints: 3'
-		]);
+		expect(listNonDefaultGameOptions(options)).toEqual(['Allow takeback: Oui', 'Max hints: 3']);
+	});
+
+	it('formats AI creation options when they differ from defaults', () => {
+		expect(
+			listNonDefaultGameOptions({
+				timeLimitMinutes: null,
+				opponentType: 'ai',
+				hostColor: 'black'
+			})
+		).toEqual(["Type d'adversaire: IA", 'Couleur choisie: Noir']);
 	});
 });

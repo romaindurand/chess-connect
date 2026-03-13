@@ -5,8 +5,11 @@
 
 	import { createGameRemote } from '$lib/client/game-api';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
+	import type { HostColorPreference, OpponentType } from '$lib/types/game';
 
 	let name = $state('');
+	let opponentType = $state<OpponentType>('human');
+	let hostColor = $state<HostColorPreference>('random');
 	let timeControlEnabled = $state(false);
 	let timeLimitMinutes = $state(5);
 	let isSubmitting = $state(false);
@@ -37,7 +40,9 @@
 		try {
 			const result = await createGameRemote({
 				name: trimmed,
-				timeLimitMinutes: timeControlEnabled ? timeLimitMinutes : undefined
+				timeLimitMinutes: timeControlEnabled ? timeLimitMinutes : undefined,
+				opponentType,
+				hostColor
 			});
 			savePlayerName(trimmed);
 			await goto(resolve(`/game/${result.gameId}`));
@@ -69,6 +74,80 @@
 			/>
 		</label>
 
+		<fieldset class="rounded-md border border-gray-200 p-3">
+			<legend class="px-1 text-sm font-medium">Type de partie</legend>
+			<div class="mt-3 grid gap-2 sm:grid-cols-2">
+				<label
+					class={`rounded-md border px-3 py-2 text-sm ${opponentType === 'human' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+				>
+					<input
+						class="sr-only"
+						type="radio"
+						name="opponentType"
+						value="human"
+						bind:group={opponentType}
+					/>
+					<span>Contre un joueur</span>
+				</label>
+				<label
+					class={`rounded-md border px-3 py-2 text-sm ${opponentType === 'ai' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+				>
+					<input
+						class="sr-only"
+						type="radio"
+						name="opponentType"
+						value="ai"
+						bind:group={opponentType}
+					/>
+					<span>Contre l'IA</span>
+				</label>
+			</div>
+
+			{#if opponentType === 'ai'}
+				<div class="mt-3 space-y-2">
+					<span class="text-sm font-medium">Votre couleur</span>
+					<div class="grid gap-2 sm:grid-cols-3">
+						<label
+							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+						>
+							<input
+								class="sr-only"
+								type="radio"
+								name="hostColor"
+								value="white"
+								bind:group={hostColor}
+							/>
+							<span>Blanc</span>
+						</label>
+						<label
+							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+						>
+							<input
+								class="sr-only"
+								type="radio"
+								name="hostColor"
+								value="black"
+								bind:group={hostColor}
+							/>
+							<span>Noir</span>
+						</label>
+						<label
+							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+						>
+							<input
+								class="sr-only"
+								type="radio"
+								name="hostColor"
+								value="random"
+								bind:group={hostColor}
+							/>
+							<span>Aléatoire</span>
+						</label>
+					</div>
+				</div>
+			{/if}
+		</fieldset>
+
 		<details class="rounded-md border border-gray-200 p-3">
 			<summary class="cursor-pointer text-sm font-medium">Options avancées</summary>
 			<div class="mt-3 space-y-3">
@@ -98,7 +177,13 @@
 			disabled={isSubmitting}
 			class="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
 		>
-			{isSubmitting ? 'Création...' : 'Créer une nouvelle partie'}
+			{#if isSubmitting}
+				Création...
+			{:else if opponentType === 'ai'}
+				Jouer contre l'IA
+			{:else}
+				Créer une nouvelle partie
+			{/if}
 		</button>
 
 		{#if errorMessage}

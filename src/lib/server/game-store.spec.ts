@@ -89,7 +89,9 @@ describe('game-store time control', () => {
 			expect(record.state.players[record.state.hostColor!]?.name).toBe('Alice');
 			expect(record.state.players[oppositeColor(record.state.hostColor!)]?.name).toBe('Bob');
 			expect(viewerRoleFromToken(state.id, hostToken)).toBe(record.state.hostColor);
-			expect(viewerRoleFromToken(state.id, playerToken)).toBe(oppositeColor(record.state.hostColor!));
+			expect(viewerRoleFromToken(state.id, playerToken)).toBe(
+				oppositeColor(record.state.hostColor!)
+			);
 		}
 
 		expect(record.state.hostColor).toBe(initialHostColor);
@@ -125,7 +127,8 @@ describe('game-store time control', () => {
 		const joinResult = await joinGame(state.id, 'Bob');
 		const record = getGameOrThrow(state.id);
 
-		const actorToken = viewerRoleFromToken(state.id, hostToken) === 'white' ? hostToken : joinResult.token;
+		const actorToken =
+			viewerRoleFromToken(state.id, hostToken) === 'white' ? hostToken : joinResult.token;
 		const actorColor = viewerRoleFromToken(state.id, actorToken);
 		if (actorColor !== 'white' && actorColor !== 'black') {
 			throw new Error('expected player role');
@@ -224,9 +227,56 @@ describe('game-store time control', () => {
 		expect(record.state.moveHistory).toEqual([]);
 		expect(record.state.pliesPlayed).toBe(0);
 		expect(record.state.turn).toBe('white');
-		expect(record.state.reserves.white).toEqual({ pawn: true, rook: true, knight: true, bishop: true });
-		expect(record.state.reserves.black).toEqual({ pawn: true, rook: true, knight: true, bishop: true });
+		expect(record.state.reserves.white).toEqual({
+			pawn: true,
+			rook: true,
+			knight: true,
+			bishop: true
+		});
+		expect(record.state.reserves.black).toEqual({
+			pawn: true,
+			rook: true,
+			knight: true,
+			bishop: true
+		});
 		expect(record.state.board.flat().every((cell) => cell === null)).toBe(true);
+	});
+
+	it('starts an AI game immediately and lets the AI open when the host chooses black', () => {
+		const { state } = createGame('Alice', {
+			opponentType: 'ai',
+			hostColor: 'black'
+		});
+
+		expect(state.status).toBe('active');
+		expect(state.options.opponentType).toBe('ai');
+		expect(state.options.hostColor).toBe('black');
+		expect(state.hostColor).toBe('black');
+		expect(state.players.black?.name).toBe('Alice');
+		expect(state.players.white?.name).toBe('IA');
+		expect(state.pliesPlayed).toBe(1);
+		expect(state.moveHistory).toHaveLength(1);
+		expect(state.turn).toBe('black');
+		expect(state.board.flat().some((cell) => cell?.owner === 'white')).toBe(true);
+	});
+
+	it('answers automatically after a human move in an AI game', async () => {
+		const { state, token } = createGame('Alice', {
+			opponentType: 'ai',
+			hostColor: 'white'
+		});
+
+		const updated = await playMove(state.id, token, {
+			kind: 'place',
+			piece: 'rook',
+			to: { x: 0, y: 0 }
+		});
+
+		expect(updated.status).toBe('active');
+		expect(updated.pliesPlayed).toBe(2);
+		expect(updated.moveHistory).toHaveLength(2);
+		expect(updated.turn).toBe('white');
+		expect(updated.board.flat().filter((cell) => cell?.owner === 'black')).toHaveLength(1);
 	});
 });
 

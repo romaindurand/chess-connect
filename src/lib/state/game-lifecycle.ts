@@ -85,15 +85,13 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 	function detectSnapshotTransition(
 		previousGame: GameView,
 		nextGame: GameView
-	):
-		| {
-				fromBoard?: Coord;
-				toBoard: Coord;
-				fromReserve?: { owner: Color; piece: PieceType };
-				moverColor: Color;
-				sound: 'move' | 'capture';
-		  }
-		| null {
+	): {
+		fromBoard?: Coord;
+		toBoard: Coord;
+		fromReserve?: { owner: Color; piece: PieceType };
+		moverColor: Color;
+		sound: 'move' | 'capture';
+	} | null {
 		if (nextGame.state.pliesPlayed !== previousGame.state.pliesPlayed + 1) {
 			return null;
 		}

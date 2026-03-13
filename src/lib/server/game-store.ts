@@ -1,16 +1,21 @@
 import { createHmac, randomUUID } from 'node:crypto';
 
 import { applyPlayerMove, createInitialBoard, getLegalOptionsForColor } from './game-engine';
+import { chooseAiMove } from './ai/agent';
+import { AI_PLAYER_NAME } from './ai/config';
 import {
 	DEFAULT_GAME_OPTIONS,
 	makeEmptyReserve,
+	type AiDifficulty,
 	type Coord,
 	type Color,
 	type HistorySnapshot,
 	type GameOptions,
 	type GameState,
 	type GameView,
+	type HostColorPreference,
 	type MoveHistoryEntry,
+	type OpponentType,
 	type PlayerMove,
 	type ServerEvent,
 	type ViewerRole
@@ -40,6 +45,13 @@ interface Store {
 	queues: Map<string, Promise<void>>;
 	cleanupTimer: NodeJS.Timeout;
 	heartbeatTimer: NodeJS.Timeout;
+}
+
+interface CreateGameOptions {
+	timeLimitMinutes?: number;
+	opponentType?: OpponentType;
+	hostColor?: HostColorPreference;
+	aiDifficulty?: AiDifficulty;
 }
 
 declare global {
@@ -121,15 +133,17 @@ function getStore(): Store {
 function createNewState(
 	gameId: string,
 	creatorName: string,
-	options?: { timeLimitMinutes?: number }
+	options?: CreateGameOptions
 ): { state: GameState } {
 	const now = Date.now();
-	const timeControlPerPlayerSeconds =
-		options?.timeLimitMinutes !== undefined ? options.timeLimitMinutes * 60 : null;
 	const gameOptions: GameOptions = {
-		...DEFAULT_GAME_OPTIONS,
-		timeLimitMinutes: options?.timeLimitMinutes ?? DEFAULT_GAME_OPTIONS.timeLimitMinutes
+		timeLimitMinutes: options?.timeLimitMinutes ?? DEFAULT_GAME_OPTIONS.timeLimitMinutes,
+		opponentType: options?.opponentType ?? DEFAULT_GAME_OPTIONS.opponentType,
+		hostColor: options?.hostColor ?? DEFAULT_GAME_OPTIONS.hostColor,
+		aiDifficulty: options?.aiDifficulty ?? DEFAULT_GAME_OPTIONS.aiDifficulty
 	};
+	const timeControlPerPlayerSeconds =
+		gameOptions.timeLimitMinutes !== null ? gameOptions.timeLimitMinutes * 60 : null;
 	const timeControlEnabled = timeControlPerPlayerSeconds !== null;
 	const timeRemainingMs =
 		timeControlPerPlayerSeconds !== null
@@ -138,41 +152,60 @@ function createNewState(
 					black: timeControlPerPlayerSeconds * SECOND_MS
 				}
 			: null;
+	const state: GameState = {
+		id: gameId,
+		status: 'waiting',
+		inviter: { name: creatorName, joinedAt: now },
+		hostColor: null,
+		options: gameOptions,
+		players: {
+			white: null,
+			black: null
+		},
+		board: createInitialBoard(),
+		reserves: {
+			white: makeEmptyReserve(),
+			black: makeEmptyReserve()
+		},
+		turn: 'white',
+		pliesPlayed: 0,
+		winner: null,
+		bestOfWinner: null,
+		score: {
+			white: 0,
+			black: 0
+		},
+		gameNumber: 1,
+		bestOf: 3,
+		timeControlEnabled,
+		timeControlPerPlayerSeconds,
+		timeRemainingMs,
+		turnStartedAt: null,
+		moveHistory: [],
+		rematchRequestedBy: null,
+		createdAt: now,
+		lastActivityAt: now,
+		version: 0
+	};
+
+	if (gameOptions.opponentType === 'ai') {
+		const hostColor: Color =
+			gameOptions.hostColor === 'black' || gameOptions.hostColor === 'white'
+				? gameOptions.hostColor
+				: Math.random() < 0.5
+					? 'white'
+					: 'black';
+		const aiColor = oppositeColor(hostColor);
+		state.hostColor = hostColor;
+		state.status = 'active';
+		state.players[hostColor] = { ...state.inviter };
+		state.players[aiColor] = { name: AI_PLAYER_NAME, joinedAt: now };
+		state.turnStartedAt = timeControlEnabled ? now : null;
+	}
+
 	return {
 		state: {
-			id: gameId,
-			status: 'waiting',
-			inviter: { name: creatorName, joinedAt: now },
-			hostColor: null,
-			options: gameOptions,
-			players: {
-				white: null,
-				black: null
-			},
-			board: createInitialBoard(),
-			reserves: {
-				white: makeEmptyReserve(),
-				black: makeEmptyReserve()
-			},
-			turn: 'white',
-			pliesPlayed: 0,
-			winner: null,
-			bestOfWinner: null,
-			score: {
-				white: 0,
-				black: 0
-			},
-			gameNumber: 1,
-			bestOf: 3,
-			timeControlEnabled,
-			timeControlPerPlayerSeconds,
-			timeRemainingMs,
-			turnStartedAt: null,
-			moveHistory: [],
-			rematchRequestedBy: null,
-			createdAt: now,
-			lastActivityAt: now,
-			version: 0
+			...state
 		}
 	};
 }
@@ -287,7 +320,12 @@ function finalizeWinner(record: GameRecord, winner: Color, now: number): void {
 
 function applyTimeoutIfExpired(record: GameRecord, now: number): boolean {
 	const state = record.state;
-	if (!state.timeControlEnabled || !state.timeRemainingMs || state.status !== 'active' || state.winner) {
+	if (
+		!state.timeControlEnabled ||
+		!state.timeRemainingMs ||
+		state.status !== 'active' ||
+		state.winner
+	) {
 		return false;
 	}
 
@@ -393,7 +431,7 @@ function createNextRoundState(state: GameState, swapColors: boolean): GameState 
 			? {
 					white: state.timeControlPerPlayerSeconds * SECOND_MS,
 					black: state.timeControlPerPlayerSeconds * SECOND_MS
-			  }
+				}
 			: null,
 		turnStartedAt: state.timeControlEnabled ? Date.now() : null,
 		rematchRequestedBy: null,
@@ -412,6 +450,78 @@ function resolveActorColor(state: GameState, payload: SessionTokenPayload): Colo
 	return payload.color;
 }
 
+function isAiGame(state: GameState): boolean {
+	return state.options.opponentType === 'ai';
+}
+
+function getAiColor(state: GameState): Color | null {
+	if (!isAiGame(state) || !state.hostColor) {
+		return null;
+	}
+	return oppositeColor(state.hostColor);
+}
+
+function applyResolvedMove(
+	record: GameRecord,
+	actorColor: Color,
+	move: PlayerMove,
+	now: number
+): void {
+	const beforeMoveState = record.state;
+	record.state = applyPlayerMove(record.state, actorColor, move);
+	record.state.moveHistory = [
+		...beforeMoveState.moveHistory,
+		buildHistoryEntry(beforeMoveState, record.state, actorColor, move)
+	];
+
+	if (record.state.winner) {
+		finalizeWinner(record, record.state.winner, now);
+		return;
+	}
+
+	if (hasThreefoldRepetition(record.state.moveHistory)) {
+		record.state = createNextRoundState(record.state, true);
+		return;
+	}
+
+	if (record.state.timeControlEnabled) {
+		record.state.turnStartedAt = now;
+	}
+}
+
+function applyAiTurns(record: GameRecord): void {
+	while (true) {
+		const aiColor = getAiColor(record.state);
+		if (
+			!aiColor ||
+			record.state.status !== 'active' ||
+			record.state.winner ||
+			record.state.turn !== aiColor
+		) {
+			return;
+		}
+
+		const now = Date.now();
+		if (record.state.timeControlEnabled && record.state.timeRemainingMs) {
+			const remaining = getRemainingTurnMs(record.state, aiColor, now);
+			if (remaining === null || remaining <= 0) {
+				record.state.timeRemainingMs[aiColor] = 0;
+				finalizeWinner(record, oppositeColor(aiColor), now);
+				return;
+			}
+			record.state.timeRemainingMs[aiColor] = remaining;
+		}
+
+		const move = chooseAiMove(record.state, aiColor);
+		if (!move) {
+			finalizeWinner(record, oppositeColor(aiColor), now);
+			return;
+		}
+
+		applyResolvedMove(record, aiColor, move, now);
+	}
+}
+
 function emitSnapshot(record: GameRecord): void {
 	const event = {
 		type: 'snapshot',
@@ -428,7 +538,7 @@ export function cookieName(gameId: string): string {
 
 export function createGame(
 	creatorName: string,
-	options?: { timeLimitMinutes?: number }
+	options?: CreateGameOptions
 ): {
 	state: GameState;
 	token: string;
@@ -443,13 +553,16 @@ export function createGame(
 		subscribers: new Set()
 	});
 
+	const record = getGameOrThrow(gameId);
+	applyAiTurns(record);
+
 	const token = signPayload({
 		gameId,
 		kind: 'host',
 		color: null,
 		rnd: randomUUID().slice(0, 12)
 	});
-	return { state, token, color: null };
+	return { state: record.state, token, color: record.state.hostColor };
 }
 
 export function getGameOrThrow(gameId: string): GameRecord {
@@ -499,7 +612,13 @@ export async function joinGame(
 			throw new Error('La partie est déjà démarrée');
 		}
 		const now = Date.now();
-		const hostColor: Color = Math.random() < 0.5 ? 'white' : 'black';
+		const preferredHostColor = record.state.options.hostColor;
+		const hostColor: Color =
+			preferredHostColor === 'white' || preferredHostColor === 'black'
+				? preferredHostColor
+				: Math.random() < 0.5
+					? 'white'
+					: 'black';
 		const guestColor: Color = hostColor === 'white' ? 'black' : 'white';
 
 		record.state.players[hostColor] = { ...record.state.inviter };
@@ -559,20 +678,8 @@ export async function playMove(
 			record.state.timeRemainingMs[actorColor] = remaining;
 		}
 
-		const beforeMoveState = record.state;
-		record.state = applyPlayerMove(record.state, actorColor, move);
-		record.state.moveHistory = [
-			...beforeMoveState.moveHistory,
-			buildHistoryEntry(beforeMoveState, record.state, actorColor, move)
-		];
-
-		if (record.state.winner) {
-			finalizeWinner(record, record.state.winner, now);
-		} else if (hasThreefoldRepetition(record.state.moveHistory)) {
-			record.state = createNextRoundState(record.state, true);
-		} else if (record.state.timeControlEnabled) {
-			record.state.turnStartedAt = now;
-		}
+		applyResolvedMove(record, actorColor, move, now);
+		applyAiTurns(record);
 
 		emitSnapshot(record);
 		return record.state;
@@ -598,6 +705,12 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 		}
 		if (isBestOfFinished(state)) {
 			throw new Error('Le best of 3 est déjà terminé');
+		}
+		if (isAiGame(state)) {
+			record.state = createNextRoundState(state, true);
+			applyAiTurns(record);
+			emitSnapshot(record);
+			return record.state;
 		}
 		if (state.rematchRequestedBy) {
 			throw new Error('Une demande de revanche est déjà en attente');

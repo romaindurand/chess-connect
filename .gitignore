@@ -21,3 +21,5 @@ Thumbs.db
 # Vite
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+artifacts/ai/baseline-frequency.json
+artifacts/ai/self-play.json

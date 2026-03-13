@@ -52,9 +52,9 @@
 	}
 </script>
 
-<div class={`rounded p-2 border ${isActiveTurn ? 'border-black' : 'border-gray-300'}`}>
+<div class={`rounded border p-2 ${isActiveTurn ? 'border-black' : 'border-gray-300'}`}>
 	<p class="mb-1 text-gray-700">{playerName} - {playerScore}</p>
-	<div class="p-2 flex h-16 flex-wrap content-start gap-2 overflow-hidden">
+	<div class="flex h-16 flex-wrap content-start gap-2 overflow-hidden p-2">
 		{#each pieces as piece (piece)}
 			{@const Icon = pieceIcon(piece)}
 			<button

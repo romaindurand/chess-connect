@@ -1,8 +1,9 @@
 ---
-description: "Use when changing game rules, server state, API endpoints, auth/session tokens, or SSE flow. Covers server authority, safety checks, and required backend tests."
-name: "Backend Game And API Rules"
-applyTo: "src/lib/server/**, src/routes/api/**, src/lib/types/game.ts"
+description: 'Use when changing game rules, server state, API endpoints, auth/session tokens, or SSE flow. Covers server authority, safety checks, and required backend tests.'
+name: 'Backend Game And API Rules'
+applyTo: 'src/lib/server/**, src/routes/api/**, src/lib/types/game.ts'
 ---
+
 # Backend Guidelines
 
 - Treat the server as the source of truth for game state. Do not rely on client-side validation for rule enforcement.

@@ -1,4 +1,9 @@
-import { playMoveRemote, postGameActionRemote, requestRematchRemote, acceptRematchRemote } from '$lib/client/game-api';
+import {
+	playMoveRemote,
+	postGameActionRemote,
+	requestRematchRemote,
+	acceptRematchRemote
+} from '$lib/client/game-api';
 import {
 	getSnapshotForHistoryStep,
 	isAutomaticDrawRoundReset,

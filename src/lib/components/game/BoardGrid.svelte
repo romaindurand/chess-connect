@@ -20,8 +20,7 @@
 		onCellLeave,
 		onCellClick,
 		pieceTransitionName
-	}: Props =
-		$props();
+	}: Props = $props();
 
 	function pieceIcon(piece: PieceType): typeof ChessPawn {
 		if (piece === 'pawn') {
@@ -48,13 +47,15 @@
 
 <div class="mx-auto w-3/4">
 	<div class="relative mb-6">
-		<div class="pointer-events-none absolute inset-y-0 -left-6 grid grid-rows-4 gap-2 text-xs font-medium text-gray-500">
+		<div
+			class="pointer-events-none absolute inset-y-0 -left-6 grid grid-rows-4 gap-2 text-xs font-medium text-gray-500"
+		>
 			{#each rowLabels as label (label)}
 				<div class="flex items-center justify-center">{label}</div>
 			{/each}
 		</div>
 
-		<div class="grid grid-cols-4 gap-2 mb-8">
+		<div class="mb-8 grid grid-cols-4 gap-2">
 			{#each board as row, y (y)}
 				{#each row as cell, x (x)}
 					{@const coord = { x, y }}
@@ -80,7 +81,9 @@
 			{/each}
 		</div>
 
-		<div class="pointer-events-none absolute inset-x-0 -bottom-6 grid grid-cols-4 gap-2 text-center text-xs font-medium text-gray-500">
+		<div
+			class="pointer-events-none absolute inset-x-0 -bottom-6 grid grid-cols-4 gap-2 text-center text-xs font-medium text-gray-500"
+		>
 			{#each colLabels as label (label)}
 				<div>{label}</div>
 			{/each}
