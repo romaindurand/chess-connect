@@ -12,7 +12,7 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] son des pieces
 - [x] historique
 - [x] coordonnées des cases
-- [ ] pas de coups qui se répètent
+- [x] pas de coups qui se répètent
 - [ ] créer une IA
 - [ ] matchmaking
 - [x] couleurs alternées pour la revanche

@@ -180,7 +180,7 @@
 		onClose={() => state.actions.setShowRepetitionDrawModal(false)}
 	>
 		<p class="mt-2">{state.view.repetitionDrawModalSubtitle}</p>
-		<p class="mt-2">Score inchangé, couleurs inversées, nouvelle manche déjà prête.</p>
+		<p class="mt-2">Le score n'a pas changé, les joueurs échangent de couleur.</p>
 	</GameDialog>
 
 	{#if state.view.errorMessage}

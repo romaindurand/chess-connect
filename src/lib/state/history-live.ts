@@ -1,5 +1,12 @@
 import type { HistorySnapshot, MoveHistoryEntry } from '$lib/types/game';
 
+interface DrawResetStateLike {
+	status: string;
+	winner: string | null;
+	moveHistory: MoveHistoryEntry[];
+	gameNumber: number;
+}
+
 export function shouldFollowLiveEdge(
 	historyStep: number | null,
 	previousMoveHistoryLength: number
@@ -24,4 +31,22 @@ export function getSnapshotForHistoryStep(
 		return null;
 	}
 	return null;
+}
+
+export function isAutomaticDrawRoundReset(
+	previousState: DrawResetStateLike | null,
+	nextState: DrawResetStateLike
+): boolean {
+	if (!previousState) {
+		return false;
+	}
+
+	return (
+		previousState.status === 'active' &&
+		!previousState.winner &&
+		previousState.moveHistory.length > 0 &&
+		nextState.status === 'active' &&
+		nextState.gameNumber === previousState.gameNumber + 1 &&
+		nextState.moveHistory.length === 0
+	);
 }

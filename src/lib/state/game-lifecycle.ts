@@ -2,7 +2,7 @@ import { getGameViewRemote, openGameEventStream } from '$lib/client/game-api';
 import { tick } from 'svelte';
 import moveSoundUrl from '$lib/assets/move.mp3';
 import captureSoundUrl from '$lib/assets/capture.mp3';
-import { shouldFollowLiveEdge } from '$lib/state/history-live';
+import { isAutomaticDrawRoundReset, shouldFollowLiveEdge } from '$lib/state/history-live';
 import {
 	BOARD_SIZE,
 	coordKey,
@@ -37,20 +37,6 @@ interface GameLifecycleFactoryInput {
 	setHistoryStep: (step: number | null) => void;
 	setHistorySnapshot: (snapshot: HistorySnapshot | null) => void;
 	setShowRepetitionDrawModal: (open: boolean) => void;
-}
-
-function isAutomaticDrawRoundReset(previousGame: GameView | null, nextGame: GameView): boolean {
-	if (!previousGame) {
-		return false;
-	}
-	return (
-		previousGame.state.status === 'active' &&
-		!previousGame.state.winner &&
-		previousGame.state.moveHistory.length > 0 &&
-		nextGame.state.status === 'active' &&
-		nextGame.state.gameNumber === previousGame.state.gameNumber + 1 &&
-		nextGame.state.moveHistory.length === 0
-	);
 }
 
 export function createGameLifecycle(input: GameLifecycleFactoryInput) {
@@ -211,7 +197,7 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		fallbackSound: 'move' | 'capture' | null = null
 	): Promise<void> {
 		const previousGame = input.getGame();
-		const showDrawModal = isAutomaticDrawRoundReset(previousGame, snapshot);
+		const showDrawModal = isAutomaticDrawRoundReset(previousGame?.state ?? null, snapshot.state);
 		const previousMoveHistoryLength = input.getGame()?.state.moveHistory.length ?? 0;
 		const resumeLiveHistory = shouldFollowLiveEdge(
 			input.getHistoryStep(),

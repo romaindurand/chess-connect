@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { getSnapshotForHistoryStep, shouldFollowLiveEdge } from '$lib/state/history-live';
+import {
+	getSnapshotForHistoryStep,
+	isAutomaticDrawRoundReset,
+	shouldFollowLiveEdge
+} from '$lib/state/history-live';
 import type { MoveHistoryEntry } from '$lib/types/game';
 
 function makeEntry(ply: number): MoveHistoryEntry {
@@ -48,5 +52,43 @@ describe('history live helpers', () => {
 		expect(getSnapshotForHistoryStep(entries, 0)).toEqual(entries[0].before);
 		expect(getSnapshotForHistoryStep(entries, 1)).toEqual(entries[0].after);
 		expect(getSnapshotForHistoryStep(entries, 2)).toBeNull();
+	});
+
+	it('detects automatic draw round reset transition', () => {
+		const previousEntries = [makeEntry(1)];
+		const nextEntries: MoveHistoryEntry[] = [];
+		expect(
+			isAutomaticDrawRoundReset(
+				{
+					status: 'active',
+					winner: null,
+					moveHistory: previousEntries,
+					gameNumber: 3
+				},
+				{
+					status: 'active',
+					winner: null,
+					moveHistory: nextEntries,
+					gameNumber: 4
+				}
+			)
+		).toBe(true);
+
+		expect(
+			isAutomaticDrawRoundReset(
+				{
+					status: 'active',
+					winner: null,
+					moveHistory: previousEntries,
+					gameNumber: 3
+				},
+				{
+					status: 'active',
+					winner: null,
+					moveHistory: nextEntries,
+					gameNumber: 3
+				}
+			)
+		).toBe(false);
 	});
 });

@@ -1,5 +1,9 @@
 import { playMoveRemote, postGameActionRemote, requestRematchRemote, acceptRematchRemote } from '$lib/client/game-api';
-import { getSnapshotForHistoryStep, shouldFollowLiveEdge } from '$lib/state/history-live';
+import {
+	getSnapshotForHistoryStep,
+	isAutomaticDrawRoundReset,
+	shouldFollowLiveEdge
+} from '$lib/state/history-live';
 import { tick } from 'svelte';
 import {
 	coordKey,
@@ -139,6 +143,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			fromReserve?: { owner: 'white' | 'black'; piece: PieceType };
 		}
 	): Promise<GameView> {
+		const previousGame = input.getGame();
 		const previousMoveHistoryLength = input.getGame()?.state.moveHistory.length ?? 0;
 		const followLiveHistory = shouldFollowLiveEdge(
 			input.getHistoryStep(),
@@ -148,6 +153,9 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
 			const updatedGame = await playMoveRemote(input.getGameId(), payload);
 			input.setGame(updatedGame);
+			if (isAutomaticDrawRoundReset(previousGame?.state ?? null, updatedGame.state)) {
+				input.setShowRepetitionDrawModal(true);
+			}
 			if (followLiveHistory) {
 				input.setHistoryStep(updatedGame.state.moveHistory.length);
 				input.setHistorySnapshot(null);
@@ -175,6 +183,9 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			try {
 				updatedGame = await playMoveRemote(input.getGameId(), payload);
 				input.setGame(updatedGame);
+				if (isAutomaticDrawRoundReset(previousGame?.state ?? null, updatedGame.state)) {
+					input.setShowRepetitionDrawModal(true);
+				}
 				if (followLiveHistory) {
 					input.setHistoryStep(updatedGame.state.moveHistory.length);
 					input.setHistorySnapshot(null);
