@@ -12,7 +12,8 @@ import { BOARD_SIZE, PIECES, type Color, type GameState, type PieceType } from '
 const PIECE_ORDER: PieceType[] = PIECES;
 const PLANES_PER_CELL = PIECE_ORDER.length * 2 + 2; // 4 white + 4 black + 2 pawn directions
 
-export const ENCODING_SIZE = BOARD_SIZE * BOARD_SIZE * PLANES_PER_CELL + PIECE_ORDER.length * 2 + 2;
+export const SPATIAL_SIZE = BOARD_SIZE * BOARD_SIZE * PLANES_PER_CELL; // 160
+export const ENCODING_SIZE = SPATIAL_SIZE + PIECE_ORDER.length * 2 + 2;
 
 export function encodeState(state: GameState, viewerColor: Color): Float32Array {
 	const buf = new Float32Array(ENCODING_SIZE);
