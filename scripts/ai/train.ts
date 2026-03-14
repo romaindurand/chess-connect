@@ -28,7 +28,7 @@ let report: SelfPlayBatchReport;
 try {
 	report = JSON.parse(readFileSync(inputFile, 'utf8')) as SelfPlayBatchReport;
 } catch {
-	report = runSelfPlayBatch({
+	report = await runSelfPlayBatch({
 		games: readNumberArg('games', 32),
 		maxPlies: readNumberArg('max-plies', 64)
 	});

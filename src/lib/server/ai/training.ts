@@ -87,13 +87,13 @@ function createSelfPlayState(): GameState {
 /** Reduced simulation budget used during self-play to keep generation fast. */
 const SELF_PLAY_SIMULATIONS = 20;
 
-function playSelfPlayGame(maxPlies: number): SelfPlayGameResult {
+async function playSelfPlayGame(maxPlies: number): Promise<SelfPlayGameResult> {
 	let state = createSelfPlayState();
 	const moves: string[] = [];
 
 	while (state.status === 'active' && state.pliesPlayed < maxPlies) {
 		const actor = state.turn;
-		const move = chooseAiMove(state, actor, { simulations: SELF_PLAY_SIMULATIONS });
+		const move = await chooseAiMove(state, actor, { simulations: SELF_PLAY_SIMULATIONS });
 		if (!move) {
 			return {
 				winner: actor === 'white' ? 'black' : 'white',
@@ -113,13 +113,15 @@ function playSelfPlayGame(maxPlies: number): SelfPlayGameResult {
 	};
 }
 
-export function runSelfPlayBatch(options?: {
+export async function runSelfPlayBatch(options?: {
 	games?: number;
 	maxPlies?: number;
-}): SelfPlayBatchReport {
+}): Promise<SelfPlayBatchReport> {
 	const totalGames = options?.games ?? 8;
 	const maxPlies = options?.maxPlies ?? 64;
-	const games = Array.from({ length: totalGames }, () => playSelfPlayGame(maxPlies));
+	const games = await Promise.all(
+		Array.from({ length: totalGames }, () => playSelfPlayGame(maxPlies))
+	);
 	const whiteWins = games.filter((game) => game.winner === 'white').length;
 	const blackWins = games.filter((game) => game.winner === 'black').length;
 	const draws = games.filter((game) => game.winner === null).length;

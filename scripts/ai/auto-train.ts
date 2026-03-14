@@ -17,7 +17,7 @@ const maxPlies = readNumberArg('max-plies', 64);
 const datasetFile = resolve('artifacts/ai/self-play.json');
 const modelFile = resolve('artifacts/ai/baseline-frequency.json');
 
-const report = runSelfPlayBatch({ games, maxPlies });
+const report = await runSelfPlayBatch({ games, maxPlies });
 const artifact = buildTrainingArtifact(report.games);
 
 mkdirSync(dirname(datasetFile), { recursive: true });

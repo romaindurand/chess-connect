@@ -5,10 +5,10 @@ import { runMcts, type MctsOptions } from './mcts';
 /** Number of MCTS simulations per turn for in-game play. */
 const DEFAULT_SIMULATIONS = 100;
 
-export function chooseAiMove(
+export async function chooseAiMove(
 	state: GameState,
 	color: Color,
 	mctsOptions?: MctsOptions
-): PlayerMove | null {
+): Promise<PlayerMove | null> {
 	return runMcts(state, color, { simulations: DEFAULT_SIMULATIONS, ...mctsOptions });
 }

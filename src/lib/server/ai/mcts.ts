@@ -8,11 +8,20 @@ import {
 	type PlayerMove
 } from '$lib/types/game';
 
+export interface ModelAdapter {
+	/** Returns prior probabilities for each legal move (must sum to ~1). */
+	priors(state: GameState, moves: PlayerMove[]): Promise<number[]>;
+	/** Returns a value estimate in [-1, 1] for `color` at `state`. */
+	value(state: GameState, color: Color): Promise<number>;
+}
+
 export interface MctsOptions {
 	/** Number of MCTS simulations per call. Default: 100. */
 	simulations?: number;
-	/** Exploration constant (UCB1). Default: 1.41. */
+	/** Exploration constant (UCB1 / PUCT). Default: sqrt(2). */
 	explorationConstant?: number;
+	/** When provided, uses PUCT selection and value-head leaf evaluation. */
+	modelAdapter?: ModelAdapter;
 }
 
 interface MctsNode {
@@ -23,6 +32,7 @@ interface MctsNode {
 	wins: number;
 	visits: number;
 	untriedMoves: PlayerMove[];
+	priors: Map<string, number>; // move key -> prior probability
 	actorColor: Color;
 }
 
@@ -59,8 +69,12 @@ function makeNode(
 	state: GameState,
 	actorColor: Color,
 	move: PlayerMove | null,
-	parent: MctsNode | null
+	parent: MctsNode | null,
+	priors?: Map<string, number>
 ): MctsNode {
+	const moves = legalMoves(state, actorColor);
+	const defaultPrior = moves.length > 0 ? 1 / moves.length : 0;
+	const p = priors ?? new Map(moves.map((m) => [sortMoveKey(m), defaultPrior]));
 	return {
 		move,
 		state,
@@ -68,7 +82,8 @@ function makeNode(
 		children: [],
 		wins: 0,
 		visits: 0,
-		untriedMoves: legalMoves(state, actorColor),
+		untriedMoves: moves,
+		priors: p,
 		actorColor
 	};
 }
@@ -83,8 +98,16 @@ function ucb1(node: MctsNode, explorationConstant: number): number {
 	);
 }
 
-function selectChild(node: MctsNode, c: number): MctsNode {
-	return node.children.reduce((best, child) => (ucb1(child, c) > ucb1(best, c) ? child : best));
+function puct(node: MctsNode, c: number): number {
+	const parentVisits = node.parent?.visits ?? 1;
+	const prior = node.parent?.priors.get(node.move ? sortMoveKey(node.move) : '') ?? 0;
+	const q = node.visits > 0 ? node.wins / node.visits : 0;
+	return q + c * prior * (Math.sqrt(parentVisits) / (1 + node.visits));
+}
+
+function selectChild(node: MctsNode, c: number, usePuct: boolean): MctsNode {
+	const score = usePuct ? puct : ucb1;
+	return node.children.reduce((best, child) => (score(child, c) > score(best, c) ? child : best));
 }
 
 function oppositeColor(color: Color): Color {
@@ -153,41 +176,46 @@ function sortMoveKey(move: PlayerMove): string {
  * Run MCTS from `state` for `color` and return the best move found.
  * Returns null only when no legal moves exist.
  */
-export function runMcts(
+export async function runMcts(
 	state: GameState,
 	color: Color,
 	options: MctsOptions = {}
-): PlayerMove | null {
+): Promise<PlayerMove | null> {
 	const simulations = options.simulations ?? 100;
 	const c = options.explorationConstant ?? Math.SQRT2;
-
-	const root = makeNode(state, color, null, null);
-	if (root.untriedMoves.length === 0) {
-		return null;
-	}
+	const adapter = options.modelAdapter;
+	const usePuct = adapter !== undefined;
 
 	// Fast path: return an immediate winning move without running simulations.
-	for (const move of root.untriedMoves) {
+	const candidates = legalMoves(state, color);
+	if (candidates.length === 0) return null;
+
+	for (const move of candidates) {
 		try {
 			const after = applyPlayerMove(state, color, move);
-			if (after.winner === color) {
-				return move;
-			}
+			if (after.winner === color) return move;
 		} catch {
-			// illegal move candidate – skip
+			// illegal – skip
 		}
 	}
 
+	// Build root — prime priors from adapter if available
+	let rootPriors: Map<string, number> | undefined;
+	if (adapter) {
+		const priorValues = await adapter.priors(state, candidates);
+		rootPriors = new Map(candidates.map((m, i) => [sortMoveKey(m), priorValues[i]]));
+	}
+	const root = makeNode(state, color, null, null, rootPriors);
+
 	for (let i = 0; i < simulations; i++) {
-		// 1. Selection – walk tree with UCB1
+		// 1. Selection
 		let node = root;
 		while (node.untriedMoves.length === 0 && node.children.length > 0) {
-			node = selectChild(node, c);
+			node = selectChild(node, c, usePuct);
 		}
 
-		// 2. Expansion – expand one untried move
+		// 2. Expansion
 		if (node.untriedMoves.length > 0) {
-			// Sort for determinism so tests are reproducible
 			const sorted = [...node.untriedMoves].sort((a, b) =>
 				sortMoveKey(a).localeCompare(sortMoveKey(b))
 			);
@@ -201,13 +229,29 @@ export function runMcts(
 				continue;
 			}
 			const nextActor = nextState.turn;
-			const child = makeNode(nextState, nextActor, move, node);
+
+			// Prime child priors from adapter if available
+			let childPriors: Map<string, number> | undefined;
+			if (adapter) {
+				const childMoves = legalMoves(nextState, nextActor);
+				if (childMoves.length > 0) {
+					const pv = await adapter.priors(nextState, childMoves);
+					childPriors = new Map(childMoves.map((m, idx) => [sortMoveKey(m), pv[idx]]));
+				}
+			}
+
+			const child = makeNode(nextState, nextActor, move, node, childPriors);
 			node.children.push(child);
 			node = child;
 		}
 
-		// 3. Rollout
-		const result = rollout(node.state, color);
+		// 3. Evaluation: value-head (adapter) or heuristic rollout
+		let result: number;
+		if (adapter) {
+			result = await adapter.value(node.state, color);
+		} else {
+			result = rollout(node.state, color);
+		}
 
 		// 4. Backpropagation
 		let current: MctsNode | null = node;
@@ -220,7 +264,6 @@ export function runMcts(
 
 	// Pick child of root with most visits
 	if (root.children.length === 0) {
-		// Fallback: no simulations ran, return first untried move sorted
 		const sorted = [...root.untriedMoves].sort((a, b) =>
 			sortMoveKey(a).localeCompare(sortMoveKey(b))
 		);

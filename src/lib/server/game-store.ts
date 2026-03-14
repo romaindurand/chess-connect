@@ -489,7 +489,7 @@ function applyResolvedMove(
 	}
 }
 
-function applyAiTurns(record: GameRecord): void {
+async function applyAiTurns(record: GameRecord): Promise<void> {
 	while (true) {
 		const aiColor = getAiColor(record.state);
 		if (
@@ -512,7 +512,7 @@ function applyAiTurns(record: GameRecord): void {
 			record.state.timeRemainingMs[aiColor] = remaining;
 		}
 
-		const move = chooseAiMove(record.state, aiColor);
+		const move = await chooseAiMove(record.state, aiColor);
 		if (!move) {
 			finalizeWinner(record, oppositeColor(aiColor), now);
 			return;
@@ -536,14 +536,14 @@ export function cookieName(gameId: string): string {
 	return `cc_player_${gameId}`;
 }
 
-export function createGame(
+export async function createGame(
 	creatorName: string,
 	options?: CreateGameOptions
-): {
+): Promise<{
 	state: GameState;
 	token: string;
 	color: Color | null;
-} {
+}> {
 	const store = getStore();
 	const gameId = randomUUID().slice(0, 8);
 	const { state } = createNewState(gameId, creatorName, options);
@@ -554,7 +554,7 @@ export function createGame(
 	});
 
 	const record = getGameOrThrow(gameId);
-	applyAiTurns(record);
+	await applyAiTurns(record);
 
 	const token = signPayload({
 		gameId,
@@ -573,18 +573,17 @@ export function getGameOrThrow(gameId: string): GameRecord {
 	return game;
 }
 
-function queueMutation<T>(gameId: string, mutation: () => T): Promise<T> {
+function queueMutation<T>(gameId: string, mutation: () => T | Promise<T>): Promise<T> {
 	const store = getStore();
-	const previous = store.queues.get(gameId) ?? Promise.resolve();
+	const previous = store.queues.get(gameId) ?? Promise.resolve<unknown>(undefined);
 
-	let resolveDone: () => void;
-	const completion = new Promise<void>((resolve) => {
-		resolveDone = resolve;
-	});
+	const result: Promise<T> = previous.then(() => mutation());
 
-	const queued = previous
-		.then(() => completion)
-		.catch(() => completion)
+	const queued = result
+		.then(
+			() => {},
+			() => {}
+		)
 		.finally(() => {
 			if (store.queues.get(gameId) === queued) {
 				store.queues.delete(gameId);
@@ -592,14 +591,7 @@ function queueMutation<T>(gameId: string, mutation: () => T): Promise<T> {
 		});
 
 	store.queues.set(gameId, queued);
-
-	return previous.then(() => {
-		try {
-			return mutation();
-		} finally {
-			resolveDone!();
-		}
-	});
+	return result;
 }
 
 export async function joinGame(
@@ -654,7 +646,7 @@ export async function playMove(
 		throw new Error('Session joueur invalide');
 	}
 
-	return queueMutation(gameId, () => {
+	return queueMutation(gameId, async () => {
 		const record = getGameOrThrow(gameId);
 		const now = Date.now();
 		if (applyTimeoutIfExpired(record, now)) {
@@ -679,7 +671,7 @@ export async function playMove(
 		}
 
 		applyResolvedMove(record, actorColor, move, now);
-		applyAiTurns(record);
+		await applyAiTurns(record);
 
 		emitSnapshot(record);
 		return record.state;
@@ -692,7 +684,7 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 		throw new Error('Session joueur invalide');
 	}
 
-	return queueMutation(gameId, () => {
+	return queueMutation(gameId, async () => {
 		const record = getGameOrThrow(gameId);
 		const state = record.state;
 		const actorColor = resolveActorColor(state, payload);
@@ -708,7 +700,7 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 		}
 		if (isAiGame(state)) {
 			record.state = createNextRoundState(state, true);
-			applyAiTurns(record);
+			await applyAiTurns(record);
 			emitSnapshot(record);
 			return record.state;
 		}

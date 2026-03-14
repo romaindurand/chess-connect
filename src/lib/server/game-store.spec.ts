@@ -12,8 +12,8 @@ import {
 } from './game-store';
 
 describe('game-store time control', () => {
-	it('creates a timed game with clocks initialized per player', () => {
-		const { state } = createGame('Alice', { timeLimitMinutes: 5 });
+	it('creates a timed game with clocks initialized per player', async () => {
+		const { state } = await createGame('Alice', { timeLimitMinutes: 5 });
 
 		expect(state.options.timeLimitMinutes).toBe(5);
 		expect(state.timeControlEnabled).toBe(true);
@@ -23,7 +23,7 @@ describe('game-store time control', () => {
 	});
 
 	it('starts the turn clock when the second player joins', async () => {
-		const { state } = createGame('Alice', { timeLimitMinutes: 3 });
+		const { state } = await createGame('Alice', { timeLimitMinutes: 3 });
 		await joinGame(state.id, 'Bob');
 		const record = getGameOrThrow(state.id);
 
@@ -32,7 +32,7 @@ describe('game-store time control', () => {
 	});
 
 	it('loses on time when current player has no time left before move validation', async () => {
-		const { state, token: hostToken } = createGame('Alice', { timeLimitMinutes: 1 });
+		const { state, token: hostToken } = await createGame('Alice', { timeLimitMinutes: 1 });
 		const joinResult = await joinGame(state.id, 'Bob');
 		const record = getGameOrThrow(state.id);
 
@@ -60,7 +60,7 @@ describe('game-store time control', () => {
 	});
 
 	it('alternates colors between players on each accepted rematch', async () => {
-		const { state, token: hostToken } = createGame('Alice');
+		const { state, token: hostToken } = await createGame('Alice');
 		const joinResult = await joinGame(state.id, 'Bob');
 		const playerToken = joinResult.token;
 		const record = getGameOrThrow(state.id);
@@ -98,7 +98,7 @@ describe('game-store time control', () => {
 	});
 
 	it('allows winner to request a rematch', async () => {
-		const { state, token: hostToken } = createGame('Alice');
+		const { state, token: hostToken } = await createGame('Alice');
 		const joinResult = await joinGame(state.id, 'Bob');
 		const playerToken = joinResult.token;
 		const record = getGameOrThrow(state.id);
@@ -123,7 +123,7 @@ describe('game-store time control', () => {
 	});
 
 	it('auto-resets the round on third repeated position without changing score', async () => {
-		const { state, token: hostToken } = createGame('Alice');
+		const { state, token: hostToken } = await createGame('Alice');
 		const joinResult = await joinGame(state.id, 'Bob');
 		const record = getGameOrThrow(state.id);
 
@@ -242,8 +242,8 @@ describe('game-store time control', () => {
 		expect(record.state.board.flat().every((cell) => cell === null)).toBe(true);
 	});
 
-	it('starts an AI game immediately and lets the AI open when the host chooses black', () => {
-		const { state } = createGame('Alice', {
+	it('starts an AI game immediately and lets the AI open when the host chooses black', async () => {
+		const { state } = await createGame('Alice', {
 			opponentType: 'ai',
 			hostColor: 'black'
 		});
@@ -261,7 +261,7 @@ describe('game-store time control', () => {
 	});
 
 	it('answers automatically after a human move in an AI game', async () => {
-		const { state, token } = createGame('Alice', {
+		const { state, token } = await createGame('Alice', {
 			opponentType: 'ai',
 			hostColor: 'white'
 		});

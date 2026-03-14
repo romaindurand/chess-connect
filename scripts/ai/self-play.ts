@@ -15,7 +15,7 @@ function readNumberArg(name: string, fallback: number): number {
 const games = readNumberArg('games', 32);
 const maxPlies = readNumberArg('max-plies', 64);
 const outFile = resolve('artifacts/ai/self-play.json');
-const report = runSelfPlayBatch({ games, maxPlies });
+const report = await runSelfPlayBatch({ games, maxPlies });
 
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, JSON.stringify(report, null, 2));

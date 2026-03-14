@@ -62,7 +62,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	try {
 		const payload = parseCreatePayload(await request.json());
-		const { state, token, color } = createGame(payload.name, {
+		const { state, token, color } = await createGame(payload.name, {
 			timeLimitMinutes: payload.timeLimitMinutes,
 			opponentType: payload.opponentType,
 			hostColor: payload.hostColor,
