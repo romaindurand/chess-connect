@@ -3,6 +3,7 @@ import { createHmac, randomUUID } from 'node:crypto';
 import { applyPlayerMove, createInitialBoard, getLegalOptionsForColor } from './game-engine';
 import { chooseAiMove } from './ai/agent';
 import { AI_PLAYER_NAME } from './ai/config';
+import { ModelManager } from './ai/model';
 import {
 	DEFAULT_GAME_OPTIONS,
 	makeEmptyReserve,
@@ -512,7 +513,8 @@ async function applyAiTurns(record: GameRecord): Promise<void> {
 			record.state.timeRemainingMs[aiColor] = remaining;
 		}
 
-		const move = await chooseAiMove(record.state, aiColor);
+		const adapter = ModelManager.getAdapter() ?? undefined;
+		const move = await chooseAiMove(record.state, aiColor, { modelAdapter: adapter });
 		if (!move) {
 			finalizeWinner(record, oppositeColor(aiColor), now);
 			return;
