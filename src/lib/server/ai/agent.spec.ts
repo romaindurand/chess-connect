@@ -5,7 +5,7 @@ import { makeEmptyReserve, type Color, type GameState } from '$lib/types/game';
 
 import { chooseAiMove } from './agent';
 import { encodeState } from './encoder';
-import { runMcts, type ModelAdapter } from './mcts';
+import { runMcts, type ModelAdapter, type MctsResult } from './mcts';
 
 function makeActiveState(turn: Color = 'white'): GameState {
 	const now = Date.now();
@@ -68,10 +68,11 @@ describe('encoder', () => {
 describe('mcts', () => {
 	it('returns a valid move from the initial position', async () => {
 		const state = makeActiveState('white');
-		const move = await runMcts(state, 'white', { simulations: 20 });
+		const result = await runMcts(state, 'white', { simulations: 20 });
 
-		expect(move).not.toBeNull();
-		expect(move?.kind).toBe('place');
+		expect(result.move).not.toBeNull();
+		expect(result.move?.kind).toBe('place');
+		expect(result.distribution).toHaveLength(320);
 	});
 
 	it('detects a winning move when available', async () => {
@@ -86,10 +87,10 @@ describe('mcts', () => {
 		state.reserves.white.knight = false;
 		state.reserves.white.bishop = false;
 
-		const move = await runMcts(state, 'white', { simulations: 50 });
+		const result = await runMcts(state, 'white', { simulations: 50 });
 
-		expect(move).not.toBeNull();
-		const after = applyPlayerMove(state, 'white', move!);
+		expect(result.move).not.toBeNull();
+		const after = applyPlayerMove(state, 'white', result.move!);
 		expect(after.winner).toBe('white');
 	});
 
@@ -99,8 +100,8 @@ describe('mcts', () => {
 			priors: async (_s, moves) => moves.map(() => 1 / moves.length),
 			value: async (_s, _color) => 0.9
 		};
-		const move = await runMcts(state, 'white', { simulations: 10, modelAdapter: mockAdapter });
-		expect(move).not.toBeNull();
+		const result = await runMcts(state, 'white', { simulations: 10, modelAdapter: mockAdapter });
+		expect(result.move).not.toBeNull();
 	});
 });
 

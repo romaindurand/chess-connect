@@ -8,6 +8,8 @@ import {
 	type PlayerMove
 } from '$lib/types/game';
 
+import { moveToIndex, MOVE_SPACE_SIZE } from './move-index';
+
 export interface ModelAdapter {
 	/** Returns prior probabilities for each legal move (must sum to ~1). */
 	priors(state: GameState, moves: PlayerMove[]): Promise<number[]>;
@@ -22,6 +24,14 @@ export interface MctsOptions {
 	explorationConstant?: number;
 	/** When provided, uses PUCT selection and value-head leaf evaluation. */
 	modelAdapter?: ModelAdapter;
+}
+
+/** Result returned by runMcts, including the visit distribution for training. */
+export interface MctsResult {
+	/** Best move chosen, or null if no legal moves exist. */
+	move: PlayerMove | null;
+	/** Normalised visit distribution over all 320 action indices. */
+	distribution: Float32Array;
 }
 
 interface MctsNode {
@@ -180,7 +190,7 @@ export async function runMcts(
 	state: GameState,
 	color: Color,
 	options: MctsOptions = {}
-): Promise<PlayerMove | null> {
+): Promise<MctsResult> {
 	const simulations = options.simulations ?? 100;
 	const c = options.explorationConstant ?? Math.SQRT2;
 	const adapter = options.modelAdapter;
@@ -188,12 +198,13 @@ export async function runMcts(
 
 	// Fast path: return an immediate winning move without running simulations.
 	const candidates = legalMoves(state, color);
-	if (candidates.length === 0) return null;
+	if (candidates.length === 0)
+		return { move: null, distribution: new Float32Array(MOVE_SPACE_SIZE) };
 
 	for (const move of candidates) {
 		try {
 			const after = applyPlayerMove(state, color, move);
-			if (after.winner === color) return move;
+			if (after.winner === color) return { move, distribution: buildSingletonDist(move) };
 		} catch {
 			// illegal – skip
 		}
@@ -267,9 +278,39 @@ export async function runMcts(
 		const sorted = [...root.untriedMoves].sort((a, b) =>
 			sortMoveKey(a).localeCompare(sortMoveKey(b))
 		);
-		return sorted[0] ?? null;
+		const move = sorted[0] ?? null;
+		return {
+			move,
+			distribution: move ? buildSingletonDist(move) : new Float32Array(MOVE_SPACE_SIZE)
+		};
 	}
 
 	const best = root.children.reduce((acc, child) => (child.visits > acc.visits ? child : acc));
-	return best.move;
+	const distribution = buildVisitDist(root.children);
+	return { move: best.move, distribution };
+}
+
+function buildSingletonDist(move: PlayerMove): Float32Array {
+	const dist = new Float32Array(MOVE_SPACE_SIZE);
+	const idx = moveToIndex(move);
+	if (idx >= 0 && idx < MOVE_SPACE_SIZE) dist[idx] = 1;
+	return dist;
+}
+
+function buildVisitDist(children: MctsNode[]): Float32Array {
+	const dist = new Float32Array(MOVE_SPACE_SIZE);
+	let total = 0;
+	for (const child of children) {
+		if (child.move) {
+			const idx = moveToIndex(child.move);
+			if (idx >= 0 && idx < MOVE_SPACE_SIZE) {
+				dist[idx] = child.visits;
+				total += child.visits;
+			}
+		}
+	}
+	if (total > 0) {
+		for (let i = 0; i < dist.length; i++) dist[i] /= total;
+	}
+	return dist;
 }

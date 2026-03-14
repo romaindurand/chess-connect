@@ -10,5 +10,6 @@ export async function chooseAiMove(
 	color: Color,
 	mctsOptions?: MctsOptions
 ): Promise<PlayerMove | null> {
-	return runMcts(state, color, { simulations: DEFAULT_SIMULATIONS, ...mctsOptions });
+	const result = await runMcts(state, color, { simulations: DEFAULT_SIMULATIONS, ...mctsOptions });
+	return result.move;
 }

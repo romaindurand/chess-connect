@@ -9,6 +9,9 @@ import {
 
 import { DEFAULT_AI_DIFFICULTY } from './config';
 import { chooseAiMove } from './agent';
+import { encodeState, ENCODING_SIZE } from './encoder';
+import { runMcts } from './mcts';
+import { MOVE_SPACE_SIZE } from './move-index';
 
 export interface SelfPlayGameResult {
 	winner: Color | null;
@@ -26,7 +29,17 @@ export interface SelfPlayBatchSummary {
 
 export interface SelfPlayBatchReport {
 	games: SelfPlayGameResult[];
+	samples: TrainingSample[];
 	summary: SelfPlayBatchSummary;
+}
+
+export interface TrainingSample {
+	/** ENCODING_SIZE floats — encoded board state */
+	encoded: number[];
+	/** MOVE_SPACE_SIZE floats — normalised visit distribution from MCTS root */
+	mctsDistribution: number[];
+	/** +1 if white wins, -1 if black wins, 0 draw */
+	outcome: number;
 }
 
 export interface TrainingArtifact {
@@ -87,30 +100,56 @@ function createSelfPlayState(): GameState {
 /** Reduced simulation budget used during self-play to keep generation fast. */
 const SELF_PLAY_SIMULATIONS = 20;
 
-async function playSelfPlayGame(maxPlies: number): Promise<SelfPlayGameResult> {
+interface PendingSample {
+	encoded: number[];
+	mctsDistribution: number[];
+	actorColor: Color;
+}
+
+async function playSelfPlayGame(
+	maxPlies: number
+): Promise<{ result: SelfPlayGameResult; samples: TrainingSample[] }> {
 	let state = createSelfPlayState();
 	const moves: string[] = [];
+	const pending: PendingSample[] = [];
 
 	while (state.status === 'active' && state.pliesPlayed < maxPlies) {
 		const actor = state.turn;
-		const move = await chooseAiMove(state, actor, { simulations: SELF_PLAY_SIMULATIONS });
+		const encoded = Array.from(encodeState(state, actor));
+		const mctsResult = await runMcts(state, actor, { simulations: SELF_PLAY_SIMULATIONS });
+		const move = mctsResult.move;
 		if (!move) {
-			return {
-				winner: actor === 'white' ? 'black' : 'white',
+			const result = {
+				winner: actor === 'white' ? ('black' as Color) : ('white' as Color),
 				pliesPlayed: state.pliesPlayed,
 				moves
 			};
+			return { result, samples: finalizeSamples(pending, result.winner) };
 		}
 
+		pending.push({
+			encoded,
+			mctsDistribution: Array.from(mctsResult.distribution),
+			actorColor: actor
+		});
 		moves.push(serializeMove(move));
 		state = applyPlayerMove(state, actor, move);
 	}
 
-	return {
+	const result = {
 		winner: state.winner,
 		pliesPlayed: state.pliesPlayed,
 		moves
 	};
+	return { result, samples: finalizeSamples(pending, state.winner) };
+}
+
+function finalizeSamples(pending: PendingSample[], winner: Color | null): TrainingSample[] {
+	return pending.map((p) => ({
+		encoded: p.encoded,
+		mctsDistribution: p.mctsDistribution,
+		outcome: winner === null ? 0 : winner === p.actorColor ? 1 : -1
+	}));
 }
 
 export async function runSelfPlayBatch(options?: {
@@ -119,9 +158,11 @@ export async function runSelfPlayBatch(options?: {
 }): Promise<SelfPlayBatchReport> {
 	const totalGames = options?.games ?? 8;
 	const maxPlies = options?.maxPlies ?? 64;
-	const games = await Promise.all(
+	const results = await Promise.all(
 		Array.from({ length: totalGames }, () => playSelfPlayGame(maxPlies))
 	);
+	const games = results.map((r) => r.result);
+	const samples = results.flatMap((r) => r.samples);
 	const whiteWins = games.filter((game) => game.winner === 'white').length;
 	const blackWins = games.filter((game) => game.winner === 'black').length;
 	const draws = games.filter((game) => game.winner === null).length;
@@ -129,6 +170,7 @@ export async function runSelfPlayBatch(options?: {
 
 	return {
 		games,
+		samples,
 		summary: {
 			totalGames,
 			whiteWins,
