@@ -11,9 +11,7 @@ export function moveToIndex(move: PlayerMove): number {
 	}
 	const fromIdx = move.from.y * BOARD_SIZE + move.from.x;
 	const toIdx = move.to.y * BOARD_SIZE + move.to.x;
-	return (
-		PIECES.length * BOARD_SIZE * BOARD_SIZE + fromIdx * BOARD_SIZE * BOARD_SIZE + toIdx
-	);
+	return PIECES.length * BOARD_SIZE * BOARD_SIZE + fromIdx * BOARD_SIZE * BOARD_SIZE + toIdx;
 }
 
 export function indexToMove(idx: number): PlayerMove {

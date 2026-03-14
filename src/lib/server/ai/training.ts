@@ -8,10 +8,8 @@ import {
 } from '$lib/types/game';
 
 import { DEFAULT_AI_DIFFICULTY } from './config';
-import { chooseAiMove } from './agent';
-import { encodeState, ENCODING_SIZE } from './encoder';
+import { encodeState } from './encoder';
 import { runMcts } from './mcts';
-import { MOVE_SPACE_SIZE } from './move-index';
 
 export interface SelfPlayGameResult {
 	winner: Color | null;

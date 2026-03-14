@@ -25,19 +25,30 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 
 Sur la page d'accueil, sélectionner **"Contre l'IA"** puis choisir la couleur souhaitée (Blanc / Noir / Aléatoire) avant de créer la partie.
 
-Le moteur IA utilise MCTS (Monte-Carlo Tree Search, 100 simulations par coup) avec un fast-path de détection de coup gagnant immédiat.
+Le moteur IA utilise MCTS (Monte-Carlo Tree Search) guidé par un réseau conv-résiduel (style AlphaZero-lite) chargé depuis un checkpoint TensorFlow.js au démarrage du serveur.  
+Sans checkpoint, le serveur refuse de démarrer — voir section *Entraînement* ci-dessous.
 
-### Scripts d'entraînement
+### Entraînement
+
+Le pipeline complet fonctionne en trois étapes :
 
 ```bash
-# Générer des parties d'auto-jeu et écrire un artefact JSON
+# 1. Générer des parties d'auto-jeu → artifacts/ai/self-play.json
 pnpm ai:self-play [-- --games=20 --max-plies=200]
 
-# Lire un artefact existant et lancer une passe d'entraînement
-pnpm ai:train [-- --input=artifacts/ai/artifact.json --output=artifacts/ai/trained.json]
+# 2. Entraîner le réseau sur les parties générées → checkpoints/model/
+pnpm ai:train-network [-- --input=artifacts/ai/self-play.json --output=checkpoints/model]
 
-# Enchaîner auto-jeu + entraînement en boucle
+# 3. (ou) Enchaîner auto-jeu + entraînement statistique en boucle (heuristique sans réseau)
 pnpm ai:auto-train [-- --games=20 --max-plies=200]
 ```
 
-Les artefacts sont écrits dans `artifacts/ai/`. L'architecture est conçue pour être étendue vers un réseau de valeur/politique (style AlphaZero) via TensorFlow.js.
+Le checkpoint TF.js est lu depuis `checkpoints/model/` par défaut.  
+Pour pointer vers un autre emplacement, définir la variable d'environnement :
+
+```env
+AI_CHECKPOINT_PATH=checkpoints/model
+```
+
+Les artefacts de self-play sont écrits dans `artifacts/ai/` (ignorés par git).  
+Le dossier `checkpoints/model/` est également ignoré par git — il doit être généré localement ou fourni séparément.

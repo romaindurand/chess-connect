@@ -5,6 +5,7 @@
 **Goal:** Intégrer TensorFlow.js pour remplacer les rollouts heuristiques du MCTS par un réseau conv-résiduel léger (tête politique + tête valeur), avec un pipeline offline self-play → entraînement → checkpoint, et un `ModelManager` utilisé au démarrage du serveur.
 
 **Architecture:**
+
 - Le MCTS accepte un `ModelAdapter` optionnel ; sans lui, il reste identique à l'actuel (rollout heuristique). Avec lui, il utilise PUCT au lieu d'UCB1 et remplace le rollout par la tête valeur.
 - Un `TfjsModelAdapter` concret wrap un modèle TF.js chargé depuis `checkpoints/model/`.
 - Le serveur démarre en important `src/hooks.server.ts` qui charge le checkpoint ; si absent, il lève une erreur fatale.
@@ -17,11 +18,13 @@
 
 ### Task 1 : Indexation des coups (`move-index.ts`)
 
-**Contexte :** Le réseau émet 320 logits. Il faut un mapping bijectif stable `PlayerMove ↔ [0, 319]`.  
+**Contexte :** Le réseau émet 320 logits. Il faut un mapping bijectif stable `PlayerMove ↔ [0, 319]`.
+
 - Indices 0–63 : `place:pawn|rook|knight|bishop × 16 cases` (4 pieces × 16 cells, row-major)
 - Indices 64–319 : `move:from×to` → les 256 paires (16×16), order row-major sur `from` puis `to`
 
 **Files:**
+
 - Create: `src/lib/server/ai/move-index.ts`
 - Test: `src/lib/server/ai/move-index.spec.ts`
 
@@ -32,28 +35,28 @@ import { moveToIndex, indexToMove, MOVE_SPACE_SIZE } from './move-index';
 import { describe, it, expect } from 'vitest';
 
 describe('move-index', () => {
-  it('MOVE_SPACE_SIZE is 320', () => {
-    expect(MOVE_SPACE_SIZE).toBe(320);
-  });
+	it('MOVE_SPACE_SIZE is 320', () => {
+		expect(MOVE_SPACE_SIZE).toBe(320);
+	});
 
-  it('place move round-trips', () => {
-    const m = { kind: 'place' as const, piece: 'rook' as const, to: { x: 2, y: 3 } };
-    expect(indexToMove(moveToIndex(m))).toEqual(m);
-  });
+	it('place move round-trips', () => {
+		const m = { kind: 'place' as const, piece: 'rook' as const, to: { x: 2, y: 3 } };
+		expect(indexToMove(moveToIndex(m))).toEqual(m);
+	});
 
-  it('move move round-trips', () => {
-    const m = { kind: 'move' as const, from: { x: 0, y: 0 }, to: { x: 3, y: 3 } };
-    expect(indexToMove(moveToIndex(m))).toEqual(m);
-  });
+	it('move move round-trips', () => {
+		const m = { kind: 'move' as const, from: { x: 0, y: 0 }, to: { x: 3, y: 3 } };
+		expect(indexToMove(moveToIndex(m))).toEqual(m);
+	});
 
-  it('all 320 indices decode to unique moves', () => {
-    const seen = new Set<string>();
-    for (let i = 0; i < MOVE_SPACE_SIZE; i++) {
-      const key = JSON.stringify(indexToMove(i));
-      expect(seen.has(key)).toBe(false);
-      seen.add(key);
-    }
-  });
+	it('all 320 indices decode to unique moves', () => {
+		const seen = new Set<string>();
+		for (let i = 0; i < MOVE_SPACE_SIZE; i++) {
+			const key = JSON.stringify(indexToMove(i));
+			expect(seen.has(key)).toBe(false);
+			seen.add(key);
+		}
+	});
 });
 ```
 
@@ -62,6 +65,7 @@ describe('move-index', () => {
 ```
 pnpm test -- --run src/lib/server/ai/move-index.spec.ts
 ```
+
 Attendu : FAIL (module introuvable).
 
 **Step 3 : Implémenter `move-index.ts`**
@@ -69,34 +73,39 @@ Attendu : FAIL (module introuvable).
 ```ts
 import { BOARD_SIZE, PIECES, type PieceType, type PlayerMove } from '$lib/types/game';
 
-export const MOVE_SPACE_SIZE = PIECES.length * BOARD_SIZE * BOARD_SIZE + (BOARD_SIZE * BOARD_SIZE) ** 2;
+export const MOVE_SPACE_SIZE =
+	PIECES.length * BOARD_SIZE * BOARD_SIZE + (BOARD_SIZE * BOARD_SIZE) ** 2;
 // 4 * 16 + 256 = 320
 
 export function moveToIndex(move: PlayerMove): number {
-  if (move.kind === 'place') {
-    const pieceIdx = PIECES.indexOf(move.piece as PieceType);
-    return pieceIdx * BOARD_SIZE * BOARD_SIZE + move.to.y * BOARD_SIZE + move.to.x;
-  }
-  const fromIdx = move.from.y * BOARD_SIZE + move.from.x;
-  const toIdx = move.to.y * BOARD_SIZE + move.to.x;
-  return PIECES.length * BOARD_SIZE * BOARD_SIZE + fromIdx * BOARD_SIZE * BOARD_SIZE + toIdx;
+	if (move.kind === 'place') {
+		const pieceIdx = PIECES.indexOf(move.piece as PieceType);
+		return pieceIdx * BOARD_SIZE * BOARD_SIZE + move.to.y * BOARD_SIZE + move.to.x;
+	}
+	const fromIdx = move.from.y * BOARD_SIZE + move.from.x;
+	const toIdx = move.to.y * BOARD_SIZE + move.to.x;
+	return PIECES.length * BOARD_SIZE * BOARD_SIZE + fromIdx * BOARD_SIZE * BOARD_SIZE + toIdx;
 }
 
 export function indexToMove(idx: number): PlayerMove {
-  const placeCount = PIECES.length * BOARD_SIZE * BOARD_SIZE;
-  if (idx < placeCount) {
-    const pieceIdx = Math.floor(idx / (BOARD_SIZE * BOARD_SIZE));
-    const cell = idx % (BOARD_SIZE * BOARD_SIZE);
-    return { kind: 'place', piece: PIECES[pieceIdx], to: { x: cell % BOARD_SIZE, y: Math.floor(cell / BOARD_SIZE) } };
-  }
-  const rem = idx - placeCount;
-  const fromIdx = Math.floor(rem / (BOARD_SIZE * BOARD_SIZE));
-  const toIdx = rem % (BOARD_SIZE * BOARD_SIZE);
-  return {
-    kind: 'move',
-    from: { x: fromIdx % BOARD_SIZE, y: Math.floor(fromIdx / BOARD_SIZE) },
-    to:   { x: toIdx  % BOARD_SIZE, y: Math.floor(toIdx   / BOARD_SIZE) }
-  };
+	const placeCount = PIECES.length * BOARD_SIZE * BOARD_SIZE;
+	if (idx < placeCount) {
+		const pieceIdx = Math.floor(idx / (BOARD_SIZE * BOARD_SIZE));
+		const cell = idx % (BOARD_SIZE * BOARD_SIZE);
+		return {
+			kind: 'place',
+			piece: PIECES[pieceIdx],
+			to: { x: cell % BOARD_SIZE, y: Math.floor(cell / BOARD_SIZE) }
+		};
+	}
+	const rem = idx - placeCount;
+	const fromIdx = Math.floor(rem / (BOARD_SIZE * BOARD_SIZE));
+	const toIdx = rem % (BOARD_SIZE * BOARD_SIZE);
+	return {
+		kind: 'move',
+		from: { x: fromIdx % BOARD_SIZE, y: Math.floor(fromIdx / BOARD_SIZE) },
+		to: { x: toIdx % BOARD_SIZE, y: Math.floor(toIdx / BOARD_SIZE) }
+	};
 }
 ```
 
@@ -120,12 +129,14 @@ git commit -m "feat(ai): move-index — bijective PlayerMove <-> int mapping (32
 **Contexte :** `mcts.ts` doit accepter un `ModelAdapter` optionnel. Sans lui : comportement UCB1 + rollout heuristique inchangé. Avec lui : PUCT + évaluation feuille par la tête valeur (le rollout est remplacé).
 
 Les formules changent :
+
 - Score UCB1 actuel : $Q + c\sqrt{\ln N_p / N}$
 - Score PUCT : $Q + c_{puct} \cdot P \cdot \sqrt{N_p} / (1 + N)$
 
 où $P$ est le prior de la politique. Les priors sont initialisés à `1/n_moves` si pas d'adapter.
 
 **Files:**
+
 - Modify: `src/lib/server/ai/mcts.ts`
 - Test: `src/lib/server/ai/agent.spec.ts` (ajouter un cas avec mock adapter)
 
@@ -137,13 +148,13 @@ Dans `agent.spec.ts`, ajouter :
 import { runMcts, type ModelAdapter } from './mcts';
 
 it('mcts uses model adapter value head instead of rollout', async () => {
-  const state = createTestState(); // état de début existant dans le fichier
-  const mockAdapter: ModelAdapter = {
-    priors: async (_s, moves) => moves.map(() => 1 / moves.length),
-    value: async (_s, _color) => 0.9 // faveur massive pour le joueur courant
-  };
-  const move = await runMcts(state, 'white', { simulations: 10, modelAdapter: mockAdapter });
-  expect(move).not.toBeNull();
+	const state = createTestState(); // état de début existant dans le fichier
+	const mockAdapter: ModelAdapter = {
+		priors: async (_s, moves) => moves.map(() => 1 / moves.length),
+		value: async (_s, _color) => 0.9 // faveur massive pour le joueur courant
+	};
+	const move = await runMcts(state, 'white', { simulations: 10, modelAdapter: mockAdapter });
+	expect(move).not.toBeNull();
 });
 ```
 
@@ -152,6 +163,7 @@ it('mcts uses model adapter value head instead of rollout', async () => {
 ```
 pnpm test -- --run src/lib/server/ai/agent.spec.ts
 ```
+
 Attendu : FAIL (type `ModelAdapter` inexistant, `runMcts` pas async).
 
 **Step 3 : Modifier `mcts.ts`**
@@ -160,8 +172,8 @@ Attendu : FAIL (type `ModelAdapter` inexistant, `runMcts` pas async).
 
 ```ts
 export interface ModelAdapter {
-  priors(state: GameState, moves: PlayerMove[]): Promise<number[]>;
-  value(state: GameState, color: Color): Promise<number>;
+	priors(state: GameState, moves: PlayerMove[]): Promise<number[]>;
+	value(state: GameState, color: Color): Promise<number>;
 }
 ```
 
@@ -209,15 +221,17 @@ git commit -m "feat(ai): ModelAdapter interface + PUCT in MCTS, async chooseAiMo
 **Contexte :** `model.ts` contient la définition du réseau conv-résiduel léger, le `TfjsModelAdapter` concret, et le `ModelManager` singleton qui charge le checkpoint depuis le disque.
 
 **Architecture du réseau :**
+
 - Input spatial : `[batch, 4, 4, 10]` (reshape des 160 premières features de l'encoder)
-- Input global  : `[batch, 10]` (les 10 features restantes)
+- Input global : `[batch, 10]` (les 10 features restantes)
 - Corps : `Conv2D(32, 3×3, padding='same') → BN → ReLU → ResBlock × 2 → Flatten → concat(global) → Dense(64) → ReLU`
 - Tête politique : `Dense(320) → softmax`
-- Tête valeur    : `Dense(1) → tanh`
+- Tête valeur : `Dense(1) → tanh`
 
 Le checkpoint TF.js est sauvegardé dans `checkpoints/model/` (fichiers `model.json` + binaires TF.js standard).
 
 **Files:**
+
 - Create: `src/lib/server/ai/model.ts`
 - Create: `src/lib/server/ai/model.spec.ts`
 
@@ -230,35 +244,33 @@ import { createInitialBoard } from '$lib/server/game-engine';
 import { makeEmptyReserve } from '$lib/types/game';
 
 describe('model', () => {
-  it('buildModel returns a LayersModel with two outputs', () => {
-    const model = buildModel();
-    expect(model.outputs).toHaveLength(2);
-  });
+	it('buildModel returns a LayersModel with two outputs', () => {
+		const model = buildModel();
+		expect(model.outputs).toHaveLength(2);
+	});
 
-  it('TfjsModelAdapter.priors returns array of correct length', async () => {
-    const model = buildModel();
-    const adapter = new TfjsModelAdapter(model);
-    const state = makeTestState();  // helper identique aux autres spec
-    const moves = [
-      { kind: 'place' as const, piece: 'pawn' as const, to: { x: 0, y: 0 } }
-    ];
-    const priors = await adapter.priors(state, moves);
-    expect(priors).toHaveLength(1);
-    expect(priors[0]).toBeGreaterThan(0);
-  });
+	it('TfjsModelAdapter.priors returns array of correct length', async () => {
+		const model = buildModel();
+		const adapter = new TfjsModelAdapter(model);
+		const state = makeTestState(); // helper identique aux autres spec
+		const moves = [{ kind: 'place' as const, piece: 'pawn' as const, to: { x: 0, y: 0 } }];
+		const priors = await adapter.priors(state, moves);
+		expect(priors).toHaveLength(1);
+		expect(priors[0]).toBeGreaterThan(0);
+	});
 
-  it('TfjsModelAdapter.value returns number in [-1, 1]', async () => {
-    const model = buildModel();
-    const adapter = new TfjsModelAdapter(model);
-    const state = makeTestState();
-    const v = await adapter.value(state, 'white');
-    expect(v).toBeGreaterThanOrEqual(-1);
-    expect(v).toBeLessThanOrEqual(1);
-  });
+	it('TfjsModelAdapter.value returns number in [-1, 1]', async () => {
+		const model = buildModel();
+		const adapter = new TfjsModelAdapter(model);
+		const state = makeTestState();
+		const v = await adapter.value(state, 'white');
+		expect(v).toBeGreaterThanOrEqual(-1);
+		expect(v).toBeLessThanOrEqual(1);
+	});
 
-  it('ModelManager.getAdapter returns null before load', () => {
-    expect(ModelManager.getAdapter()).toBeNull();
-  });
+	it('ModelManager.getAdapter returns null before load', () => {
+		expect(ModelManager.getAdapter()).toBeNull();
+	});
 });
 ```
 
@@ -269,6 +281,7 @@ Note : `makeTestState()` peut être extrait dans `src/lib/server/ai/test-helpers
 ```
 pnpm test -- --run src/lib/server/ai/model.spec.ts
 ```
+
 Attendu : FAIL (module introuvable / `@tensorflow/tfjs-node` absent).
 
 **Step 3 : Installer la dépendance**
@@ -289,88 +302,105 @@ import type { ModelAdapter } from './mcts';
 const SPATIAL_CHANNELS = 10;
 const BOARD_SIZE = 4;
 const SPATIAL_SIZE = BOARD_SIZE * BOARD_SIZE * SPATIAL_CHANNELS; // 160
-const GLOBAL_SIZE = ENCODING_SIZE - SPATIAL_SIZE;                 // 10
+const GLOBAL_SIZE = ENCODING_SIZE - SPATIAL_SIZE; // 10
 
 function residualBlock(x: tf.SymbolicTensor, filters: number): tf.SymbolicTensor {
-  const shortcut = x;
-  let out = tf.layers.conv2d({ filters, kernelSize: 3, padding: 'same', useBias: false }).apply(x) as tf.SymbolicTensor;
-  out = tf.layers.batchNormalization().apply(out) as tf.SymbolicTensor;
-  out = tf.layers.reLU().apply(out) as tf.SymbolicTensor;
-  out = tf.layers.conv2d({ filters, kernelSize: 3, padding: 'same', useBias: false }).apply(out) as tf.SymbolicTensor;
-  out = tf.layers.batchNormalization().apply(out) as tf.SymbolicTensor;
-  out = tf.layers.add().apply([out, shortcut]) as tf.SymbolicTensor;
-  return tf.layers.reLU().apply(out) as tf.SymbolicTensor;
+	const shortcut = x;
+	let out = tf.layers
+		.conv2d({ filters, kernelSize: 3, padding: 'same', useBias: false })
+		.apply(x) as tf.SymbolicTensor;
+	out = tf.layers.batchNormalization().apply(out) as tf.SymbolicTensor;
+	out = tf.layers.reLU().apply(out) as tf.SymbolicTensor;
+	out = tf.layers
+		.conv2d({ filters, kernelSize: 3, padding: 'same', useBias: false })
+		.apply(out) as tf.SymbolicTensor;
+	out = tf.layers.batchNormalization().apply(out) as tf.SymbolicTensor;
+	out = tf.layers.add().apply([out, shortcut]) as tf.SymbolicTensor;
+	return tf.layers.reLU().apply(out) as tf.SymbolicTensor;
 }
 
 export function buildModel(): tf.LayersModel {
-  const spatialInput = tf.input({ shape: [BOARD_SIZE, BOARD_SIZE, SPATIAL_CHANNELS] });
-  const globalInput  = tf.input({ shape: [GLOBAL_SIZE] });
+	const spatialInput = tf.input({ shape: [BOARD_SIZE, BOARD_SIZE, SPATIAL_CHANNELS] });
+	const globalInput = tf.input({ shape: [GLOBAL_SIZE] });
 
-  let x = tf.layers.conv2d({ filters: 32, kernelSize: 3, padding: 'same', useBias: false }).apply(spatialInput) as tf.SymbolicTensor;
-  x = tf.layers.batchNormalization().apply(x) as tf.SymbolicTensor;
-  x = tf.layers.reLU().apply(x) as tf.SymbolicTensor;
-  x = residualBlock(x, 32);
-  x = residualBlock(x, 32);
-  const flat = tf.layers.flatten().apply(x) as tf.SymbolicTensor;
-  const combined = tf.layers.concatenate().apply([flat, globalInput]) as tf.SymbolicTensor;
-  const trunk = tf.layers.dense({ units: 64, activation: 'relu' }).apply(combined) as tf.SymbolicTensor;
+	let x = tf.layers
+		.conv2d({ filters: 32, kernelSize: 3, padding: 'same', useBias: false })
+		.apply(spatialInput) as tf.SymbolicTensor;
+	x = tf.layers.batchNormalization().apply(x) as tf.SymbolicTensor;
+	x = tf.layers.reLU().apply(x) as tf.SymbolicTensor;
+	x = residualBlock(x, 32);
+	x = residualBlock(x, 32);
+	const flat = tf.layers.flatten().apply(x) as tf.SymbolicTensor;
+	const combined = tf.layers.concatenate().apply([flat, globalInput]) as tf.SymbolicTensor;
+	const trunk = tf.layers
+		.dense({ units: 64, activation: 'relu' })
+		.apply(combined) as tf.SymbolicTensor;
 
-  const policy = tf.layers.dense({ units: MOVE_SPACE_SIZE, activation: 'softmax', name: 'policy' }).apply(trunk) as tf.SymbolicTensor;
-  const value  = tf.layers.dense({ units: 1, activation: 'tanh', name: 'value' }).apply(trunk) as tf.SymbolicTensor;
+	const policy = tf.layers
+		.dense({ units: MOVE_SPACE_SIZE, activation: 'softmax', name: 'policy' })
+		.apply(trunk) as tf.SymbolicTensor;
+	const value = tf.layers
+		.dense({ units: 1, activation: 'tanh', name: 'value' })
+		.apply(trunk) as tf.SymbolicTensor;
 
-  return tf.model({ inputs: [spatialInput, globalInput], outputs: [policy, value] });
+	return tf.model({ inputs: [spatialInput, globalInput], outputs: [policy, value] });
 }
 
 export class TfjsModelAdapter implements ModelAdapter {
-  constructor(private readonly model: tf.LayersModel) {}
+	constructor(private readonly model: tf.LayersModel) {}
 
-  async priors(state: GameState, moves: PlayerMove[]): Promise<number[]> {
-    const [policyTensor] = this.runInference(state);
-    const policyData = await policyTensor.data() as Float32Array;
-    policyTensor.dispose();
-    const indices = moves.map(moveToIndex);
-    const raw = indices.map((i) => policyData[i]);
-    const sum = raw.reduce((a, b) => a + b, 1e-8);
-    return raw.map((v) => v / sum);
-  }
+	async priors(state: GameState, moves: PlayerMove[]): Promise<number[]> {
+		const [policyTensor] = this.runInference(state);
+		const policyData = (await policyTensor.data()) as Float32Array;
+		policyTensor.dispose();
+		const indices = moves.map(moveToIndex);
+		const raw = indices.map((i) => policyData[i]);
+		const sum = raw.reduce((a, b) => a + b, 1e-8);
+		return raw.map((v) => v / sum);
+	}
 
-  async value(state: GameState, color: Color): Promise<number> {
-    const [policyTensor, valueTensor] = this.runInference(state);
-    policyTensor.dispose();
-    const v = ((await valueTensor.data()) as Float32Array)[0];
-    valueTensor.dispose();
-    return color === state.turn ? v : -v;
-  }
+	async value(state: GameState, color: Color): Promise<number> {
+		const [policyTensor, valueTensor] = this.runInference(state);
+		policyTensor.dispose();
+		const v = ((await valueTensor.data()) as Float32Array)[0];
+		valueTensor.dispose();
+		return color === state.turn ? v : -v;
+	}
 
-  private runInference(state: GameState): [tf.Tensor, tf.Tensor] {
-    const encoded = encodeState(state, state.turn);
-    const spatial = tf.tensor4d(Array.from(encoded.slice(0, SPATIAL_SIZE)), [1, BOARD_SIZE, BOARD_SIZE, SPATIAL_CHANNELS]);
-    const global  = tf.tensor2d(Array.from(encoded.slice(SPATIAL_SIZE)), [1, GLOBAL_SIZE]);
-    const [policy, value] = this.model.predict([spatial, global]) as [tf.Tensor, tf.Tensor];
-    spatial.dispose();
-    global.dispose();
-    return [policy, value];
-  }
+	private runInference(state: GameState): [tf.Tensor, tf.Tensor] {
+		const encoded = encodeState(state, state.turn);
+		const spatial = tf.tensor4d(Array.from(encoded.slice(0, SPATIAL_SIZE)), [
+			1,
+			BOARD_SIZE,
+			BOARD_SIZE,
+			SPATIAL_CHANNELS
+		]);
+		const global = tf.tensor2d(Array.from(encoded.slice(SPATIAL_SIZE)), [1, GLOBAL_SIZE]);
+		const [policy, value] = this.model.predict([spatial, global]) as [tf.Tensor, tf.Tensor];
+		spatial.dispose();
+		global.dispose();
+		return [policy, value];
+	}
 }
 
 class _ModelManager {
-  private adapter: TfjsModelAdapter | null = null;
-  private loaded = false;
+	private adapter: TfjsModelAdapter | null = null;
+	private loaded = false;
 
-  async load(checkpointPath: string): Promise<void> {
-    const model = await tf.loadLayersModel(`file://${checkpointPath}/model.json`);
-    this.adapter = new TfjsModelAdapter(model);
-    this.loaded = true;
-    console.info(`[AI] Model loaded from ${checkpointPath}`);
-  }
+	async load(checkpointPath: string): Promise<void> {
+		const model = await tf.loadLayersModel(`file://${checkpointPath}/model.json`);
+		this.adapter = new TfjsModelAdapter(model);
+		this.loaded = true;
+		console.info(`[AI] Model loaded from ${checkpointPath}`);
+	}
 
-  getAdapter(): TfjsModelAdapter | null {
-    return this.adapter;
-  }
+	getAdapter(): TfjsModelAdapter | null {
+		return this.adapter;
+	}
 
-  isLoaded(): boolean {
-    return this.loaded;
-  }
+	isLoaded(): boolean {
+		return this.loaded;
+	}
 }
 
 export const ModelManager = new _ModelManager();
@@ -404,6 +434,7 @@ git commit -m "feat(ai): TfjsModelAdapter + ModelManager + conv-residual network
 `AI_CHECKPOINT_PATH` est lu depuis `process.env.AI_CHECKPOINT_PATH` (défaut : `checkpoints/model`).
 
 **Files:**
+
 - Create: `src/hooks.server.ts`
 
 **Step 1 : Implémenter `hooks.server.ts`**
@@ -417,10 +448,10 @@ const checkpointPath = process.env.AI_CHECKPOINT_PATH ?? 'checkpoints/model';
 const absolutePath = path.resolve(checkpointPath);
 
 if (!fs.existsSync(path.join(absolutePath, 'model.json'))) {
-  throw new Error(
-    `[AI] Checkpoint introuvable : ${absolutePath}/model.json\n` +
-    `Lancez d'abord : pnpm ai:auto-train`
-  );
+	throw new Error(
+		`[AI] Checkpoint introuvable : ${absolutePath}/model.json\n` +
+			`Lancez d'abord : pnpm ai:auto-train`
+	);
 }
 
 await ModelManager.load(absolutePath);
@@ -467,11 +498,13 @@ git commit -m "feat(ai): load TF.js checkpoint at server startup, inject adapter
 ### Task 5 : Pipeline d'entraînement TF.js (enrichissement de `training.ts`)
 
 **Contexte :** Le pipeline offline doit :
+
 1. Collecter des triplets `(encoded_state, mcts_distribution, outcome)` durant l'auto-jeu.
 2. Entraîner le réseau sur ces triplets (policy loss = cross-entropy, value loss = MSE).
 3. Sauvegarder le checkpoint dans `checkpoints/model/`.
 
 **Files:**
+
 - Modify: `src/lib/server/ai/training.ts`
 - Create: `scripts/ai/train-network.ts` (nouveau script TF.js, distinct du `train.ts` existant)
 - Modify: `package.json` (nouveau script `ai:train-network`)
@@ -483,13 +516,14 @@ Ajouter un type :
 
 ```ts
 export interface TrainingSample {
-  encoded: Float32Array;          // ENCODING_SIZE floats
-  mctsDistribution: Float32Array; // MOVE_SPACE_SIZE floats (distribution lissée des visites)
-  outcome: number;                // +1 blanc gagne, -1 noir gagne, 0 nul
+	encoded: Float32Array; // ENCODING_SIZE floats
+	mctsDistribution: Float32Array; // MOVE_SPACE_SIZE floats (distribution lissée des visites)
+	outcome: number; // +1 blanc gagne, -1 noir gagne, 0 nul
 }
 ```
 
 Dans `playSelfPlayGame`, à chaque coup :
+
 - Appeler `encodeState(state, actor)` avant d'appliquer le coup.
 - Construire `mctsDistribution` en normalisant les visites de la racine MCTS sur les 320 actions.
 - Stocker `{ encoded, mctsDistribution, outcome: ?? }` dans un tableau.
@@ -502,12 +536,16 @@ Ajouter `samples: TrainingSample[]` à `SelfPlayBatchReport`.
 Dans `training.spec.ts` :
 
 ```ts
-it('self-play batch collects training samples', async () => {
-  const report = await runSelfPlayBatch({ games: 1, maxPlies: 30 });
-  expect(report.samples.length).toBeGreaterThan(0);
-  expect(report.samples[0].encoded).toHaveLength(ENCODING_SIZE);
-  expect(report.samples[0].mctsDistribution).toHaveLength(MOVE_SPACE_SIZE);
-}, { timeout: 60_000 });
+it(
+	'self-play batch collects training samples',
+	async () => {
+		const report = await runSelfPlayBatch({ games: 1, maxPlies: 30 });
+		expect(report.samples.length).toBeGreaterThan(0);
+		expect(report.samples[0].encoded).toHaveLength(ENCODING_SIZE);
+		expect(report.samples[0].mctsDistribution).toHaveLength(MOVE_SPACE_SIZE);
+	},
+	{ timeout: 60_000 }
+);
 ```
 
 **Step 3 : Vérifier que le test échoue puis passer au vert**
@@ -529,52 +567,52 @@ import { ENCODING_SIZE, SPATIAL_SIZE } from '../../src/lib/server/ai/encoder';
 import { MOVE_SPACE_SIZE } from '../../src/lib/server/ai/move-index';
 
 // Parse CLI args
-const args = Object.fromEntries(process.argv.slice(2).map(a => a.replace('--','').split('=')));
+const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace('--', '').split('=')));
 const datasetPath = args.dataset ?? 'artifacts/ai/dataset.jsonl';
-const outputPath  = args.output  ?? 'checkpoints/model';
-const epochs      = Number(args.epochs ?? 10);
-const batchSize   = Number(args.batch  ?? 64);
+const outputPath = args.output ?? 'checkpoints/model';
+const epochs = Number(args.epochs ?? 10);
+const batchSize = Number(args.batch ?? 64);
 
 // Load dataset
 const samples = [];
 const rl = readline.createInterface({ input: fs.createReadStream(datasetPath) });
 for await (const line of rl) {
-  if (line.trim()) samples.push(JSON.parse(line));
+	if (line.trim()) samples.push(JSON.parse(line));
 }
 
 const n = samples.length;
-const spatialData  = new Float32Array(n * 4 * 4 * 10);
-const globalData   = new Float32Array(n * (ENCODING_SIZE - 4*4*10));
+const spatialData = new Float32Array(n * 4 * 4 * 10);
+const globalData = new Float32Array(n * (ENCODING_SIZE - 4 * 4 * 10));
 const policyTarget = new Float32Array(n * MOVE_SPACE_SIZE);
-const valueTarget  = new Float32Array(n);
+const valueTarget = new Float32Array(n);
 
 for (let i = 0; i < n; i++) {
-  const s = samples[i];
-  spatialData.set(s.encoded.slice(0, 4*4*10), i * 4*4*10);
-  globalData.set(s.encoded.slice(4*4*10),      i * (ENCODING_SIZE - 4*4*10));
-  policyTarget.set(s.mctsDistribution,          i * MOVE_SPACE_SIZE);
-  valueTarget[i] = s.outcome;
+	const s = samples[i];
+	spatialData.set(s.encoded.slice(0, 4 * 4 * 10), i * 4 * 4 * 10);
+	globalData.set(s.encoded.slice(4 * 4 * 10), i * (ENCODING_SIZE - 4 * 4 * 10));
+	policyTarget.set(s.mctsDistribution, i * MOVE_SPACE_SIZE);
+	valueTarget[i] = s.outcome;
 }
 
 const xSpatial = tf.tensor4d(spatialData, [n, 4, 4, 10]);
-const xGlobal  = tf.tensor2d(globalData,  [n, ENCODING_SIZE - 4*4*10]);
-const yPolicy  = tf.tensor2d(policyTarget,[n, MOVE_SPACE_SIZE]);
-const yValue   = tf.tensor2d(valueTarget, [n, 1]);
+const xGlobal = tf.tensor2d(globalData, [n, ENCODING_SIZE - 4 * 4 * 10]);
+const yPolicy = tf.tensor2d(policyTarget, [n, MOVE_SPACE_SIZE]);
+const yValue = tf.tensor2d(valueTarget, [n, 1]);
 
 let model: tf.LayersModel;
 const modelJsonPath = path.join(outputPath, 'model.json');
 if (fs.existsSync(modelJsonPath)) {
-  model = await tf.loadLayersModel(`file://${modelJsonPath}`);
-  console.log('Reprise depuis checkpoint existant.');
+	model = await tf.loadLayersModel(`file://${modelJsonPath}`);
+	console.log('Reprise depuis checkpoint existant.');
 } else {
-  model = buildModel();
-  console.log('Nouveau modèle créé.');
+	model = buildModel();
+	console.log('Nouveau modèle créé.');
 }
 
 model.compile({
-  optimizer: tf.train.adam(1e-3),
-  loss: { policy: 'categoricalCrossentropy', value: 'meanSquaredError' },
-  lossWeights: { policy: 1, value: 1 }
+	optimizer: tf.train.adam(1e-3),
+	loss: { policy: 'categoricalCrossentropy', value: 'meanSquaredError' },
+	lossWeights: { policy: 1, value: 1 }
 });
 
 await model.fit([xSpatial, xGlobal], [yPolicy, yValue], { epochs, batchSize });
@@ -611,6 +649,7 @@ git commit -m "feat(ai): collect MCTS training samples, train-network script for
 ### Task 6 : Vérification finale et documentation
 
 **Files:**
+
 - Modify: `README.md`
 - Modify: `checkpoints/.gitkeep` (créer si absent)
 
@@ -645,6 +684,7 @@ Attendu : 0 erreurs, 0 avertissements, tous les tests verts.
 **Step 4 : Mettre à jour `README.md`**
 
 Mettre à jour la section IA :
+
 - Documenter `pnpm ai:self-play` → collecte dataset
 - Documenter `pnpm ai:train-network` → entraîne réseau TF.js
 - Documenter `pnpm ai:auto-train` → boucle complète

@@ -5,7 +5,7 @@ import { makeEmptyReserve, type Color, type GameState } from '$lib/types/game';
 
 import { chooseAiMove } from './agent';
 import { encodeState } from './encoder';
-import { runMcts, type ModelAdapter, type MctsResult } from './mcts';
+import { runMcts, type ModelAdapter } from './mcts';
 
 function makeActiveState(turn: Color = 'white'): GameState {
 	const now = Date.now();
@@ -97,8 +97,8 @@ describe('mcts', () => {
 	it('uses model adapter value head instead of rollout', async () => {
 		const state = makeActiveState('white');
 		const mockAdapter: ModelAdapter = {
-			priors: async (_s, moves) => moves.map(() => 1 / moves.length),
-			value: async (_s, _color) => 0.9
+			priors: async (_, moves) => moves.map(() => 1 / moves.length),
+			value: async () => 0.9
 		};
 		const result = await runMcts(state, 'white', { simulations: 10, modelAdapter: mockAdapter });
 		expect(result.move).not.toBeNull();

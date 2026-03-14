@@ -56,9 +56,10 @@ export class TfjsModelAdapter implements ModelAdapter {
 	constructor(private readonly model: tf.LayersModel) {}
 
 	async priors(state: GameState, moves: PlayerMove[]): Promise<number[]> {
-		const [policyTensor, _] = this.runInference(state);
+		const [policyTensor, valueTensor] = this.runInference(state);
 		const policyData = (await policyTensor.data()) as Float32Array;
 		policyTensor.dispose();
+		valueTensor.dispose();
 		const indices = moves.map(moveToIndex);
 		const raw = indices.map((i) => policyData[i]);
 		const sum = raw.reduce((a, b) => a + b, 1e-8);
