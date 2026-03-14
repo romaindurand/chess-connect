@@ -84,13 +84,16 @@ function createSelfPlayState(): GameState {
 	};
 }
 
+/** Reduced simulation budget used during self-play to keep generation fast. */
+const SELF_PLAY_SIMULATIONS = 20;
+
 function playSelfPlayGame(maxPlies: number): SelfPlayGameResult {
 	let state = createSelfPlayState();
 	const moves: string[] = [];
 
 	while (state.status === 'active' && state.pliesPlayed < maxPlies) {
 		const actor = state.turn;
-		const move = chooseAiMove(state, actor);
+		const move = chooseAiMove(state, actor, { simulations: SELF_PLAY_SIMULATIONS });
 		if (!move) {
 			return {
 				winner: actor === 'white' ? 'black' : 'white',

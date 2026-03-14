@@ -13,8 +13,31 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] historique
 - [x] coordonnées des cases
 - [x] pas de coups qui se répètent
-- [ ] créer une IA
+- [x] créer une IA
 - [ ] matchmaking
 - [x] couleurs alternées pour la revanche
-- [ ] choix noir/blanc dans les options
+- [x] choix noir/blanc dans les options
 - [x] n'importe quel joueur doit pouvoir proposer une revanche
+
+## IA
+
+### Jouer contre l'IA
+
+Sur la page d'accueil, sélectionner **"Contre l'IA"** puis choisir la couleur souhaitée (Blanc / Noir / Aléatoire) avant de créer la partie.
+
+Le moteur IA utilise MCTS (Monte-Carlo Tree Search, 100 simulations par coup) avec un fast-path de détection de coup gagnant immédiat.
+
+### Scripts d'entraînement
+
+```bash
+# Générer des parties d'auto-jeu et écrire un artefact JSON
+pnpm ai:self-play [-- --games=20 --max-plies=200]
+
+# Lire un artefact existant et lancer une passe d'entraînement
+pnpm ai:train [-- --input=artifacts/ai/artifact.json --output=artifacts/ai/trained.json]
+
+# Enchaîner auto-jeu + entraînement en boucle
+pnpm ai:auto-train [-- --games=20 --max-plies=200]
+```
+
+Les artefacts sont écrits dans `artifacts/ai/`. L'architecture est conçue pour être étendue vers un réseau de valeur/politique (style AlphaZero) via TensorFlow.js.

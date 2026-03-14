@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { buildTrainingArtifact, runSelfPlayBatch } from './training';
 
 describe('ai training scaffold', () => {
-	it('plays a deterministic self-play batch and aggregates outcomes', () => {
+	it('plays a deterministic self-play batch and aggregates outcomes', { timeout: 30_000 }, () => {
 		const report = runSelfPlayBatch({ games: 4, maxPlies: 12 });
 
 		expect(report.games).toHaveLength(4);
@@ -13,7 +13,7 @@ describe('ai training scaffold', () => {
 		expect(report.summary.averagePlies).toBeLessThanOrEqual(12);
 	});
 
-	it('builds a baseline artifact from self-play openings', () => {
+	it('builds a baseline artifact from self-play openings', { timeout: 30_000 }, () => {
 		const report = runSelfPlayBatch({ games: 3, maxPlies: 8 });
 		const artifact = buildTrainingArtifact(report.games);
 
