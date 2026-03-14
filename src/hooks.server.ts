@@ -9,7 +9,7 @@ const absolutePath = path.resolve(checkpointPath);
 if (!fs.existsSync(path.join(absolutePath, 'model.json'))) {
 	throw new Error(
 		`[AI] Checkpoint introuvable : ${absolutePath}/model.json\n` +
-			`Lancez d'abord : pnpm ai:auto-train`
+			`Lancez d'abord : pnpm ai:train-network -- --dataset=artifacts/ai/self-play.json --output=checkpoints/model`
 	);
 }
 

@@ -12,10 +12,32 @@ function readNumberArg(name: string, fallback: number): number {
 	return Number.isFinite(value) && value > 0 ? value : fallback;
 }
 
+function formatEta(seconds: number): string {
+	if (!isFinite(seconds) || seconds < 0) return '…';
+	if (seconds < 60) return `${seconds}s`;
+	const m = Math.floor(seconds / 60);
+	const s = seconds % 60;
+	if (m < 60) return `${m}m ${s.toString().padStart(2, '0')}s`;
+	return `${Math.floor(m / 60)}h ${(m % 60).toString().padStart(2, '0')}m`;
+}
+
 const games = readNumberArg('games', 32);
 const maxPlies = readNumberArg('max-plies', 64);
 const outFile = resolve('artifacts/ai/self-play.json');
-const report = await runSelfPlayBatch({ games, maxPlies });
+
+console.log(`Génération de ${games} parties (max ${maxPlies} coups)…`);
+const startTime = Date.now();
+
+const report = await runSelfPlayBatch({
+	games,
+	maxPlies,
+	onGameComplete: (done, total) => {
+		const elapsed = Date.now() - startTime;
+		const etaSec = Math.round(((elapsed / done) * (total - done)) / 1000);
+		process.stdout.write(`\r  Partie ${done}/${total} — ETA : ${formatEta(etaSec)}   `);
+	}
+});
+process.stdout.write('\n');
 
 mkdirSync(dirname(outFile), { recursive: true });
 writeFileSync(outFile, JSON.stringify(report, null, 2));

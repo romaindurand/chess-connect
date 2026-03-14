@@ -153,12 +153,15 @@ function finalizeSamples(pending: PendingSample[], winner: Color | null): Traini
 export async function runSelfPlayBatch(options?: {
 	games?: number;
 	maxPlies?: number;
+	onGameComplete?: (completed: number, total: number) => void;
 }): Promise<SelfPlayBatchReport> {
 	const totalGames = options?.games ?? 8;
 	const maxPlies = options?.maxPlies ?? 64;
-	const results = await Promise.all(
-		Array.from({ length: totalGames }, () => playSelfPlayGame(maxPlies))
-	);
+	const results: Awaited<ReturnType<typeof playSelfPlayGame>>[] = [];
+	for (let i = 0; i < totalGames; i++) {
+		results.push(await playSelfPlayGame(maxPlies));
+		options?.onGameComplete?.(i + 1, totalGames);
+	}
 	const games = results.map((r) => r.result);
 	const samples = results.flatMap((r) => r.samples);
 	const whiteWins = games.filter((game) => game.winner === 'white').length;

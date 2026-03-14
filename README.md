@@ -26,21 +26,42 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 Sur la page d'accueil, sélectionner **"Contre l'IA"** puis choisir la couleur souhaitée (Blanc / Noir / Aléatoire) avant de créer la partie.
 
 Le moteur IA utilise MCTS (Monte-Carlo Tree Search) guidé par un réseau conv-résiduel (style AlphaZero-lite) chargé depuis un checkpoint TensorFlow.js au démarrage du serveur.  
-Sans checkpoint, le serveur refuse de démarrer — voir section *Entraînement* ci-dessous.
+Sans checkpoint, le serveur refuse de démarrer — voir section _Entraînement_ ci-dessous.
 
 ### Entraînement
 
-Le pipeline complet fonctionne en trois étapes :
+Le serveur nécessite un checkpoint `checkpoints/model/model.json` au démarrage. Ce checkpoint n'est pas inclus dans git et doit être généré localement.
+
+**Pipeline requis pour jouer contre l'IA :**
 
 ```bash
 # 1. Générer des parties d'auto-jeu → artifacts/ai/self-play.json
-pnpm ai:self-play [-- --games=20 --max-plies=200]
+pnpm ai:self-play [-- --games=100 --max-plies=128]
 
-# 2. Entraîner le réseau sur les parties générées → checkpoints/model/
-pnpm ai:train-network [-- --input=artifacts/ai/self-play.json --output=checkpoints/model]
+# 2. Entraîner le réseau conv-résiduel → checkpoints/model/model.json
+pnpm ai:train-network [-- --dataset=artifacts/ai/self-play.json --output=checkpoints/model --epochs=20 --batch=64]
 
-# 3. (ou) Enchaîner auto-jeu + entraînement statistique en boucle (heuristique sans réseau)
-pnpm ai:auto-train [-- --games=20 --max-plies=200]
+# Optionnel : choisir le backend explicitement (auto par défaut)
+pnpm ai:train-network [-- --dataset=artifacts/ai/self-play.json --backend=auto]
+```
+
+Les deux scripts affichent une progression en temps réel avec estimation du temps restant.
+`ai:train-network` affiche aussi l'avancement intra-époque (batch par batch) pour éviter les longues périodes sans sortie.
+
+Pour `ai:train-network`, le backend est en mode `auto` par défaut :
+
+- tentative du backend natif `tensorflow` (`tfjs-node`, plus rapide)
+- bascule automatique sur `cpu` si le backend natif n'est pas stable dans l'environnement courant
+
+**Commandes auxiliaires (artefact de fréquences, hors checkpoint réseau) :**
+
+```bash
+# Enchaîner auto-jeu + construction de l'artefact de fréquences en une seule commande
+# ⚠ Ne produit PAS le checkpoint réseau utilisé par le serveur
+pnpm ai:auto-train [-- --games=64 --max-plies=64]
+
+# Construire l'artefact de fréquences à partir d'un dataset existant (ou en générer un)
+pnpm ai:train [-- --input=artifacts/ai/self-play.json]
 ```
 
 Le checkpoint TF.js est lu depuis `checkpoints/model/` par défaut.  

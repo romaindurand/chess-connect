@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+
 import * as tf from '@tensorflow/tfjs';
 
 import { BOARD_SIZE } from '$lib/types/game';
@@ -9,6 +12,43 @@ import type { ModelAdapter } from './mcts';
 
 const SPATIAL_CHANNELS = 10; // PLANES_PER_CELL
 const GLOBAL_SIZE = ENCODING_SIZE - SPATIAL_SIZE; // 10
+
+interface LayersModelJson {
+	modelTopology: tf.io.ModelJSON['modelTopology'];
+	weightsManifest?: Array<{
+		paths: string[];
+		weights: tf.io.WeightsManifestEntry[];
+	}>;
+	format?: string;
+	generatedBy?: string;
+	convertedBy?: string;
+}
+
+export function readModelArtifactsFromCheckpoint(checkpointPath: string): tf.io.ModelArtifacts {
+	const modelJsonPath = path.join(checkpointPath, 'model.json');
+	const modelJson = JSON.parse(readFileSync(modelJsonPath, 'utf8')) as LayersModelJson;
+
+	const manifests = modelJson.weightsManifest ?? [];
+	const weightSpecs = manifests.flatMap((group) => group.weights);
+	const buffers: Buffer[] = [];
+
+	for (const group of manifests) {
+		for (const relativePath of group.paths) {
+			const shardPath = path.join(checkpointPath, relativePath);
+			buffers.push(readFileSync(shardPath));
+		}
+	}
+	const weightBytes = Uint8Array.from(Buffer.concat(buffers));
+
+	return {
+		modelTopology: modelJson.modelTopology,
+		weightSpecs,
+		weightData: weightBytes.buffer,
+		format: modelJson.format,
+		generatedBy: modelJson.generatedBy,
+		convertedBy: modelJson.convertedBy
+	};
+}
 
 function residualBlock(x: tf.SymbolicTensor, filters: number): tf.SymbolicTensor {
 	const shortcut = x;
@@ -96,7 +136,8 @@ class _ModelManager {
 	private _loaded = false;
 
 	async load(checkpointPath: string): Promise<void> {
-		const model = await tf.loadLayersModel(`file://${checkpointPath}/model.json`);
+		const artifacts = readModelArtifactsFromCheckpoint(checkpointPath);
+		const model = await tf.loadLayersModel(tf.io.fromMemory(artifacts));
 		this.adapter = new TfjsModelAdapter(model);
 		this._loaded = true;
 		console.info(`[AI] Model loaded from ${checkpointPath}`);

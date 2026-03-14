@@ -10,10 +10,10 @@
  *        Le serveur SvelteKit utilise @tensorflow/tfjs (JS pure) pour la compatibilité Node v24.
  */
 import fs from 'node:fs';
+import { createRequire } from 'node:module';
 import path from 'node:path';
 
-// Importation dynamique de tfjs-node pour cet environnement contrôlé
-import * as tf from '@tensorflow/tfjs-node';
+import type * as TfjsNode from '@tensorflow/tfjs-node';
 
 const BOARD_SIZE = 4;
 const SPATIAL_CHANNELS = 10;
@@ -34,10 +34,75 @@ function readIntArg(name: string, fallback: number): number {
 	return Number.isFinite(v) && v > 0 ? v : fallback;
 }
 
+type BackendMode = 'auto' | 'tensorflow' | 'cpu';
+
+function readBackendMode(): BackendMode {
+	const raw = readArg('backend', 'auto');
+	if (raw === 'tensorflow' || raw === 'cpu' || raw === 'auto') {
+		return raw;
+	}
+	return 'auto';
+}
+
 const datasetPath = path.resolve(readArg('dataset', 'artifacts/ai/self-play.json'));
 const outputPath = path.resolve(readArg('output', 'checkpoints/model'));
 const epochs = readIntArg('epochs', 10);
 const batchSize = readIntArg('batch', 64);
+const backendMode = readBackendMode();
+
+const require = createRequire(import.meta.url);
+const utilModule = require('node:util') as {
+	isNullOrUndefined?: (value: unknown) => boolean;
+};
+if (typeof utilModule.isNullOrUndefined !== 'function') {
+	utilModule.isNullOrUndefined = (value: unknown): boolean => value === null || value === undefined;
+}
+
+const tf: typeof TfjsNode = await import('@tensorflow/tfjs-node');
+
+async function validateTensorflowBackend(): Promise<void> {
+	const probe = tf.tensor1d([1, 2, 3]);
+	const sliced = tf.slice(probe, [0], [1]);
+	await sliced.data();
+	probe.dispose();
+	sliced.dispose();
+}
+
+async function initializeBackend(mode: BackendMode): Promise<'tensorflow' | 'cpu'> {
+	if (mode === 'cpu') {
+		await tf.setBackend('cpu');
+		await tf.ready();
+		return 'cpu';
+	}
+
+	try {
+		await tf.setBackend('tensorflow');
+		await tf.ready();
+		await validateTensorflowBackend();
+		return 'tensorflow';
+	} catch (error) {
+		if (mode === 'tensorflow') {
+			throw new Error(
+				`Impossible d'initialiser le backend tensorflow natif. Détail: ${error instanceof Error ? error.message : String(error)}`
+			);
+		}
+		console.warn(
+			'[AI] Backend tensorflow indisponible sur cet environnement. Bascule automatique en backend cpu (plus lent).'
+		);
+		await tf.setBackend('cpu');
+		await tf.ready();
+		return 'cpu';
+	}
+}
+
+const selectedBackend = await initializeBackend(backendMode);
+
+if (selectedBackend === 'cpu') {
+	console.warn(
+		'[AI] Entraînement en backend CPU (plus lent). Utilisez --backend=tensorflow pour forcer un test du backend natif.'
+	);
+}
+console.log(`[AI] Backend actif: ${tf.getBackend()}`);
 
 // ─── Load dataset ─────────────────────────────────────────────────────────────
 
@@ -71,7 +136,12 @@ for (let i = 0; i < n; i++) {
 	globalBuf.set(s.encoded.slice(SPATIAL_SIZE), i * GLOBAL_SIZE);
 	policyBuf.set(s.mctsDistribution, i * MOVE_SPACE_SIZE);
 	valueBuf[i] = s.outcome;
+	if ((i + 1) % Math.max(1, Math.floor(n / 20)) === 0 || i + 1 === n) {
+		const pct = Math.round(((i + 1) / n) * 100);
+		process.stdout.write(`\rPréparation des tenseurs: ${i + 1}/${n} (${pct}%)   `);
+	}
 }
+process.stdout.write('\n');
 
 const xSpatial = tf.tensor4d(spatialBuf, [n, BOARD_SIZE, BOARD_SIZE, SPATIAL_CHANNELS]);
 const xGlobal = tf.tensor2d(globalBuf, [n, GLOBAL_SIZE]);
@@ -140,13 +210,60 @@ model.compile({
 
 // ─── Train ────────────────────────────────────────────────────────────────────
 
+function formatEta(seconds: number): string {
+	if (!isFinite(seconds) || seconds < 0) return '…';
+	if (seconds < 60) return `${seconds}s`;
+	const m = Math.floor(seconds / 60);
+	const s = seconds % 60;
+	if (m < 60) return `${m}m ${s.toString().padStart(2, '0')}s`;
+	return `${Math.floor(m / 60)}h ${(m % 60).toString().padStart(2, '0')}m`;
+}
+
 console.log(`Entraînement : ${epochs} époques, batch ${batchSize}…`);
+const trainStart = Date.now();
+const batchesPerEpoch = Math.ceil(n / batchSize);
+const totalBatches = Math.max(1, batchesPerEpoch * epochs);
+let currentEpoch = 1;
+let lastPrint = 0;
 await model.fit([xSpatial, xGlobal], [yPolicy, yValue], {
 	epochs,
 	batchSize,
 	shuffle: true,
-	verbose: 1
+	verbose: 0,
+	callbacks: {
+		onEpochBegin: (epoch: number) => {
+			currentEpoch = epoch + 1;
+		},
+		onBatchEnd: (batch: number, logs?) => {
+			const now = Date.now();
+			if (now - lastPrint < 250) {
+				return;
+			}
+			lastPrint = now;
+			const doneBatches = (currentEpoch - 1) * batchesPerEpoch + (batch + 1);
+			const clampedDone = Math.min(totalBatches, Math.max(1, doneBatches));
+			const elapsed = now - trainStart;
+			const etaSec = Math.round(((elapsed / clampedDone) * (totalBatches - clampedDone)) / 1000);
+			const pct = Math.round((clampedDone / totalBatches) * 100);
+			const lossRaw = logs?.loss;
+			const loss = (typeof lossRaw === 'number' ? lossRaw : 0).toFixed(4);
+			process.stdout.write(
+				`\r  Entraînement ${pct}% — époque ${currentEpoch}/${epochs}, batch ${batch + 1}/${batchesPerEpoch} — loss: ${loss} — ETA : ${formatEta(etaSec)}   `
+			);
+		},
+		onEpochEnd: (epoch: number, logs?) => {
+			const done = epoch + 1;
+			const elapsed = Date.now() - trainStart;
+			const etaSec = Math.round(((elapsed / done) * (epochs - done)) / 1000);
+			const lossRaw = logs?.loss;
+			const loss = (typeof lossRaw === 'number' ? lossRaw : 0).toFixed(4);
+			process.stdout.write(
+				`\r  Époque ${done}/${epochs} terminée — loss: ${loss} — ETA global : ${formatEta(etaSec)}   `
+			);
+		}
+	}
 });
+process.stdout.write('\n');
 
 // ─── Save checkpoint ─────────────────────────────────────────────────────────
 
