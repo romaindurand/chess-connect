@@ -112,6 +112,7 @@ export interface GameView {
 	viewerIsInviter: boolean;
 	joinAllowed: boolean;
 	legalOptions: LegalOptions;
+	legalOptionsByColor: Record<Color, LegalOptions>;
 }
 
 export interface PlaceMove {

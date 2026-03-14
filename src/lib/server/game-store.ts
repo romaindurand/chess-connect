@@ -805,6 +805,10 @@ export function toView(
 ): GameView {
 	const role = viewerRole ?? 'spectator';
 	const viewerColor: Color | null = role === 'white' || role === 'black' ? role : null;
+	const legalOptionsByColor = {
+		white: getLegalOptionsForColor(state, 'white'),
+		black: getLegalOptionsForColor(state, 'black')
+	};
 	return {
 		state,
 		viewerRole: role,
@@ -813,7 +817,8 @@ export function toView(
 		joinAllowed: (!state.players.white || !state.players.black) && !viewerIsInviter,
 		legalOptions: viewerColor
 			? getLegalOptionsForColor(state, viewerColor)
-			: { byBoardFrom: {}, byReservePiece: { pawn: [], rook: [], knight: [], bishop: [] } }
+			: { byBoardFrom: {}, byReservePiece: { pawn: [], rook: [], knight: [], bishop: [] } },
+		legalOptionsByColor
 	};
 }
 

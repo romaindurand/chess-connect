@@ -5,6 +5,7 @@
 	interface Props {
 		board: (PieceOnBoard | null)[][];
 		targetHints: Set<string>;
+		targetHintTone: 'ally' | 'enemy';
 		selectedBoardFrom: Coord | null;
 		onCellEnter: (coord: Coord, cell: PieceOnBoard | null) => void;
 		onCellLeave: () => void;
@@ -15,6 +16,7 @@
 	let {
 		board,
 		targetHints,
+		targetHintTone,
 		selectedBoardFrom,
 		onCellEnter,
 		onCellLeave,
@@ -62,7 +64,7 @@
 					{@const key = coordKey(coord)}
 					<button
 						type="button"
-						class={`aspect-square rounded border ${targetHints.has(key) ? 'border-black bg-emerald-100' : 'border-gray-300 bg-stone-100'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''}`}
+						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100') : 'border-gray-300 bg-stone-100'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''}`}
 						onmouseenter={() => onCellEnter(coord, cell)}
 						onmouseleave={onCellLeave}
 						onclick={() => onCellClick(coord)}

@@ -294,7 +294,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 	}
 
 	function onBoardHover(coord: Coord, cell: PieceOnBoard | null): void {
-		input.setHoveredBoardFrom(isMyPiece(cell) ? coord : null);
+		input.setHoveredBoardFrom(cell ? coord : null);
 	}
 
 	function clearBoardHover(): void {

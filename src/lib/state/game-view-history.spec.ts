@@ -20,6 +20,11 @@ function createSnapshot(turn: 'white' | 'black'): HistorySnapshot {
 function createGame(): GameView {
 	const from: Coord = { x: 1, y: 1 };
 	const to: Coord = { x: 1, y: 2 };
+	const enemyFrom: Coord = { x: 0, y: 0 };
+	const enemyTo: Coord = { x: 0, y: 1 };
+	const board = createSnapshot('white').board;
+	board[from.y][from.x] = { type: 'rook', owner: 'white', pawnDirection: -1 };
+	board[enemyFrom.y][enemyFrom.x] = { type: 'rook', owner: 'black', pawnDirection: 1 };
 
 	return {
 		viewerRole: 'white',
@@ -37,6 +42,30 @@ function createGame(): GameView {
 				bishop: []
 			}
 		},
+		legalOptionsByColor: {
+			white: {
+				byBoardFrom: {
+					[coordKey(from)]: [to]
+				},
+				byReservePiece: {
+					pawn: [],
+					rook: [],
+					knight: [],
+					bishop: []
+				}
+			},
+			black: {
+				byBoardFrom: {
+					[coordKey(enemyFrom)]: [enemyTo]
+				},
+				byReservePiece: {
+					pawn: [],
+					rook: [],
+					knight: [],
+					bishop: []
+				}
+			}
+		},
 		state: {
 			id: 'g1',
 			status: 'active',
@@ -47,7 +76,7 @@ function createGame(): GameView {
 				white: { name: 'A', joinedAt: 1 },
 				black: { name: 'B', joinedAt: 2 }
 			},
-			board: createSnapshot('white').board,
+			board,
 			reserves: createSnapshot('white').reserves,
 			turn: 'white',
 			pliesPlayed: 2,
@@ -131,5 +160,49 @@ describe('game view history interactions', () => {
 		historyStep = 1;
 		expect(view.isMyTurn).toBe(false);
 		expect(view.targetHints.size).toBe(0);
+	});
+
+	it('uses red hints when hovering an enemy piece', () => {
+		let hoveredBoardFrom: Coord | null = { x: 0, y: 0 };
+		let selectedBoardFrom: Coord | null = null;
+		const game = createGame();
+
+		const view = createGameView({
+			getGameId: () => 'g1',
+			rulesLines: [],
+			getGame: () => game,
+			getHoveredBoardFrom: () => hoveredBoardFrom,
+			getHoveredReservePiece: () => null,
+			getLoading: () => false,
+			getErrorMessage: () => '',
+			getSelectedBoardFrom: () => selectedBoardFrom,
+			getSelectedReservePiece: () => null,
+			getCopying: () => false,
+			getShowRulesModal: () => false,
+			getIsSubmittingRematch: () => false,
+			getNowMs: () => Date.now(),
+			getActivePieceTransitionName: () => null,
+			getTransitionFromBoardKey: () => null,
+			getTransitionToBoardKey: () => null,
+			getTransitionReserveKey: () => null,
+			getTransitionMovingOwner: () => null,
+			getShowHistoryPanel: () => false,
+			getHistoryStep: () => null,
+			getHistorySnapshot: () => null,
+			getShowRepetitionDrawModal: () => false
+		});
+
+		expect(Array.from(view.targetHints)).toContain(coordKey({ x: 0, y: 1 }));
+		expect(view.targetHintTone).toBe('enemy');
+
+		hoveredBoardFrom = { x: 1, y: 1 };
+		expect(Array.from(view.targetHints)).toContain(coordKey({ x: 1, y: 2 }));
+		expect(view.targetHintTone).toBe('ally');
+
+		hoveredBoardFrom = { x: 0, y: 0 };
+		selectedBoardFrom = { x: 1, y: 1 };
+		expect(Array.from(view.targetHints)).toContain(coordKey({ x: 1, y: 2 }));
+		expect(Array.from(view.targetHints)).not.toContain(coordKey({ x: 0, y: 1 }));
+		expect(view.targetHintTone).toBe('ally');
 	});
 });

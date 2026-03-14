@@ -108,19 +108,6 @@ export function createGameView(input: GameViewFactoryInput) {
 			return new SvelteSet<string>();
 		}
 
-		const hoveredBoardFrom = input.getHoveredBoardFrom();
-		if (hoveredBoardFrom) {
-			const key = coordKey(hoveredBoardFrom);
-			return new SvelteSet((game.legalOptions.byBoardFrom[key] ?? []).map(coordKey));
-		}
-
-		const hoveredReservePiece = input.getHoveredReservePiece();
-		if (hoveredReservePiece) {
-			return new SvelteSet(
-				(game.legalOptions.byReservePiece[hoveredReservePiece] ?? []).map(coordKey)
-			);
-		}
-
 		const selectedBoardFrom = input.getSelectedBoardFrom();
 		if (selectedBoardFrom) {
 			const key = coordKey(selectedBoardFrom);
@@ -134,7 +121,50 @@ export function createGameView(input: GameViewFactoryInput) {
 			);
 		}
 
+		const hoveredBoardFrom = input.getHoveredBoardFrom();
+		if (hoveredBoardFrom) {
+			const key = coordKey(hoveredBoardFrom);
+			const hoveredPiece = game.state.board[hoveredBoardFrom.y]?.[hoveredBoardFrom.x];
+			if (!hoveredPiece) {
+				return new SvelteSet<string>();
+			}
+			const options =
+				game.viewerColor && hoveredPiece.owner !== game.viewerColor
+					? game.legalOptionsByColor[hoveredPiece.owner]
+					: game.legalOptions;
+			return new SvelteSet((options.byBoardFrom[key] ?? []).map(coordKey));
+		}
+
+		const hoveredReservePiece = input.getHoveredReservePiece();
+		if (hoveredReservePiece) {
+			return new SvelteSet(
+				(game.legalOptions.byReservePiece[hoveredReservePiece] ?? []).map(coordKey)
+			);
+		}
+
 		return new SvelteSet<string>();
+	});
+
+	const targetHintTone = $derived.by(() => {
+		if (isHistoryMode) {
+			return 'ally' as const;
+		}
+		const game = input.getGame();
+		if (!game || !game.viewerColor) {
+			return 'ally' as const;
+		}
+		if (input.getSelectedBoardFrom() || input.getSelectedReservePiece()) {
+			return 'ally' as const;
+		}
+		const hoveredBoardFrom = input.getHoveredBoardFrom();
+		if (!hoveredBoardFrom) {
+			return 'ally' as const;
+		}
+		const hoveredPiece = game.state.board[hoveredBoardFrom.y]?.[hoveredBoardFrom.x];
+		if (!hoveredPiece) {
+			return 'ally' as const;
+		}
+		return hoveredPiece.owner === game.viewerColor ? ('ally' as const) : ('enemy' as const);
 	});
 
 	const isMyTurn = $derived.by(() => {
@@ -361,6 +391,9 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get targetHints() {
 			return targetHints;
+		},
+		get targetHintTone() {
+			return targetHintTone;
 		},
 		get isMyTurn() {
 			return isMyTurn;

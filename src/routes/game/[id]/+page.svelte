@@ -71,6 +71,7 @@
 				<BoardGrid
 					board={state.view.displayBoard}
 					targetHints={state.view.targetHints}
+					targetHintTone={state.view.targetHintTone}
 					selectedBoardFrom={state.view.selectedBoardFrom}
 					onCellEnter={state.actions.onBoardHover}
 					onCellLeave={state.actions.clearBoardHover}
