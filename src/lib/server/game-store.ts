@@ -513,6 +513,9 @@ async function applyAiTurns(record: GameRecord): Promise<void> {
 			record.state.timeRemainingMs[aiColor] = remaining;
 		}
 
+		const thinkDelayMs = process.env.VITEST ? 0 : 2000;
+		await new Promise((resolve) => setTimeout(resolve, thinkDelayMs));
+
 		const adapter = ModelManager.getAdapter() ?? undefined;
 		const move = await chooseAiMove(record.state, aiColor, { modelAdapter: adapter });
 		if (!move) {
@@ -596,6 +599,19 @@ function queueMutation<T>(gameId: string, mutation: () => T | Promise<T>): Promi
 	return result;
 }
 
+function queueAiTurns(gameId: string): void {
+	void queueMutation(gameId, async () => {
+		const record = getGameOrThrow(gameId);
+		const previousVersion = record.state.version;
+		await applyAiTurns(record);
+		if (record.state.version !== previousVersion) {
+			emitSnapshot(record);
+		}
+	}).catch((error) => {
+		console.error('[AI] Echec du coup automatique', error);
+	});
+}
+
 export async function joinGame(
 	gameId: string,
 	playerName: string
@@ -673,9 +689,10 @@ export async function playMove(
 		}
 
 		applyResolvedMove(record, actorColor, move, now);
-		await applyAiTurns(record);
-
 		emitSnapshot(record);
+		if (isAiGame(record.state)) {
+			queueAiTurns(gameId);
+		}
 		return record.state;
 	});
 }

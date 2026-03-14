@@ -265,6 +265,7 @@ describe('game-store time control', () => {
 			opponentType: 'ai',
 			hostColor: 'white'
 		});
+		const record = getGameOrThrow(state.id);
 
 		const updated = await playMove(state.id, token, {
 			kind: 'place',
@@ -273,12 +274,29 @@ describe('game-store time control', () => {
 		});
 
 		expect(updated.status).toBe('active');
-		expect(updated.pliesPlayed).toBe(2);
-		expect(updated.moveHistory).toHaveLength(2);
-		expect(updated.turn).toBe('white');
-		expect(updated.board.flat().filter((cell) => cell?.owner === 'black')).toHaveLength(1);
+		expect(updated.pliesPlayed).toBe(1);
+		expect(updated.moveHistory).toHaveLength(1);
+		expect(updated.turn).toBe('black');
+
+		await waitFor(() => record.state.pliesPlayed === 2);
+
+		expect(updated.status).toBe('active');
+		expect(record.state.pliesPlayed).toBe(2);
+		expect(record.state.moveHistory).toHaveLength(2);
+		expect(record.state.turn).toBe('white');
+		expect(record.state.board.flat().filter((cell) => cell?.owner === 'black')).toHaveLength(1);
 	});
 });
+
+async function waitFor(condition: () => boolean, timeoutMs = 250): Promise<void> {
+	const startedAt = Date.now();
+	while (!condition()) {
+		if (Date.now() - startedAt > timeoutMs) {
+			throw new Error('Timeout en attente du coup IA');
+		}
+		await new Promise((resolve) => setTimeout(resolve, 5));
+	}
+}
 
 function oppositeColor(color: 'white' | 'black'): 'white' | 'black' {
 	return color === 'white' ? 'black' : 'white';
