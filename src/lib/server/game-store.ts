@@ -178,6 +178,10 @@ function createNewState(
 			white: 0,
 			black: 0
 		},
+		matchScore: {
+			host: 0,
+			guest: 0
+		},
 		gameNumber: 1,
 		bestOf: 3,
 		timeControlEnabled,
@@ -316,7 +320,12 @@ function finalizeWinner(record: GameRecord, winner: Color, now: number): void {
 	record.state.version += 1;
 
 	record.state.score[winner] += 1;
-	if (record.state.score[winner] >= 2) {
+	if (record.state.hostColor === winner) {
+		record.state.matchScore.host += 1;
+	} else {
+		record.state.matchScore.guest += 1;
+	}
+	if (record.state.matchScore.host >= 2 || record.state.matchScore.guest >= 2) {
 		record.state.bestOfWinner = winner;
 	}
 
@@ -347,7 +356,7 @@ function applyTimeoutIfExpired(record: GameRecord, now: number): boolean {
 }
 
 function isBestOfFinished(state: GameState): boolean {
-	return Boolean(state.bestOfWinner || state.score.white >= 2 || state.score.black >= 2);
+	return Boolean(state.bestOfWinner || state.matchScore.host >= 2 || state.matchScore.guest >= 2);
 }
 
 function oppositeColor(color: Color): Color {

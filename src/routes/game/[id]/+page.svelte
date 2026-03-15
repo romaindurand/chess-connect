@@ -52,7 +52,7 @@
 		<div class="space-y-3">
 			<ReserveRow
 				playerName={state.view.game.state.players.black?.name ?? 'En attente'}
-				playerScore={state.view.game.state.score.black}
+				playerScore={state.view.topPlayerScore}
 				isActiveTurn={state.view.displayTurn === 'black'}
 				reserveColor={state.view.topReserveColor}
 				pieces={state.view.topReservePieces}
@@ -94,7 +94,7 @@
 
 			<ReserveRow
 				playerName={state.view.game.state.players.white?.name ?? 'En attente'}
-				playerScore={state.view.game.state.score.white}
+				playerScore={state.view.bottomPlayerScore}
 				isActiveTurn={state.view.displayTurn === 'white'}
 				reserveColor={state.view.bottomReserveColor}
 				pieces={state.view.bottomReservePieces}

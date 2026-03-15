@@ -39,6 +39,15 @@ export function createGameView(input: GameViewFactoryInput) {
 	const topReserveColor = $derived('black' as const);
 	const bottomReserveColor = $derived('white' as const);
 
+	function scoreForColor(game: GameView, color: Color): number {
+		const hostColor = game.state.hostColor;
+		if (!hostColor) {
+			return 0;
+		}
+		const side = color === hostColor ? 'host' : 'guest';
+		return game.state.matchScore[side];
+	}
+
 	const displayedState = $derived.by(() => {
 		const historySnapshot = input.getHistorySnapshot();
 		if (historySnapshot) {
@@ -75,6 +84,22 @@ export function createGameView(input: GameViewFactoryInput) {
 
 	const displayBoard = $derived.by(() => displayedState?.board ?? []);
 	const displayTurn = $derived.by(() => displayedState?.turn ?? 'white');
+
+	const topPlayerScore = $derived.by(() => {
+		const game = input.getGame();
+		if (!game) {
+			return 0;
+		}
+		return scoreForColor(game, topReserveColor);
+	});
+
+	const bottomPlayerScore = $derived.by(() => {
+		const game = input.getGame();
+		if (!game) {
+			return 0;
+		}
+		return scoreForColor(game, bottomReserveColor);
+	});
 
 	const historyEntries = $derived.by(() => input.getGame()?.state.moveHistory ?? []);
 	const isHistoryMode = $derived.by(() => {
@@ -220,7 +245,17 @@ export function createGameView(input: GameViewFactoryInput) {
 		if (!game || !isGameFinished) {
 			return '';
 		}
-		return `Score actuel: Blanc ${game.state.score.white} - Noir ${game.state.score.black}`;
+
+		const hostColor = game.state.hostColor;
+		if (!hostColor) {
+			return '';
+		}
+		const guestColor = hostColor === 'white' ? 'black' : 'white';
+		const hostName = game.state.players[hostColor]?.name ?? game.state.inviter.name;
+		const guestName = game.state.players[guestColor]?.name ?? 'Adversaire';
+		const hostScore = game.state.matchScore.host;
+		const guestScore = game.state.matchScore.guest;
+		return `Score actuel: ${hostName}: ${hostScore} - ${guestName}: ${guestScore}`;
 	});
 
 	const repetitionDrawModalTitle = $derived('Egalite par repetition');
@@ -382,6 +417,12 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get bottomReservePieces() {
 			return bottomReservePieces;
+		},
+		get topPlayerScore() {
+			return topPlayerScore;
+		},
+		get bottomPlayerScore() {
+			return bottomPlayerScore;
 		},
 		get displayBoard() {
 			return displayBoard;

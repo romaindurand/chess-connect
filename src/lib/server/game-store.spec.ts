@@ -122,6 +122,49 @@ describe('game-store time control', () => {
 		expect(record.state.rematchRequestedBy).toBe(oppositeColor(hostColor));
 	});
 
+	it('tracks match score by player across color swaps', async () => {
+		const { state, token: hostToken } = await createGame('Alice', { timeLimitMinutes: 1 });
+		const joinResult = await joinGame(state.id, 'Bob');
+		const playerToken = joinResult.token;
+		const record = getGameOrThrow(state.id);
+
+		const hostColor = record.state.hostColor;
+		if (!hostColor) {
+			throw new Error('host color should be assigned after join');
+		}
+
+		for (let round = 0; round < 2; round += 1) {
+			const currentHostColor = record.state.hostColor;
+			if (!currentHostColor) {
+				throw new Error('host color should exist during active round');
+			}
+			const guestColor = oppositeColor(currentHostColor);
+
+			record.state.turn = guestColor;
+			record.state.turnStartedAt = Date.now() - 61_000;
+			if (record.state.timeRemainingMs) {
+				record.state.timeRemainingMs[guestColor] = 60_000;
+			}
+
+			await playMove(state.id, hostToken, {
+				kind: 'place',
+				piece: 'pawn',
+				to: { x: 0, y: 0 }
+			});
+
+			expect(record.state.status).toBe('finished');
+			expect(record.state.winner).toBe(currentHostColor);
+
+			if (round === 0) {
+				await requestRematch(state.id, hostToken);
+				await acceptRematch(state.id, playerToken);
+			}
+		}
+
+		expect(record.state.matchScore.host).toBe(2);
+		expect(record.state.matchScore.guest).toBe(0);
+	});
+
 	it('auto-resets the round on third repeated position without changing score', async () => {
 		const { state, token: hostToken } = await createGame('Alice');
 		const joinResult = await joinGame(state.id, 'Bob');

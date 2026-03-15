@@ -31,6 +31,11 @@ export interface PlayersByColor {
 	black: PlayerInfo | null;
 }
 
+export interface MatchScore {
+	host: number;
+	guest: number;
+}
+
 export type GameOptionValue = string | number | boolean | null | undefined;
 
 export interface GameOptions {
@@ -62,6 +67,7 @@ export interface GameState {
 	winner: Color | null;
 	bestOfWinner: Color | null;
 	score: Record<Color, number>;
+	matchScore: MatchScore;
 	gameNumber: number;
 	bestOf: 3;
 	timeControlEnabled: boolean;

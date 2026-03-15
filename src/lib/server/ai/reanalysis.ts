@@ -32,6 +32,7 @@ function createReplayState(): GameState {
 		winner: null,
 		bestOfWinner: null,
 		score: { white: 0, black: 0 },
+		matchScore: { host: 0, guest: 0 },
 		gameNumber: 1,
 		bestOf: 3,
 		timeControlEnabled: false,
