@@ -73,3 +73,43 @@ AI_CHECKPOINT_PATH=checkpoints/model
 
 Les artefacts de self-play sont écrits dans `artifacts/ai/` (ignorés par git).  
 Le dossier `checkpoints/model/` est également ignoré par git — il doit être généré localement ou fourni séparément.
+
+### Réutiliser les parties humaines pour l'entraînement
+
+Les parties terminées (joueur vs joueur et joueur vs IA) peuvent être enregistrées automatiquement
+dans un fichier JSONL local :
+
+```env
+AI_GAMES_PATH=artifacts/ai/recorded-games.jsonl
+```
+
+Chaque position rejouée est ensuite reanalysée avec MCTS pour produire une distribution complète
+des coups (au lieu d'un simple one-hot du coup joué), puis fusionnée avec le dataset self-play.
+
+```bash
+# Reanalyse des parties enregistrées avec MCTS + fusion avec self-play
+pnpm ai:reanalyse-games -- \
+	--games=artifacts/ai/recorded-games.jsonl \
+	--base=artifacts/ai/self-play.json \
+	--output=artifacts/ai/training-data.json \
+	--simulations=32
+
+# Entraînement sur dataset fusionné
+pnpm ai:train-network -- --dataset=artifacts/ai/training-data.json --output=checkpoints/model
+```
+
+Pour fusionner plusieurs sources (local + serveur de prod), répéter `--games` :
+
+```bash
+pnpm ai:reanalyse-games -- \
+	--games=artifacts/ai/recorded-games.jsonl \
+	--games=artifacts/ai/recorded-games-prod.jsonl \
+	--base=artifacts/ai/self-play.json \
+	--output=artifacts/ai/training-data.json
+```
+
+Options utiles :
+
+- `--simulations=<n>` : budget MCTS par position pendant la reanalyse (défaut: 32)
+- `--max-games=<n>` : limite le nombre de parties rejouées
+- `--max-samples-per-game=<n>` : limite le nombre de positions extraites par partie

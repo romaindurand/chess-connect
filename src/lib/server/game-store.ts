@@ -1,8 +1,10 @@
 import { createHmac, randomUUID } from 'node:crypto';
+import path from 'node:path';
 
 import { applyPlayerMove, createInitialBoard, getLegalOptionsForColor } from './game-engine';
 import { chooseAiMove } from './ai/agent';
 import { AI_PLAYER_NAME } from './ai/config';
+import { recordCompletedGame } from './ai/game-recorder';
 import { ModelManager } from './ai/model';
 import {
 	DEFAULT_GAME_OPTIONS,
@@ -317,6 +319,9 @@ function finalizeWinner(record: GameRecord, winner: Color, now: number): void {
 	if (record.state.score[winner] >= 2) {
 		record.state.bestOfWinner = winner;
 	}
+
+	const outPath = path.resolve(process.env.AI_GAMES_PATH ?? 'artifacts/ai/recorded-games.jsonl');
+	recordCompletedGame(record.state, outPath);
 }
 
 function applyTimeoutIfExpired(record: GameRecord, now: number): boolean {

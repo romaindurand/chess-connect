@@ -15,6 +15,7 @@
 		"ai:self-play": "tsx scripts/ai/self-play.ts",
 		"ai:train": "tsx scripts/ai/train.ts",
 		"ai:auto-train": "tsx scripts/ai/auto-train.ts",
+		"ai:reanalyse-games": "tsx scripts/ai/reanalyse-games.ts",
 		"ai:train-network": "tsx scripts/ai/train-network.ts",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run"

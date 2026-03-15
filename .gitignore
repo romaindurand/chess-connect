@@ -23,6 +23,8 @@ vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 artifacts/ai/baseline-frequency.json
 artifacts/ai/self-play.json
+artifacts/ai/recorded-games.jsonl
+artifacts/ai/training-data.json
 
 # AI checkpoints (modèles entraînés, potentiellement volumineux)
 checkpoints/model/
