@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
@@ -9,10 +10,17 @@
 	import MoveHistoryPanel from '$lib/components/game/MoveHistoryPanel.svelte';
 	import ReserveRow from '$lib/components/game/ReserveRow.svelte';
 	import GameDialog from '$lib/components/GameDialog.svelte';
+	import { buildPageTitle, OG_IMAGE_ALT, toAbsoluteUrl, TWITTER_CARD } from '$lib/seo';
 	import { createGameState } from '$lib/state/game.svelte';
+	import favicon from '$lib/assets/favicon.png';
 
 	const props = $props<{ data: { gameId: string } }>();
 	const state = createGameState(() => props.data.gameId);
+	const pageTitle = $derived(`Partie ${props.data.gameId}`);
+	const pageDescription =
+		"Rejoignez une partie Chess Connect et jouez en ligne a ce melange d'echecs et de puissance 4 contre un ami ou l'IA.";
+	const canonicalUrl = $derived(page.url.href);
+	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
 
 	onMount(async () => {
 		await state.lifecycle.init();
@@ -23,10 +31,25 @@
 	});
 </script>
 
+<svelte:head>
+	<title>{buildPageTitle(pageTitle)}</title>
+	<meta name="description" content={pageDescription} />
+	<link rel="canonical" href={canonicalUrl} />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content={buildPageTitle(pageTitle)} />
+	<meta property="og:description" content={pageDescription} />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:image" content={ogImageUrl} />
+	<meta property="og:image:alt" content={OG_IMAGE_ALT} />
+	<meta name="twitter:card" content={TWITTER_CARD} />
+	<meta name="twitter:title" content={buildPageTitle(pageTitle)} />
+	<meta name="twitter:description" content={pageDescription} />
+	<meta name="twitter:image" content={ogImageUrl} />
+</svelte:head>
+
 <main class="mx-auto max-w-3xl px-4 py-6">
 	<GameHeader
 		gameId={state.view.gameId}
-		roleText={state.view.roleText}
 		turnLineText={state.view.turnLineText}
 		isViewerTurnNow={state.view.isViewerTurnNow}
 		copying={state.view.copying}

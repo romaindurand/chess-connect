@@ -1,11 +1,20 @@
 <script lang="ts">
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
 
 	import { createGameRemote } from '$lib/client/game-api';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
+	import { buildPageTitle, OG_IMAGE_ALT, toAbsoluteUrl, TWITTER_CARD } from '$lib/seo';
 	import type { HostColorPreference, OpponentType } from '$lib/types/game';
+	import favicon from '$lib/assets/favicon.png';
+
+	const pageTitle = 'Jouez en ligne';
+	const pageDescription =
+		"Creez une partie Chess Connect, invitez un ami ou affrontez l'IA dans un jeu tactique melangeant echecs et alignement de quatre pieces.";
+	const canonicalUrl = $derived(page.url.href);
+	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
 
 	let name = $state('');
 	let opponentType = $state<OpponentType>('human');
@@ -53,6 +62,22 @@
 		}
 	}
 </script>
+
+<svelte:head>
+	<title>{buildPageTitle(pageTitle)}</title>
+	<meta name="description" content={pageDescription} />
+	<link rel="canonical" href={canonicalUrl} />
+	<meta property="og:type" content="website" />
+	<meta property="og:title" content={buildPageTitle(pageTitle)} />
+	<meta property="og:description" content={pageDescription} />
+	<meta property="og:url" content={canonicalUrl} />
+	<meta property="og:image" content={ogImageUrl} />
+	<meta property="og:image:alt" content={OG_IMAGE_ALT} />
+	<meta name="twitter:card" content={TWITTER_CARD} />
+	<meta name="twitter:title" content={buildPageTitle(pageTitle)} />
+	<meta name="twitter:description" content={pageDescription} />
+	<meta name="twitter:image" content={ogImageUrl} />
+</svelte:head>
 
 <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-8">
 	<h1 class="mb-4 text-3xl font-semibold">Chess Connect</h1>

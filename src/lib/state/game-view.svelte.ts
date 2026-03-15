@@ -275,20 +275,6 @@ export function createGameView(input: GameViewFactoryInput) {
 		return `Gagnant: ${winnerName} (${winnerColor})`;
 	});
 
-	const roleText = $derived.by(() => {
-		const game = input.getGame();
-		if (!game) {
-			return '';
-		}
-		if (game.viewerRole === 'white' || game.viewerRole === 'black') {
-			return `Vous êtes ${game.viewerRole === 'white' ? 'Blanc' : 'Noir'}`;
-		}
-		if (game.viewerRole === 'spectator') {
-			return 'Mode spectateur';
-		}
-		return '';
-	});
-
 	const turnLineText = $derived.by(() => {
 		const game = input.getGame();
 		if (!game) {
@@ -465,9 +451,6 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get winnerDetailsLine() {
 			return winnerDetailsLine;
-		},
-		get roleText() {
-			return roleText;
 		},
 		get turnLineText() {
 			return turnLineText;
