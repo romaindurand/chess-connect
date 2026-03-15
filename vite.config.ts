@@ -4,6 +4,9 @@ import { sveltekit } from '@sveltejs/kit/vite';
 
 export default defineConfig({
 	plugins: [tailwindcss(), sveltekit()],
+	ssr: {
+		external: ['@tensorflow/tfjs']
+	},
 	test: {
 		expect: { requireAssertions: true },
 		projects: [
