@@ -281,7 +281,9 @@ export function createGameView(input: GameViewFactoryInput) {
 			return '';
 		}
 		if (game.state.winner) {
-			return `Partie terminée — gagnant: ${game.state.winner === 'white' ? 'Blanc' : 'Noir'}`;
+			const whiteName = game.state.players.white?.name ?? 'Joueur blanc';
+			const blackName = game.state.players.black?.name ?? 'Joueur noir';
+			return `Partie terminée — gagnant: ${game.state.winner === 'white' ? `${whiteName} (blanc)` : `${blackName} (noir)`}`;
 		}
 		if (game.viewerRole !== 'white' && game.viewerRole !== 'black') {
 			return '';
