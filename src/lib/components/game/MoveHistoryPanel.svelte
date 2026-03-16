@@ -57,7 +57,7 @@
 
 <aside class="rounded border border-gray-300 p-2">
 	<p class="mb-2 text-xs font-medium text-gray-700">Historique</p>
-	<div class="h-72 overflow-y-auto rounded border border-gray-200 bg-white">
+	<div class="lg:h-130 h-full overflow-y-auto rounded border border-gray-200 bg-white">
 		{#if entries.length === 0}
 			<p class="p-3 text-xs text-gray-500">Aucun coup joué.</p>
 		{:else}

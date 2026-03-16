@@ -72,25 +72,27 @@
 			/>
 		{/if}
 
-		<div class="space-y-3">
-			<ReserveRow
-				playerName={state.view.game.state.players.black?.name ?? 'En attente'}
-				playerScore={state.view.topPlayerScore}
-				isActiveTurn={state.view.displayTurn === 'black'}
-				reserveColor={state.view.topReserveColor}
-				pieces={state.view.topReservePieces}
-				isMine={state.view.topReserveIsMine}
-				isMyTurn={state.view.isMyTurn}
-				selectedPiece={state.view.selectedReservePiece}
-				onClick={state.actions.onReserveClick}
-				onEnter={state.actions.onReserveHover}
-				onLeave={state.actions.clearReserveHover}
-				pieceTransitionName={state.view.reservePieceTransitionName}
-			/>
+		<div
+			class={`grid gap-3 ${state.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:items-start' : 'grid-cols-1'}`}
+		>
+			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-1' : ''}>
+				<ReserveRow
+					playerName={state.view.game.state.players.black?.name ?? 'En attente'}
+					playerScore={state.view.topPlayerScore}
+					isActiveTurn={state.view.displayTurn === 'black'}
+					reserveColor={state.view.topReserveColor}
+					pieces={state.view.topReservePieces}
+					isMine={state.view.topReserveIsMine}
+					isMyTurn={state.view.isMyTurn}
+					selectedPiece={state.view.selectedReservePiece}
+					onClick={state.actions.onReserveClick}
+					onEnter={state.actions.onReserveHover}
+					onLeave={state.actions.clearReserveHover}
+					pieceTransitionName={state.view.reservePieceTransitionName}
+				/>
+			</div>
 
-			<div
-				class={`grid gap-3 ${state.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem]' : 'grid-cols-1'}`}
-			>
+			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-2' : ''}>
 				<BoardGrid
 					board={state.view.displayBoard}
 					targetHints={state.view.targetHints}
@@ -101,8 +103,27 @@
 					onCellClick={state.actions.onCellClick}
 					pieceTransitionName={state.view.boardPieceTransitionName}
 				/>
+			</div>
 
-				{#if state.view.showHistoryPanel}
+			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-3' : ''}>
+				<ReserveRow
+					playerName={state.view.game.state.players.white?.name ?? 'En attente'}
+					playerScore={state.view.bottomPlayerScore}
+					isActiveTurn={state.view.displayTurn === 'white'}
+					reserveColor={state.view.bottomReserveColor}
+					pieces={state.view.bottomReservePieces}
+					isMine={state.view.bottomReserveIsMine}
+					isMyTurn={state.view.isMyTurn}
+					selectedPiece={state.view.selectedReservePiece}
+					onClick={state.actions.onReserveClick}
+					onEnter={state.actions.onReserveHover}
+					onLeave={state.actions.clearReserveHover}
+					pieceTransitionName={state.view.reservePieceTransitionName}
+				/>
+			</div>
+
+			{#if state.view.showHistoryPanel}
+				<div class="lg:col-start-2 lg:row-start-1 lg:row-span-3">
 					<MoveHistoryPanel
 						entries={state.view.historyEntries}
 						selectedMoveIndex={state.view.historySelectedMoveIndex}
@@ -112,23 +133,8 @@
 						onJumpNext={state.actions.jumpToHistoryNext}
 						onJumpLast={state.actions.jumpToHistoryLast}
 					/>
-				{/if}
-			</div>
-
-			<ReserveRow
-				playerName={state.view.game.state.players.white?.name ?? 'En attente'}
-				playerScore={state.view.bottomPlayerScore}
-				isActiveTurn={state.view.displayTurn === 'white'}
-				reserveColor={state.view.bottomReserveColor}
-				pieces={state.view.bottomReservePieces}
-				isMine={state.view.bottomReserveIsMine}
-				isMyTurn={state.view.isMyTurn}
-				selectedPiece={state.view.selectedReservePiece}
-				onClick={state.actions.onReserveClick}
-				onEnter={state.actions.onReserveHover}
-				onLeave={state.actions.clearReserveHover}
-				pieceTransitionName={state.view.reservePieceTransitionName}
-			/>
+				</div>
+			{/if}
 		</div>
 	{/if}
 
