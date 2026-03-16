@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { chooseTrainingBackend } from './tf-runtime';
+import { chooseTrainingBackend, initializeBestRuntimeBackend } from './tf-runtime';
 
 describe('chooseTrainingBackend', () => {
 	it('uses tensorflow backend before Node 24', () => {
@@ -15,5 +15,36 @@ describe('chooseTrainingBackend', () => {
 
 	it('falls back to cpu when version is malformed', () => {
 		expect(chooseTrainingBackend('x.y.z')).toBe('cpu');
+	});
+});
+
+describe('initializeBestRuntimeBackend', () => {
+	it('selects tensorflow when native backend works', async () => {
+		const result = await initializeBestRuntimeBackend({
+			importTfjsNode: async () => undefined,
+			setBackend: async () => undefined,
+			ready: async () => undefined,
+			validateTensorflowBackend: async () => undefined
+		});
+
+		expect(result).toEqual({ backend: 'tensorflow', fallbackReason: null });
+	});
+
+	it('falls back to cpu when native backend init fails', async () => {
+		let selectedBackend: 'tensorflow' | 'cpu' | null = null;
+		const result = await initializeBestRuntimeBackend({
+			importTfjsNode: async () => {
+				throw new Error('native bindings unavailable');
+			},
+			setBackend: async (backend) => {
+				selectedBackend = backend;
+			},
+			ready: async () => undefined,
+			validateTensorflowBackend: async () => undefined
+		});
+
+		expect(selectedBackend).toBe('cpu');
+		expect(result.backend).toBe('cpu');
+		expect(result.fallbackReason).toContain('native bindings unavailable');
 	});
 });
