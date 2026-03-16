@@ -1,4 +1,5 @@
 import * as tf from '@tensorflow/tfjs';
+import { createRequire } from 'node:module';
 
 export type TrainingBackend = 'tensorflow' | 'cpu';
 
@@ -17,8 +18,19 @@ export interface RuntimeBackendResult {
 }
 
 function defaultDeps(): RuntimeBackendDeps {
+	const require = createRequire(import.meta.url);
 	return {
-		importTfjsNode: () => import('@tensorflow/tfjs-node'),
+		importTfjsNode: async () => {
+			const utilModule = require('node:util') as {
+				isNullOrUndefined?: (value: unknown) => boolean;
+			};
+			if (typeof utilModule.isNullOrUndefined !== 'function') {
+				utilModule.isNullOrUndefined = (value: unknown): boolean =>
+					value === null || value === undefined;
+			}
+			// Load tfjs-node at runtime to avoid SSR bundling issues in the server build.
+			require('@tensorflow/tfjs-node');
+		},
 		setBackend: (backend) => tf.setBackend(backend),
 		ready: () => tf.ready(),
 		validateTensorflowBackend: async () => {
