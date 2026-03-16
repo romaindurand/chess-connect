@@ -36,6 +36,8 @@ interface GameLifecycleFactoryInput {
 	getHistoryStep: () => number | null;
 	setHistoryStep: (step: number | null) => void;
 	setHistorySnapshot: (snapshot: HistorySnapshot | null) => void;
+	getShowHistoryPanel: () => boolean;
+	setShowHistoryPanel: (open: boolean) => void;
 	setShowRepetitionDrawModal: (open: boolean) => void;
 }
 
@@ -212,6 +214,25 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			input.setShowRepetitionDrawModal(true);
 		}
 
+		const changedRound =
+			previousGame && previousGame.state.gameNumber !== snapshot.state.gameNumber;
+		if (changedRound) {
+			// Keep the UX simple: every new round starts with history closed.
+			input.setShowHistoryPanel(false);
+			input.setHistoryStep(null);
+			input.setHistorySnapshot(null);
+		}
+
+		const justFinished =
+			(previousGame
+				? previousGame.state.status !== 'finished' && snapshot.state.status === 'finished'
+				: snapshot.state.status === 'finished') && Boolean(snapshot.state.winner);
+		if (justFinished) {
+			input.setShowHistoryPanel(true);
+			input.setHistoryStep(snapshot.state.moveHistory.length);
+			input.setHistorySnapshot(null);
+		}
+
 		if (resumeLiveHistory) {
 			const nextLength = snapshot.state.moveHistory.length;
 			input.setHistoryStep(nextLength);
@@ -304,8 +325,20 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 
 	async function refreshState(): Promise<void> {
 		try {
+			const previousGame = input.getGame();
 			const game = await getGameViewRemote(input.getGameId());
 			input.setGame(game);
+			const changedRound = previousGame && previousGame.state.gameNumber !== game.state.gameNumber;
+			if (changedRound) {
+				input.setShowHistoryPanel(false);
+				input.setHistoryStep(null);
+				input.setHistorySnapshot(null);
+			}
+			if (!input.getShowHistoryPanel() && game.state.status === 'finished' && game.state.winner) {
+				input.setShowHistoryPanel(true);
+				input.setHistoryStep(game.state.moveHistory.length);
+				input.setHistorySnapshot(null);
+			}
 			input.setErrorMessage('');
 		} catch (error) {
 			input.setErrorMessage(

@@ -72,6 +72,50 @@
 			/>
 		{/if}
 
+		{#if state.view.isGameFinished}
+			<section class="mb-3 rounded border border-black bg-white p-4 shadow-sm">
+				<p class="text-lg font-semibold">{state.view.winnerModalTitle}</p>
+				{#if state.view.winnerDetailsLine}
+					<p class="mt-1 text-sm text-gray-700">{state.view.winnerDetailsLine}</p>
+				{/if}
+				<p class="mt-2 text-sm text-gray-700">{state.view.winnerModalSubtitle}</p>
+
+				<div class="mt-4 flex flex-wrap items-center gap-2">
+					{#if state.view.canRequestRematch}
+						<button
+							type="button"
+							onclick={state.actions.onRequestRematch}
+							disabled={state.view.isSubmittingRematch}
+							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+						>
+							{state.view.isSubmittingRematch ? 'Envoi...' : 'Proposer une revanche'}
+						</button>
+					{:else if state.view.canAcceptRematch}
+						<button
+							type="button"
+							onclick={state.actions.onAcceptRematch}
+							disabled={state.view.isSubmittingRematch}
+							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+						>
+							{state.view.isSubmittingRematch ? 'Demarrage...' : 'Accepter la revanche'}
+						</button>
+					{:else if state.view.game?.state.rematchRequestedBy}
+						<p class="text-sm text-gray-700">Demande de revanche en attente...</p>
+					{:else if state.view.game?.state.bestOfWinner}
+						<p class="text-sm text-gray-700">Ce match est termine.</p>
+					{/if}
+
+					<button
+						type="button"
+						onclick={() => goto(resolve('/'))}
+						class="rounded border px-4 py-2 text-sm font-medium"
+					>
+						Nouvelle partie
+					</button>
+				</div>
+			</section>
+		{/if}
+
 		<div
 			class={`grid gap-3 ${state.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:items-start' : 'grid-cols-1'}`}
 		>
@@ -123,7 +167,7 @@
 			</div>
 
 			{#if state.view.showHistoryPanel}
-				<div class="lg:col-start-2 lg:row-start-1 lg:row-span-3">
+				<div class="lg:col-start-2 lg:row-span-3 lg:row-start-1">
 					<MoveHistoryPanel
 						entries={state.view.historyEntries}
 						selectedMoveIndex={state.view.historySelectedMoveIndex}
@@ -165,45 +209,6 @@
 				<p>{rule}</p>
 			{/each}
 		</div>
-	</GameDialog>
-
-	<GameDialog open={state.view.isGameFinished} closable={false} title={state.view.winnerModalTitle}>
-		{#if state.view.winnerDetailsLine}
-			<p class="mt-2">{state.view.winnerDetailsLine}</p>
-		{/if}
-		<p class="mt-2">{state.view.winnerModalSubtitle}</p>
-
-		{#if state.view.canRequestRematch}
-			<button
-				type="button"
-				onclick={state.actions.onRequestRematch}
-				disabled={state.view.isSubmittingRematch}
-				class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-			>
-				{state.view.isSubmittingRematch ? 'Envoi...' : 'Proposer une revanche'}
-			</button>
-		{:else if state.view.canAcceptRematch}
-			<button
-				type="button"
-				onclick={state.actions.onAcceptRematch}
-				disabled={state.view.isSubmittingRematch}
-				class="mt-4 rounded bg-black px-4 py-2 text-white disabled:opacity-50"
-			>
-				{state.view.isSubmittingRematch ? 'Démarrage...' : 'Accepter la revanche'}
-			</button>
-		{:else if state.view.game?.state.rematchRequestedBy}
-			<p class="mt-4">Demande de revanche en attente...</p>
-		{:else if state.view.game?.state.bestOfWinner}
-			<p class="mt-4">Ce match est terminé.</p>
-		{/if}
-
-		<button
-			type="button"
-			onclick={() => goto(resolve('/'))}
-			class="mt-4 rounded border px-4 py-2 text-sm font-medium"
-		>
-			Nouvelle partie
-		</button>
 	</GameDialog>
 
 	<GameDialog

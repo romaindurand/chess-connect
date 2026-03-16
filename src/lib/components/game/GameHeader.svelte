@@ -24,7 +24,7 @@
 	}: Props = $props();
 </script>
 
-<header class="mb-4 flex items-center justify-between gap-3">
+<header class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 	<div>
 		<h1 class="text-2xl font-semibold">Partie {gameId}</h1>
 		{#if turnLineText}
@@ -33,7 +33,7 @@
 			</p>
 		{/if}
 	</div>
-	<div class="flex items-center gap-2">
+	<div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
 		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onToggleHistory}>
 			<span class="inline-flex items-center gap-2">
 				<History class="h-4 w-4" />

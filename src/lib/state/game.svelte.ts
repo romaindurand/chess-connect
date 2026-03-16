@@ -92,6 +92,10 @@ export function createGameState(getGameId: () => string) {
 		setHistorySnapshot: (snapshot) => {
 			historySnapshot = snapshot;
 		},
+		getShowHistoryPanel: () => showHistoryPanel,
+		setShowHistoryPanel: (open) => {
+			showHistoryPanel = open;
+		},
 		setShowRepetitionDrawModal: (open) => {
 			showRepetitionDrawModal = open;
 		}
