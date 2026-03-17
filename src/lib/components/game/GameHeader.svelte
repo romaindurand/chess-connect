@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { History, Languages, Share2 } from '@lucide/svelte';
+	import { ChevronDown, History, Languages, Share2 } from '@lucide/svelte';
 	import { _ } from 'svelte-i18n';
 	import type { SupportedLanguage } from '$lib/i18n';
 
@@ -52,16 +52,22 @@
 		<label class="flex items-center gap-2 rounded border px-2 py-2 text-sm" title={$_('game.header.language')}>
 			<Languages class="h-4 w-4" aria-hidden="true" />
 			<span class="sr-only">{$_('game.header.language')}</span>
-			<select
-				class="border-0 bg-transparent p-0 pr-5 text-sm focus:ring-0"
-				value={currentLanguage}
-				onchange={(event) =>
-					onChangeLanguage((event.currentTarget as HTMLSelectElement).value as SupportedLanguage)}
-				aria-label={$_('game.header.language')}
-			>
-				<option value="fr">{$_('language.french')}</option>
-				<option value="en">{$_('language.english')}</option>
-			</select>
+			<span class="relative">
+				<select
+					class="appearance-none border-0 bg-transparent bg-none py-0 pl-0 pr-5 text-sm focus:ring-0"
+					value={currentLanguage}
+					onchange={(event) =>
+						onChangeLanguage((event.currentTarget as HTMLSelectElement).value as SupportedLanguage)}
+					aria-label={$_('game.header.language')}
+				>
+					<option value="fr">{$_('language.french')}</option>
+					<option value="en">{$_('language.english')}</option>
+				</select>
+				<ChevronDown
+					class="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500"
+					aria-hidden="true"
+				/>
+			</span>
 		</label>
 		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onShowRules}
 			>{$_('game.header.rules')}</button
