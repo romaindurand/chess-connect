@@ -122,6 +122,37 @@ describe('game-store time control', () => {
 		expect(record.state.rematchRequestedBy).toBe(oppositeColor(hostColor));
 	});
 
+	it('allows rematches indefinitely by default', async () => {
+		const { state, token: hostToken } = await createGame('Alice');
+		const joinResult = await joinGame(state.id, 'Bob');
+		const playerToken = joinResult.token;
+		const record = getGameOrThrow(state.id);
+
+		record.state.status = 'finished';
+		record.state.winner = record.state.hostColor;
+		record.state.matchScore.host = 12;
+		record.state.matchScore.guest = 11;
+		record.state.bestOfWinner = null;
+
+		await expect(requestRematch(state.id, hostToken)).resolves.toBeDefined();
+		await expect(acceptRematch(state.id, playerToken)).resolves.toBeDefined();
+		expect(record.state.status).toBe('active');
+	});
+
+	it('stops rematches when odd round limit is reached', async () => {
+		const { state, token: hostToken } = await createGame('Alice', { roundLimit: 5 });
+		await joinGame(state.id, 'Bob');
+		const record = getGameOrThrow(state.id);
+
+		record.state.status = 'finished';
+		record.state.winner = record.state.hostColor;
+		record.state.matchScore.host = 3;
+		record.state.matchScore.guest = 1;
+		record.state.bestOfWinner = record.state.hostColor;
+
+		await expect(requestRematch(state.id, hostToken)).rejects.toThrow('Le match est déjà terminé');
+	});
+
 	it('tracks match score by player across color swaps', async () => {
 		const { state, token: hostToken } = await createGame('Alice', { timeLimitMinutes: 1 });
 		const joinResult = await joinGame(state.id, 'Bob');

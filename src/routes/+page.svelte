@@ -21,6 +21,8 @@
 	let hostColor = $state<HostColorPreference>('random');
 	let timeControlEnabled = $state(false);
 	let timeLimitMinutes = $state(5);
+	let roundLimitEnabled = $state(false);
+	let roundLimit = $state(5);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 
@@ -44,12 +46,20 @@
 			errorMessage = $_('errors.timeLimitRange');
 			return;
 		}
+		if (
+			roundLimitEnabled &&
+			(!Number.isInteger(roundLimit) || roundLimit <= 0 || roundLimit % 2 === 0)
+		) {
+			errorMessage = $_('errors.roundLimitOddPositive');
+			return;
+		}
 
 		isSubmitting = true;
 		try {
 			const result = await createGameRemote({
 				name: trimmed,
 				timeLimitMinutes: timeControlEnabled ? timeLimitMinutes : undefined,
+				roundLimit: roundLimitEnabled ? roundLimit : undefined,
 				opponentType,
 				hostColor
 			});
@@ -190,6 +200,24 @@
 							max="30"
 							step="1"
 							bind:value={timeLimitMinutes}
+							class="w-full rounded-md border border-gray-300 px-3 py-2"
+						/>
+					</label>
+				{/if}
+
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" bind:checked={roundLimitEnabled} />
+					<span>{$_('home.enableRoundLimit')}</span>
+				</label>
+
+				{#if roundLimitEnabled}
+					<label class="block space-y-2">
+						<span class="text-sm">{$_('home.roundLimit')}</span>
+						<input
+							type="number"
+							min="1"
+							step="2"
+							bind:value={roundLimit}
 							class="w-full rounded-md border border-gray-300 px-3 py-2"
 						/>
 					</label>

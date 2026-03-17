@@ -17,8 +17,8 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] couleurs alternées pour la revanche
 - [x] choix noir/blanc dans les options
 - [x] n'importe quel joueur doit pouvoir proposer une revanche
-- [ ] internationalisation
-- [ ] ne pas limiter à un BO3, rendre le nombre de parties configurable
+- [x] internationalisation
+- [x] ne pas limiter à un BO3, rendre le nombre de parties configurable
 - [ ] création de compte avec token d'auth (pas de login/password, juste un token généré aléatoirement à la création du compte)
 - [ ] permettre de refuser l'utilisation de sa partie pour l'entraînement de l'IA
 - [ ] permettre le choix de la couleur en joueur contre joueur (pas juste en joueur contre IA)

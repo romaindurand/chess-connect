@@ -11,6 +11,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 	const input = body as {
 		name: unknown;
 		timeLimitMinutes?: unknown;
+		roundLimit?: unknown;
 		opponentType?: unknown;
 		hostColor?: unknown;
 		aiDifficulty?: unknown;
@@ -39,20 +40,28 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 		throw new Error("Le niveau d'IA est invalide");
 	}
 
-	if (input.timeLimitMinutes === undefined) {
-		return { name, opponentType, hostColor, aiDifficulty };
+	if (input.timeLimitMinutes !== undefined) {
+		if (typeof input.timeLimitMinutes !== 'number' || !Number.isInteger(input.timeLimitMinutes)) {
+			throw new Error('La limite de temps doit être un entier');
+		}
+		if (input.timeLimitMinutes < 1 || input.timeLimitMinutes > 30) {
+			throw new Error('La limite de temps doit être entre 1 et 30 minutes');
+		}
 	}
 
-	if (typeof input.timeLimitMinutes !== 'number' || !Number.isInteger(input.timeLimitMinutes)) {
-		throw new Error('La limite de temps doit être un entier');
-	}
-	if (input.timeLimitMinutes < 1 || input.timeLimitMinutes > 30) {
-		throw new Error('La limite de temps doit être entre 1 et 30 minutes');
+	if (input.roundLimit !== undefined) {
+		if (typeof input.roundLimit !== 'number' || !Number.isInteger(input.roundLimit)) {
+			throw new Error('Le nombre de manches doit être un entier');
+		}
+		if (input.roundLimit <= 0 || input.roundLimit % 2 === 0) {
+			throw new Error('Le nombre de manches doit être impair et strictement positif');
+		}
 	}
 
 	return {
 		name,
 		timeLimitMinutes: input.timeLimitMinutes,
+		roundLimit: input.roundLimit,
 		opponentType,
 		hostColor,
 		aiDifficulty
@@ -64,6 +73,7 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 		const payload = parseCreatePayload(await request.json());
 		const { state, token, color } = await createGame(payload.name, {
 			timeLimitMinutes: payload.timeLimitMinutes,
+			roundLimit: payload.roundLimit,
 			opponentType: payload.opponentType,
 			hostColor: payload.hostColor,
 			aiDifficulty: payload.aiDifficulty

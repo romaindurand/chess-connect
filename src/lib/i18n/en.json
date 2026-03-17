@@ -31,7 +31,9 @@
 		"colorRandom": "Random",
 		"advancedOptions": "Advanced options",
 		"enableTimeControl": "Enable time control",
+		"enableRoundLimit": "Limit number of rounds",
 		"timePerPlayer": "Time per player (minutes)",
+		"roundLimit": "Number of rounds (odd)",
 		"creating": "Creating...",
 		"playVsAi": "Play versus AI",
 		"createGame": "Create a new game"
@@ -109,6 +111,7 @@
 		"opponentType": "Opponent type",
 		"hostColor": "Chosen color",
 		"aiDifficulty": "AI level",
+		"roundLimit": "Number of rounds",
 		"ai": "AI",
 		"human": "Human",
 		"white": "White",
@@ -117,6 +120,7 @@
 		"yes": "Yes",
 		"no": "No",
 		"none": "None",
+		"rounds": "{value} rounds",
 		"minutes": "{value} min",
 		"seconds": "{value} s"
 	},
@@ -144,6 +148,8 @@
 		"invalidAiDifficulty": "Invalid AI level",
 		"timeLimitInteger": "Time limit must be an integer",
 		"timeLimitRange": "Time limit must be between 1 and 30 minutes",
+		"roundLimitInteger": "Round limit must be an integer",
+		"roundLimitOddPositive": "Round limit must be an odd positive integer",
 		"createGameError": "Game creation error",
 		"readGameError": "Game loading error",
 		"invalidActionType": "Unknown action type",
@@ -162,6 +168,7 @@
 		"twoPlayersRequired": "Two players are required to start the next round",
 		"gameAlreadyStarted": "Game is already started",
 		"invalidPlayerSession": "Invalid player session",
-		"roundNotFinished": "Current round is not finished"
+		"roundNotFinished": "Current round is not finished",
+		"matchFinished": "This match is already finished"
 	}
 }

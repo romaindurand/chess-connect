@@ -31,7 +31,9 @@
 		"colorRandom": "Aléatoire",
 		"advancedOptions": "Options avancées",
 		"enableTimeControl": "Activer une limite de temps",
+		"enableRoundLimit": "Limiter le nombre de manches",
 		"timePerPlayer": "Durée par joueur (minutes)",
+		"roundLimit": "Nombre de manches (impair)",
 		"creating": "Création...",
 		"playVsAi": "Jouer contre l'IA",
 		"createGame": "Créer une nouvelle partie"
@@ -109,6 +111,7 @@
 		"opponentType": "Type d'adversaire",
 		"hostColor": "Couleur choisie",
 		"aiDifficulty": "Niveau IA",
+		"roundLimit": "Nombre de manches",
 		"ai": "IA",
 		"human": "Humain",
 		"white": "Blanc",
@@ -117,6 +120,7 @@
 		"yes": "Oui",
 		"no": "Non",
 		"none": "Aucun",
+		"rounds": "{value} manches",
 		"minutes": "{value} min",
 		"seconds": "{value} s"
 	},
@@ -144,6 +148,8 @@
 		"invalidAiDifficulty": "Le niveau d'IA est invalide",
 		"timeLimitInteger": "La limite de temps doit être un entier",
 		"timeLimitRange": "La limite de temps doit être entre 1 et 30 minutes",
+		"roundLimitInteger": "Le nombre de manches doit être un entier",
+		"roundLimitOddPositive": "Le nombre de manches doit être impair et strictement positif",
 		"createGameError": "Erreur de création de partie",
 		"readGameError": "Erreur de lecture de partie",
 		"invalidActionType": "Type d'action inconnu",
@@ -162,6 +168,7 @@
 		"twoPlayersRequired": "Deux joueurs sont requis pour lancer la manche suivante",
 		"gameAlreadyStarted": "La partie est déjà démarrée",
 		"invalidPlayerSession": "Session joueur invalide",
-		"roundNotFinished": "La manche en cours n'est pas terminée"
+		"roundNotFinished": "La manche en cours n'est pas terminée",
+		"matchFinished": "Le match est déjà terminé"
 	}
 }

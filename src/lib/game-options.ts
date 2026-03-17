@@ -12,6 +12,9 @@ function humanizeOptionKey(key: string, format: OptionFormatter): string {
 	if (key === 'aiDifficulty') {
 		return format('options.aiDifficulty');
 	}
+	if (key === 'roundLimit') {
+		return format('options.roundLimit');
+	}
 
 	const withSpaces = key
 		.replace(/([a-z0-9])([A-Z])/g, '$1 $2')
@@ -35,6 +38,9 @@ function formatOptionValue(key: string, value: GameOptionValue, format: OptionFo
 	}
 	if (key === 'aiDifficulty' && typeof value === 'string') {
 		return value === 'baseline' ? 'Baseline' : value;
+	}
+	if (key === 'roundLimit' && typeof value === 'number') {
+		return format('options.rounds', { value });
 	}
 
 	if (typeof value === 'boolean') {

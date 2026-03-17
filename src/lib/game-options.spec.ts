@@ -8,10 +8,14 @@ const format = (key: string, values?: Record<string, unknown>): string => {
 	if (key === 'options.seconds') {
 		return `${values?.value} s`;
 	}
+	if (key === 'options.rounds') {
+		return `${values?.value} manches`;
+	}
 	const labels: Record<string, string> = {
 		'options.opponentType': "Type d'adversaire",
 		'options.hostColor': 'Couleur choisie',
 		'options.aiDifficulty': 'Niveau IA',
+		'options.roundLimit': 'Nombre de manches',
 		'options.ai': 'IA',
 		'options.human': 'Humain',
 		'options.white': 'Blanc',
@@ -55,5 +59,11 @@ describe('game options listing', () => {
 				format
 			)
 		).toEqual(["Type d'adversaire: IA", 'Couleur choisie: Noir']);
+	});
+
+	it('includes odd round limit when configured', () => {
+		expect(listNonDefaultGameOptions({ timeLimitMinutes: null, roundLimit: 5 }, format)).toEqual([
+			'Nombre de manches: 5 manches'
+		]);
 	});
 });

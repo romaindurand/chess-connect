@@ -20,6 +20,8 @@ const SERVER_ERROR_KEYS: Record<string, string> = {
 	"Le niveau d'IA est invalide": 'errors.invalidAiDifficulty',
 	'La limite de temps doit être un entier': 'errors.timeLimitInteger',
 	'La limite de temps doit être entre 1 et 30 minutes': 'errors.timeLimitRange',
+	'Le nombre de manches doit être un entier': 'errors.roundLimitInteger',
+	'Le nombre de manches doit être impair et strictement positif': 'errors.roundLimitOddPositive',
 	'Erreur de création de partie': 'errors.createGameError',
 	'Erreur de lecture de partie': 'errors.readGameError',
 	"Type d'action inconnu": 'errors.invalidActionType',
@@ -41,6 +43,7 @@ const SERVER_ERROR_KEYS: Record<string, string> = {
 	'La partie est déjà démarrée': 'errors.gameAlreadyStarted',
 	'Session joueur invalide': 'errors.invalidPlayerSession',
 	"La manche en cours n'est pas terminée": 'errors.roundNotFinished',
+	'Le match est déjà terminé': 'errors.matchFinished',
 	'Impossible de créer la partie': 'errors.createGameFailed',
 	'Impossible de rejoindre la partie': 'errors.joinGameFailed',
 	'Impossible de proposer une revanche': 'errors.requestRematchFailed',
@@ -108,7 +111,10 @@ export function translate(key: string, values?: Record<string, unknown>): string
 	const interpolationValues = values as
 		| Record<string, string | number | boolean | Date | null | undefined>
 		| undefined;
-	return formatter(key, interpolationValues ? { values: interpolationValues } : undefined) as string;
+	return formatter(
+		key,
+		interpolationValues ? { values: interpolationValues } : undefined
+	) as string;
 }
 
 export function localizeServerError(message: string): string {

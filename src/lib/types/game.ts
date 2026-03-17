@@ -40,6 +40,7 @@ export type GameOptionValue = string | number | boolean | null | undefined;
 
 export interface GameOptions {
 	timeLimitMinutes: number | null;
+	roundLimit?: number | null;
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
@@ -48,6 +49,7 @@ export interface GameOptions {
 
 export const DEFAULT_GAME_OPTIONS: GameOptions = {
 	timeLimitMinutes: null,
+	roundLimit: null,
 	opponentType: 'human',
 	hostColor: 'random',
 	aiDifficulty: 'baseline'
@@ -69,7 +71,7 @@ export interface GameState {
 	score: Record<Color, number>;
 	matchScore: MatchScore;
 	gameNumber: number;
-	bestOf: 3;
+	bestOf: number | null;
 	timeControlEnabled: boolean;
 	timeControlPerPlayerSeconds: number | null;
 	timeRemainingMs: Record<Color, number> | null;
@@ -138,6 +140,7 @@ export type PlayerMove = PlaceMove | BoardMove;
 export interface CreateGamePayload {
 	name: string;
 	timeLimitMinutes?: number;
+	roundLimit?: number;
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;

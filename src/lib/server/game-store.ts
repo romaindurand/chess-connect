@@ -52,6 +52,7 @@ interface Store {
 
 interface CreateGameOptions {
 	timeLimitMinutes?: number;
+	roundLimit?: number;
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
@@ -141,6 +142,7 @@ function createNewState(
 	const now = Date.now();
 	const gameOptions: GameOptions = {
 		timeLimitMinutes: options?.timeLimitMinutes ?? DEFAULT_GAME_OPTIONS.timeLimitMinutes,
+		roundLimit: options?.roundLimit ?? DEFAULT_GAME_OPTIONS.roundLimit,
 		opponentType: options?.opponentType ?? DEFAULT_GAME_OPTIONS.opponentType,
 		hostColor: options?.hostColor ?? DEFAULT_GAME_OPTIONS.hostColor,
 		aiDifficulty: options?.aiDifficulty ?? DEFAULT_GAME_OPTIONS.aiDifficulty
@@ -183,7 +185,7 @@ function createNewState(
 			guest: 0
 		},
 		gameNumber: 1,
-		bestOf: 3,
+		bestOf: gameOptions.roundLimit ?? null,
 		timeControlEnabled,
 		timeControlPerPlayerSeconds,
 		timeRemainingMs,
@@ -325,7 +327,11 @@ function finalizeWinner(record: GameRecord, winner: Color, now: number): void {
 	} else {
 		record.state.matchScore.guest += 1;
 	}
-	if (record.state.matchScore.host >= 2 || record.state.matchScore.guest >= 2) {
+	const requiredWins = getRequiredWins(record.state.bestOf);
+	if (
+		requiredWins !== null &&
+		(record.state.matchScore.host >= requiredWins || record.state.matchScore.guest >= requiredWins)
+	) {
 		record.state.bestOfWinner = winner;
 	}
 
@@ -356,7 +362,22 @@ function applyTimeoutIfExpired(record: GameRecord, now: number): boolean {
 }
 
 function isBestOfFinished(state: GameState): boolean {
-	return Boolean(state.bestOfWinner || state.matchScore.host >= 2 || state.matchScore.guest >= 2);
+	const requiredWins = getRequiredWins(state.bestOf);
+	if (requiredWins === null) {
+		return false;
+	}
+	return Boolean(
+		state.bestOfWinner ||
+		state.matchScore.host >= requiredWins ||
+		state.matchScore.guest >= requiredWins
+	);
+}
+
+function getRequiredWins(bestOf: number | null): number | null {
+	if (bestOf === null) {
+		return null;
+	}
+	return Math.floor(bestOf / 2) + 1;
 }
 
 function oppositeColor(color: Color): Color {
@@ -729,7 +750,7 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 			throw new Error("La manche en cours n'est pas terminée");
 		}
 		if (isBestOfFinished(state)) {
-			throw new Error('Le best of 3 est déjà terminé');
+			throw new Error('Le match est déjà terminé');
 		}
 		if (isAiGame(state)) {
 			record.state = createNextRoundState(state, true);
@@ -768,7 +789,7 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 			throw new Error("La manche en cours n'est pas terminée");
 		}
 		if (isBestOfFinished(state)) {
-			throw new Error('Le best of 3 est déjà terminé');
+			throw new Error('Le match est déjà terminé');
 		}
 		if (!state.rematchRequestedBy) {
 			throw new Error('Aucune demande de revanche en attente');
