@@ -6,14 +6,15 @@ import type {
 	PlayMovePayload,
 	ServerEvent
 } from '$lib/types/game';
+import { localizeServerError, translate } from '$lib/i18n';
 
 async function readJsonOrThrow<T>(response: Response): Promise<T> {
 	const payload = (await response.json()) as T | { error: string };
 	if (!response.ok) {
 		const message =
 			typeof payload === 'object' && payload !== null && 'error' in payload
-				? String(payload.error)
-				: 'Erreur inattendue';
+				? localizeServerError(String(payload.error))
+				: translate('errors.unexpected');
 		throw new Error(message);
 	}
 	return payload as T;

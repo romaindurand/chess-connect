@@ -21,6 +21,7 @@ import {
 	type PieceType,
 	type PlayMovePayload
 } from '$lib/types/game';
+import { translate } from '$lib/i18n';
 
 interface GameActionsFactoryInput {
 	getGameId: () => string;
@@ -208,7 +209,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		}
 
 		if (!updatedGame) {
-			throw new Error('Coup invalide');
+			throw new Error(translate('errors.invalidMove'));
 		}
 
 		return updatedGame;
@@ -222,7 +223,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 	async function onJoin(name: string): Promise<boolean> {
 		const trimmed = name.trim();
 		if (trimmed.length < 2) {
-			input.setErrorMessage('Le pseudo doit contenir au moins 2 caractères.');
+			input.setErrorMessage(translate('errors.nameLength'));
 			return false;
 		}
 
@@ -234,7 +235,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			return true;
 		} catch (error) {
 			input.setErrorMessage(
-				error instanceof Error ? error.message : 'Impossible de rejoindre la partie'
+				error instanceof Error ? error.message : translate('errors.joinGameFailed')
 			);
 			return false;
 		}
@@ -266,7 +267,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			input.setErrorMessage('');
 		} catch (error) {
 			input.setErrorMessage(
-				error instanceof Error ? error.message : 'Impossible de proposer une revanche'
+				error instanceof Error ? error.message : translate('errors.requestRematchFailed')
 			);
 		} finally {
 			input.setIsSubmittingRematch(false);
@@ -286,7 +287,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			input.setErrorMessage('');
 		} catch (error) {
 			input.setErrorMessage(
-				error instanceof Error ? error.message : 'Impossible de démarrer la revanche'
+				error instanceof Error ? error.message : translate('errors.startRematchFailed')
 			);
 		} finally {
 			input.setIsSubmittingRematch(false);
@@ -344,7 +345,9 @@ export function createGameActions(input: GameActionsFactoryInput) {
 					);
 					resetSelection();
 				} catch (error) {
-					input.setErrorMessage(error instanceof Error ? error.message : 'Coup invalide');
+					input.setErrorMessage(
+						error instanceof Error ? error.message : translate('errors.invalidMove')
+					);
 				}
 				return;
 			}
@@ -376,7 +379,9 @@ export function createGameActions(input: GameActionsFactoryInput) {
 					);
 					resetSelection();
 				} catch (error) {
-					input.setErrorMessage(error instanceof Error ? error.message : 'Coup invalide');
+					input.setErrorMessage(
+						error instanceof Error ? error.message : translate('errors.invalidMove')
+					);
 				}
 				return;
 			}

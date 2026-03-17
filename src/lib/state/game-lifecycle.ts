@@ -13,6 +13,7 @@ import {
 	type PieceOnBoard,
 	type PieceType
 } from '$lib/types/game';
+import { translate } from '$lib/i18n';
 
 interface GameLifecycleFactoryInput {
 	getGameId: () => string;
@@ -318,7 +319,7 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			}
 		});
 		stream.onerror = () => {
-			input.setErrorMessage('Connexion temps réel interrompue, reconnexion en cours...');
+			input.setErrorMessage(translate('errors.realTimeDisconnected'));
 		};
 		input.setStream(stream);
 	}
@@ -342,7 +343,7 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			input.setErrorMessage('');
 		} catch (error) {
 			input.setErrorMessage(
-				error instanceof Error ? error.message : 'Impossible de charger la partie'
+				error instanceof Error ? error.message : translate('errors.loadGameFailed')
 			);
 		} finally {
 			input.setLoading(false);

@@ -1,0 +1,167 @@
+{
+	"meta": {
+		"siteName": "Chess Connect",
+		"siteDescription": "Chess Connect est un jeu de plateau multijoueur en ligne qui mélange échecs et puissance 4.",
+		"siteLocale": "fr_FR",
+		"ogImageAlt": "Logo Chess Connect, un jeu en ligne mélangeant échecs et puissance 4.",
+		"twitterCard": "summary"
+	},
+	"common": {
+		"loading": "Chargement...",
+		"close": "Fermer",
+		"gameNotFound": "Partie introuvable",
+		"waiting": "En attente"
+	},
+	"language": {
+		"french": "Français",
+		"english": "Anglais"
+	},
+	"home": {
+		"pageTitle": "Jouez en ligne",
+		"pageDescription": "Créez une partie Chess Connect, invitez un ami ou affrontez l'IA dans ce mélange tactique d'échecs et de puissance 4.",
+		"subtitle": "Créez une partie, partagez le lien, puis jouez en direct.",
+		"nameLabel": "Votre pseudo",
+		"namePlaceholder": "Ex: Romain",
+		"gameType": "Type de partie",
+		"versusHuman": "Contre un joueur",
+		"versusAi": "Contre l'IA",
+		"yourColor": "Votre couleur",
+		"colorWhite": "Blanc",
+		"colorBlack": "Noir",
+		"colorRandom": "Aléatoire",
+		"advancedOptions": "Options avancées",
+		"enableTimeControl": "Activer une limite de temps",
+		"timePerPlayer": "Durée par joueur (minutes)",
+		"creating": "Création...",
+		"playVsAi": "Jouer contre l'IA",
+		"createGame": "Créer une nouvelle partie"
+	},
+	"game": {
+		"pageTitle": "Partie {id}",
+		"pageDescription": "Rejoignez une partie Chess Connect et jouez en ligne contre un ami ou l'IA dans un mélange tactique d'échecs et de puissance 4.",
+		"header": {
+			"history": "Historique",
+			"hideHistory": "Masquer historique",
+			"language": "Langue",
+			"rules": "Règles",
+			"copiedLink": "Lien copié",
+			"copyLink": "Copier le lien"
+		},
+		"invite": {
+			"pending": "Invitation en attente - {name} vous invite à rejoindre la partie.",
+			"options": "Options de la partie",
+			"nameLabel": "Votre pseudo",
+			"accept": "Accepter l'invitation"
+		},
+		"history": {
+			"title": "Historique",
+			"empty": "Aucun coup joué.",
+			"firstMove": "Premier coup",
+			"previousMove": "Coup précédent",
+			"nextMove": "Coup suivant",
+			"lastMove": "Dernier coup"
+		},
+		"rules": {
+			"title": "Règles",
+			"line1": "La partie se joue sur un plateau 4x4.",
+			"line2": "Les 6 premiers demi-coups servent uniquement à poser les pièces depuis la réserve.",
+			"line3": "Ensuite, les pièces se déplacent comme aux échecs, avec capture autorisée.",
+			"line4": "Un pion qui atteint un bord repart dans l'autre sens au coup suivant.",
+			"line5": "Une pièce capturée retourne dans la réserve de son propriétaire.",
+			"line6": "Vous gagnez en alignant 4 de vos pièces (ligne, colonne ou diagonale)."
+		},
+		"rematch": {
+			"sending": "Envoi...",
+			"starting": "Démarrage...",
+			"request": "Proposer une revanche",
+			"accept": "Accepter la revanche",
+			"pending": "Demande de revanche en attente...",
+			"finished": "Ce match est terminé.",
+			"newGame": "Nouvelle partie"
+		},
+		"repetition": {
+			"title": "Égalité par répétition",
+			"subtitle": "La même position est apparue 3 fois. Nouvelle manche prête avec couleurs inversées.",
+			"details": "Le score n'a pas changé, les joueurs échangent de couleur."
+		},
+		"winner": {
+			"victory": "Victoire 🎉",
+			"defeat": "Défaite",
+			"finished": "Partie terminée - {color} gagne",
+			"white": "Blanc",
+			"black": "Noir",
+			"opponent": "Adversaire",
+			"score": "Score actuel: {hostName}: {hostScore} - {guestName}: {guestScore}",
+			"whitePlayer": "Joueur blanc",
+			"blackPlayer": "Joueur noir",
+			"winner": "Gagnant: {name} ({color})"
+		},
+		"turn": {
+			"finished": "Partie terminée - gagnant: {winner}",
+			"whiteLower": "blanc",
+			"blackLower": "noir",
+			"turnNumber": "Tour {turnNumber}",
+			"yourTurn": "C'est à votre tour de jouer",
+			"opponentTurn": "C'est à l'adversaire de jouer"
+		}
+	},
+	"options": {
+		"opponentType": "Type d'adversaire",
+		"hostColor": "Couleur choisie",
+		"aiDifficulty": "Niveau IA",
+		"ai": "IA",
+		"human": "Humain",
+		"white": "Blanc",
+		"black": "Noir",
+		"random": "Aléatoire",
+		"yes": "Oui",
+		"no": "Non",
+		"none": "Aucun",
+		"minutes": "{value} min",
+		"seconds": "{value} s"
+	},
+	"piece": {
+		"pawn": "Pion",
+		"rook": "Tour",
+		"knight": "Cavalier",
+		"bishop": "Fou"
+	},
+	"errors": {
+		"unexpected": "Erreur inattendue",
+		"createGameFailed": "Impossible de créer la partie",
+		"joinGameFailed": "Impossible de rejoindre la partie",
+		"requestRematchFailed": "Impossible de proposer une revanche",
+		"startRematchFailed": "Impossible de démarrer la revanche",
+		"loadGameFailed": "Impossible de charger la partie",
+		"realTimeDisconnected": "Connexion temps réel interrompue, reconnexion en cours...",
+		"invalidMove": "Coup invalide",
+		"missingPlayerSession": "Session joueur manquante",
+		"invalidPayload": "Payload invalide",
+		"nameRequired": "Le nom est obligatoire",
+		"nameLength": "Le nom doit contenir entre 2 et 24 caractères",
+		"invalidOpponentType": "Le type d'adversaire est invalide",
+		"invalidHostColor": "La couleur choisie est invalide",
+		"invalidAiDifficulty": "Le niveau d'IA est invalide",
+		"timeLimitInteger": "La limite de temps doit être un entier",
+		"timeLimitRange": "La limite de temps doit être entre 1 et 30 minutes",
+		"createGameError": "Erreur de création de partie",
+		"readGameError": "Erreur de lecture de partie",
+		"invalidActionType": "Type d'action inconnu",
+		"actionImpossible": "Action impossible",
+		"gameNotActive": "La partie n'est pas active",
+		"notYourTurn": "Ce n'est pas votre tour",
+		"waitingForPlayer": "La partie attend encore un joueur",
+		"gameAlreadyFinished": "La partie est déjà terminée",
+		"openingPlacementOnly": "Durant les 6 premiers tours, seul le placement est autorisé",
+		"pieceUnavailable": "Pièce indisponible dans la réserve",
+		"invalidCell": "Case invalide",
+		"cellOccupied": "Case déjà occupée",
+		"invalidStartPiece": "Pièce de départ invalide",
+		"illegalMove": "Déplacement illégal",
+		"hostColorUnavailable": "Couleur hôte indisponible",
+		"twoPlayersRequired": "Deux joueurs sont requis pour lancer la manche suivante",
+		"gameAlreadyStarted": "La partie est déjà démarrée",
+		"invalidPlayerSession": "Session joueur invalide",
+		"roundNotFinished": "La manche en cours n'est pas terminée"
+	}
+}

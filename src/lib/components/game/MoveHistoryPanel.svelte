@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ChevronsLeft, ChevronLeft, ChevronRight, ChevronsRight } from '@lucide/svelte';
+	import { _ } from 'svelte-i18n';
 	import type { MoveHistoryEntry } from '$lib/types/game';
 
 	interface Props {
@@ -56,10 +57,10 @@
 </script>
 
 <aside class="rounded border border-gray-300 p-2">
-	<p class="mb-2 text-xs font-medium text-gray-700">Historique</p>
+	<p class="mb-2 text-xs font-medium text-gray-700">{$_('game.history.title')}</p>
 	<div class="h-full overflow-y-auto rounded border border-gray-200 bg-white lg:h-130">
 		{#if entries.length === 0}
-			<p class="p-3 text-xs text-gray-500">Aucun coup joué.</p>
+			<p class="p-3 text-xs text-gray-500">{$_('game.history.empty')}</p>
 		{:else}
 			{#each groupedRows as row (row.turn)}
 				{@const whiteMove = row.white}
@@ -101,7 +102,7 @@
 			type="button"
 			class="rounded border p-2"
 			onclick={onJumpFirst}
-			aria-label="Premier coup"
+			aria-label={$_('game.history.firstMove')}
 		>
 			<ChevronsLeft class="mx-auto h-4 w-4" />
 		</button>
@@ -109,14 +110,24 @@
 			type="button"
 			class="rounded border p-2"
 			onclick={onJumpPrevious}
-			aria-label="Coup précédent"
+			aria-label={$_('game.history.previousMove')}
 		>
 			<ChevronLeft class="mx-auto h-4 w-4" />
 		</button>
-		<button type="button" class="rounded border p-2" onclick={onJumpNext} aria-label="Coup suivant">
+		<button
+			type="button"
+			class="rounded border p-2"
+			onclick={onJumpNext}
+			aria-label={$_('game.history.nextMove')}
+		>
 			<ChevronRight class="mx-auto h-4 w-4" />
 		</button>
-		<button type="button" class="rounded border p-2" onclick={onJumpLast} aria-label="Dernier coup">
+		<button
+			type="button"
+			class="rounded border p-2"
+			onclick={onJumpLast}
+			aria-label={$_('game.history.lastMove')}
+		>
 			<ChevronsRight class="mx-auto h-4 w-4" />
 		</button>
 	</div>

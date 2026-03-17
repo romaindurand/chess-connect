@@ -1,4 +1,6 @@
 import { SvelteSet } from 'svelte/reactivity';
+import { fromStore } from 'svelte/store';
+import { _, locale } from 'svelte-i18n';
 import { listNonDefaultGameOptions } from '$lib/game-options';
 import {
 	coordKey,
@@ -36,6 +38,21 @@ interface GameViewFactoryInput {
 }
 
 export function createGameView(input: GameViewFactoryInput) {
+	const formatterStore = fromStore(_);
+	const localeStore = fromStore(locale);
+
+	function t(key: string, values?: Record<string, unknown>): string {
+		void localeStore.current;
+		const formatter = formatterStore.current;
+		if (!formatter) {
+			return key;
+		}
+		const interpolationValues = values as
+			| Record<string, string | number | boolean | Date | null | undefined>
+			| undefined;
+		return formatter(key, interpolationValues ? { values: interpolationValues } : undefined) as string;
+	}
+
 	const topReserveColor = $derived('black' as const);
 	const bottomReserveColor = $derived('white' as const);
 
@@ -121,7 +138,7 @@ export function createGameView(input: GameViewFactoryInput) {
 		if (!game) {
 			return [] as string[];
 		}
-		return listNonDefaultGameOptions(game.state.options);
+		return listNonDefaultGameOptions(game.state.options, t);
 	});
 
 	const targetHints = $derived.by(() => {
@@ -234,10 +251,14 @@ export function createGameView(input: GameViewFactoryInput) {
 		}
 
 		if (game.viewerRole === 'white' || game.viewerRole === 'black') {
-			return game.viewerColor === game.state.winner ? 'Victoire 🎉' : 'Défaite';
+			return game.viewerColor === game.state.winner
+				? t('game.winner.victory')
+				: t('game.winner.defeat');
 		}
 
-		return `Partie terminée — ${game.state.winner === 'white' ? 'Blanc' : 'Noir'} gagne`;
+		return t('game.winner.finished', {
+			color: game.state.winner === 'white' ? t('game.winner.white') : t('game.winner.black')
+		});
 	});
 
 	const winnerModalSubtitle = $derived.by(() => {
@@ -252,27 +273,26 @@ export function createGameView(input: GameViewFactoryInput) {
 		}
 		const guestColor = hostColor === 'white' ? 'black' : 'white';
 		const hostName = game.state.players[hostColor]?.name ?? game.state.inviter.name;
-		const guestName = game.state.players[guestColor]?.name ?? 'Adversaire';
+		const guestName = game.state.players[guestColor]?.name ?? t('game.winner.opponent');
 		const hostScore = game.state.matchScore.host;
 		const guestScore = game.state.matchScore.guest;
-		return `Score actuel: ${hostName}: ${hostScore} - ${guestName}: ${guestScore}`;
+		return t('game.winner.score', { hostName, hostScore, guestName, guestScore });
 	});
 
-	const repetitionDrawModalTitle = $derived('Egalite par repetition');
-	const repetitionDrawModalSubtitle = $derived(
-		'La meme position est apparue 3 fois. Nouvelle manche prete avec couleurs inversees.'
-	);
+	const repetitionDrawModalTitle = $derived.by(() => t('game.repetition.title'));
+	const repetitionDrawModalSubtitle = $derived.by(() => t('game.repetition.subtitle'));
 
 	const winnerDetailsLine = $derived.by(() => {
 		const game = input.getGame();
 		if (!game || !game.state.winner) {
 			return '';
 		}
-		const whiteName = game.state.players.white?.name ?? 'Joueur blanc';
-		const blackName = game.state.players.black?.name ?? 'Joueur noir';
+		const whiteName = game.state.players.white?.name ?? t('game.winner.whitePlayer');
+		const blackName = game.state.players.black?.name ?? t('game.winner.blackPlayer');
 		const winnerName = game.state.winner === 'white' ? whiteName : blackName;
-		const winnerColor = game.state.winner === 'white' ? 'Blanc' : 'Noir';
-		return `Gagnant: ${winnerName} (${winnerColor})`;
+		const winnerColor =
+			game.state.winner === 'white' ? t('game.winner.white') : t('game.winner.black');
+		return t('game.winner.winner', { name: winnerName, color: winnerColor });
 	});
 
 	const turnLineText = $derived.by(() => {
@@ -281,19 +301,23 @@ export function createGameView(input: GameViewFactoryInput) {
 			return '';
 		}
 		if (game.state.winner) {
-			const whiteName = game.state.players.white?.name ?? 'Joueur blanc';
-			const blackName = game.state.players.black?.name ?? 'Joueur noir';
-			return `Partie terminée — gagnant: ${game.state.winner === 'white' ? `${whiteName} (blanc)` : `${blackName} (noir)`}`;
+			const whiteName = game.state.players.white?.name ?? t('game.winner.whitePlayer');
+			const blackName = game.state.players.black?.name ?? t('game.winner.blackPlayer');
+			const winner =
+				game.state.winner === 'white'
+					? `${whiteName} (${t('game.turn.whiteLower')})`
+					: `${blackName} (${t('game.turn.blackLower')})`;
+			return t('game.turn.finished', { winner });
 		}
 		if (game.viewerRole !== 'white' && game.viewerRole !== 'black') {
 			return '';
 		}
 		const turnNumber = Math.floor(game.state.pliesPlayed / 2) + 1;
 		if (game.state.timeControlEnabled) {
-			return `Tour ${turnNumber}`;
+			return t('game.turn.turnNumber', { turnNumber });
 		}
 		const isViewerTurn = game.viewerColor === game.state.turn;
-		return `Tour ${turnNumber} — ${isViewerTurn ? "C'est à votre tour de jouer" : "C'est à l'adversaire de jouer"}`;
+		return `${t('game.turn.turnNumber', { turnNumber })} - ${isViewerTurn ? t('game.turn.yourTurn') : t('game.turn.opponentTurn')}`;
 	});
 
 	const isViewerTurnNow = $derived.by(() => {

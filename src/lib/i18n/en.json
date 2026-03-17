@@ -1,0 +1,167 @@
+{
+	"meta": {
+		"siteName": "Chess Connect",
+		"siteDescription": "Chess Connect is an online multiplayer board game mixing chess and connect four mechanics.",
+		"siteLocale": "en_US",
+		"ogImageAlt": "Chess Connect logo, an online game mixing chess and connect four.",
+		"twitterCard": "summary"
+	},
+	"common": {
+		"loading": "Loading...",
+		"close": "Close",
+		"gameNotFound": "Game not found",
+		"waiting": "Waiting"
+	},
+	"language": {
+		"french": "French",
+		"english": "English"
+	},
+	"home": {
+		"pageTitle": "Play online",
+		"pageDescription": "Create a Chess Connect game, invite a friend, or challenge the AI in this tactical hybrid of chess and connect four.",
+		"subtitle": "Create a game, share the link, then play live.",
+		"nameLabel": "Your nickname",
+		"namePlaceholder": "e.g. Romain",
+		"gameType": "Game type",
+		"versusHuman": "Versus a player",
+		"versusAi": "Versus AI",
+		"yourColor": "Your color",
+		"colorWhite": "White",
+		"colorBlack": "Black",
+		"colorRandom": "Random",
+		"advancedOptions": "Advanced options",
+		"enableTimeControl": "Enable time control",
+		"timePerPlayer": "Time per player (minutes)",
+		"creating": "Creating...",
+		"playVsAi": "Play versus AI",
+		"createGame": "Create a new game"
+	},
+	"game": {
+		"pageTitle": "Game {id}",
+		"pageDescription": "Join a Chess Connect game and play online against a friend or the AI in a tactical hybrid of chess and connect four.",
+		"header": {
+			"history": "History",
+			"hideHistory": "Hide history",
+			"language": "Language",
+			"rules": "Rules",
+			"copiedLink": "Link copied",
+			"copyLink": "Copy link"
+		},
+		"invite": {
+			"pending": "Invitation pending - {name} invites you to join the game.",
+			"options": "Game options",
+			"nameLabel": "Your nickname",
+			"accept": "Accept invitation"
+		},
+		"history": {
+			"title": "History",
+			"empty": "No move played.",
+			"firstMove": "First move",
+			"previousMove": "Previous move",
+			"nextMove": "Next move",
+			"lastMove": "Last move"
+		},
+		"rules": {
+			"title": "Rules",
+			"line1": "The game is played on a 4x4 board.",
+			"line2": "The first 6 half-moves are reserve placements only.",
+			"line3": "After that, pieces move like chess pieces, with captures allowed.",
+			"line4": "A pawn that reaches an edge reverses direction on its next move.",
+			"line5": "A captured piece returns to its owner's reserve.",
+			"line6": "You win by aligning 4 of your pieces (row, column, or diagonal)."
+		},
+		"rematch": {
+			"sending": "Sending...",
+			"starting": "Starting...",
+			"request": "Request rematch",
+			"accept": "Accept rematch",
+			"pending": "Rematch request pending...",
+			"finished": "This match is finished.",
+			"newGame": "New game"
+		},
+		"repetition": {
+			"title": "Draw by repetition",
+			"subtitle": "The same position appeared 3 times. New round ready with swapped colors.",
+			"details": "The score did not change, players swap colors."
+		},
+		"winner": {
+			"victory": "Victory 🎉",
+			"defeat": "Defeat",
+			"finished": "Game finished - {color} wins",
+			"white": "White",
+			"black": "Black",
+			"opponent": "Opponent",
+			"score": "Current score: {hostName}: {hostScore} - {guestName}: {guestScore}",
+			"whitePlayer": "White player",
+			"blackPlayer": "Black player",
+			"winner": "Winner: {name} ({color})"
+		},
+		"turn": {
+			"finished": "Game finished - winner: {winner}",
+			"whiteLower": "white",
+			"blackLower": "black",
+			"turnNumber": "Turn {turnNumber}",
+			"yourTurn": "It's your turn to play",
+			"opponentTurn": "It's your opponent's turn"
+		}
+	},
+	"options": {
+		"opponentType": "Opponent type",
+		"hostColor": "Chosen color",
+		"aiDifficulty": "AI level",
+		"ai": "AI",
+		"human": "Human",
+		"white": "White",
+		"black": "Black",
+		"random": "Random",
+		"yes": "Yes",
+		"no": "No",
+		"none": "None",
+		"minutes": "{value} min",
+		"seconds": "{value} s"
+	},
+	"piece": {
+		"pawn": "Pawn",
+		"rook": "Rook",
+		"knight": "Knight",
+		"bishop": "Bishop"
+	},
+	"errors": {
+		"unexpected": "Unexpected error",
+		"createGameFailed": "Unable to create game",
+		"joinGameFailed": "Unable to join game",
+		"requestRematchFailed": "Unable to request rematch",
+		"startRematchFailed": "Unable to start rematch",
+		"loadGameFailed": "Unable to load game",
+		"realTimeDisconnected": "Real-time connection interrupted, reconnecting...",
+		"invalidMove": "Invalid move",
+		"missingPlayerSession": "Missing player session",
+		"invalidPayload": "Invalid payload",
+		"nameRequired": "Name is required",
+		"nameLength": "Name must contain between 2 and 24 characters",
+		"invalidOpponentType": "Invalid opponent type",
+		"invalidHostColor": "Invalid selected color",
+		"invalidAiDifficulty": "Invalid AI level",
+		"timeLimitInteger": "Time limit must be an integer",
+		"timeLimitRange": "Time limit must be between 1 and 30 minutes",
+		"createGameError": "Game creation error",
+		"readGameError": "Game loading error",
+		"invalidActionType": "Unknown action type",
+		"actionImpossible": "Action impossible",
+		"gameNotActive": "Game is not active",
+		"notYourTurn": "It is not your turn",
+		"waitingForPlayer": "The game is waiting for another player",
+		"gameAlreadyFinished": "The game is already finished",
+		"openingPlacementOnly": "During the first 6 turns, only placement is allowed",
+		"pieceUnavailable": "Piece unavailable in reserve",
+		"invalidCell": "Invalid square",
+		"cellOccupied": "Square already occupied",
+		"invalidStartPiece": "Invalid starting piece",
+		"illegalMove": "Illegal move",
+		"hostColorUnavailable": "Host color unavailable",
+		"twoPlayersRequired": "Two players are required to start the next round",
+		"gameAlreadyStarted": "Game is already started",
+		"invalidPlayerSession": "Invalid player session",
+		"roundNotFinished": "Current round is not finished"
+	}
+}

@@ -1,5 +1,7 @@
 <script lang="ts">
-	import { History } from '@lucide/svelte';
+	import { History, Languages, Share2 } from '@lucide/svelte';
+	import { _ } from 'svelte-i18n';
+	import type { SupportedLanguage } from '$lib/i18n';
 
 	interface Props {
 		gameId: string;
@@ -8,6 +10,8 @@
 		copying: boolean;
 		historyOpen: boolean;
 		onToggleHistory: () => void;
+		currentLanguage: SupportedLanguage;
+		onChangeLanguage: (language: SupportedLanguage) => void;
 		onShowRules: () => void;
 		onCopyInvite: () => void;
 	}
@@ -19,6 +23,8 @@
 		copying,
 		historyOpen,
 		onToggleHistory,
+		currentLanguage,
+		onChangeLanguage,
 		onShowRules,
 		onCopyInvite
 	}: Props = $props();
@@ -26,7 +32,7 @@
 
 <header class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
 	<div>
-		<h1 class="text-2xl font-semibold">Partie {gameId}</h1>
+		<h1 class="text-2xl font-semibold">{$_('game.pageTitle', { values: { id: gameId } })}</h1>
 		{#if turnLineText}
 			<p class={`text-sm ${isViewerTurnNow ? 'font-bold text-gray-900' : 'text-gray-700'} h-5`}>
 				{turnLineText}
@@ -34,17 +40,40 @@
 		{/if}
 	</div>
 	<div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
-		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onToggleHistory}>
-			<span class="inline-flex items-center gap-2">
-				<History class="h-4 w-4" />
-				{historyOpen ? 'Masquer historique' : 'Historique'}
-			</span>
-		</button>
-		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onShowRules}
-			>Règles</button
+		<button
+			class="rounded border p-2"
+			type="button"
+			onclick={onToggleHistory}
+			aria-label={historyOpen ? $_('game.header.hideHistory') : $_('game.header.history')}
+			title={historyOpen ? $_('game.header.hideHistory') : $_('game.header.history')}
 		>
-		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onCopyInvite}>
-			{copying ? 'Lien copié' : 'Copier le lien'}
+			<History class="h-4 w-4" />
+		</button>
+		<label class="flex items-center gap-2 rounded border px-2 py-2 text-sm" title={$_('game.header.language')}>
+			<Languages class="h-4 w-4" aria-hidden="true" />
+			<span class="sr-only">{$_('game.header.language')}</span>
+			<select
+				class="border-0 bg-transparent p-0 pr-5 text-sm focus:ring-0"
+				value={currentLanguage}
+				onchange={(event) =>
+					onChangeLanguage((event.currentTarget as HTMLSelectElement).value as SupportedLanguage)}
+				aria-label={$_('game.header.language')}
+			>
+				<option value="fr">{$_('language.french')}</option>
+				<option value="en">{$_('language.english')}</option>
+			</select>
+		</label>
+		<button class="rounded border px-3 py-2 text-sm" type="button" onclick={onShowRules}
+			>{$_('game.header.rules')}</button
+		>
+		<button
+			class="rounded border p-2"
+			type="button"
+			onclick={onCopyInvite}
+			aria-label={copying ? $_('game.header.copiedLink') : $_('game.header.copyLink')}
+			title={copying ? $_('game.header.copiedLink') : $_('game.header.copyLink')}
+		>
+			<Share2 class="h-4 w-4" />
 		</button>
 	</div>
 </header>

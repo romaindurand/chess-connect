@@ -3,16 +3,16 @@
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { onMount } from 'svelte';
+	import { _ } from 'svelte-i18n';
 
 	import { createGameRemote } from '$lib/client/game-api';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
-	import { buildPageTitle, OG_IMAGE_ALT, toAbsoluteUrl, TWITTER_CARD } from '$lib/seo';
+	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import type { HostColorPreference, OpponentType } from '$lib/types/game';
 	import favicon from '$lib/assets/favicon.png';
 
-	const pageTitle = 'Jouez en ligne';
-	const pageDescription =
-		"Creez une partie Chess Connect, invitez un ami ou affrontez l'IA dans un jeu tactique melangeant echecs et alignement de quatre pieces.";
+	const pageTitle = $derived($_('home.pageTitle'));
+	const pageDescription = $derived($_('home.pageDescription'));
 	const canonicalUrl = $derived(page.url.href);
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
 
@@ -34,14 +34,14 @@
 
 		const trimmed = name.trim();
 		if (trimmed.length < 2) {
-			errorMessage = 'Le pseudo doit contenir au moins 2 caractères.';
+			errorMessage = $_('errors.nameLength');
 			return;
 		}
 		if (
 			timeControlEnabled &&
 			(!Number.isInteger(timeLimitMinutes) || timeLimitMinutes < 1 || timeLimitMinutes > 30)
 		) {
-			errorMessage = 'La limite de temps doit être un entier entre 1 et 30 minutes.';
+			errorMessage = $_('errors.timeLimitRange');
 			return;
 		}
 
@@ -56,7 +56,7 @@
 			savePlayerName(trimmed);
 			await goto(resolve(`/game/${result.gameId}`));
 		} catch (error) {
-			errorMessage = error instanceof Error ? error.message : 'Impossible de créer la partie';
+			errorMessage = error instanceof Error ? error.message : $_('errors.createGameFailed');
 		} finally {
 			isSubmitting = false;
 		}
@@ -72,8 +72,8 @@
 	<meta property="og:description" content={pageDescription} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:image" content={ogImageUrl} />
-	<meta property="og:image:alt" content={OG_IMAGE_ALT} />
-	<meta name="twitter:card" content={TWITTER_CARD} />
+	<meta property="og:image:alt" content={$_('meta.ogImageAlt')} />
+	<meta name="twitter:card" content={$_('meta.twitterCard')} />
 	<meta name="twitter:title" content={buildPageTitle(pageTitle)} />
 	<meta name="twitter:description" content={pageDescription} />
 	<meta name="twitter:image" content={ogImageUrl} />
@@ -82,25 +82,25 @@
 <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-8">
 	<h1 class="mb-4 text-3xl font-semibold">Chess Connect</h1>
 	<p class="mb-8 text-sm text-gray-600">
-		Créez une partie, partagez le lien, puis jouez en direct.
+		{$_('home.subtitle')}
 	</p>
 
 	<form class="space-y-4" onsubmit={onCreateGame}>
 		<label class="block space-y-2">
-			<span class="text-sm font-medium">Votre pseudo</span>
+			<span class="text-sm font-medium">{$_('home.nameLabel')}</span>
 			<input
 				class="w-full rounded-md border border-gray-300 px-3 py-2"
 				type="text"
 				name="name"
 				bind:value={name}
 				maxlength="24"
-				placeholder="Ex: Romain"
+				placeholder={$_('home.namePlaceholder')}
 				required
 			/>
 		</label>
 
 		<fieldset class="rounded-md border border-gray-200 p-3">
-			<legend class="px-1 text-sm font-medium">Type de partie</legend>
+			<legend class="px-1 text-sm font-medium">{$_('home.gameType')}</legend>
 			<div class="mt-3 grid gap-2 sm:grid-cols-2">
 				<label
 					class={`rounded-md border px-3 py-2 text-sm ${opponentType === 'human' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
@@ -112,7 +112,7 @@
 						value="human"
 						bind:group={opponentType}
 					/>
-					<span>Contre un joueur</span>
+					<span>{$_('home.versusHuman')}</span>
 				</label>
 				<label
 					class={`rounded-md border px-3 py-2 text-sm ${opponentType === 'ai' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
@@ -124,13 +124,13 @@
 						value="ai"
 						bind:group={opponentType}
 					/>
-					<span>Contre l'IA</span>
+					<span>{$_('home.versusAi')}</span>
 				</label>
 			</div>
 
 			{#if opponentType === 'ai'}
 				<div class="mt-3 space-y-2">
-					<span class="text-sm font-medium">Votre couleur</span>
+					<span class="text-sm font-medium">{$_('home.yourColor')}</span>
 					<div class="grid gap-2 sm:grid-cols-3">
 						<label
 							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
@@ -142,7 +142,7 @@
 								value="white"
 								bind:group={hostColor}
 							/>
-							<span>Blanc</span>
+							<span>{$_('home.colorWhite')}</span>
 						</label>
 						<label
 							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
@@ -154,7 +154,7 @@
 								value="black"
 								bind:group={hostColor}
 							/>
-							<span>Noir</span>
+							<span>{$_('home.colorBlack')}</span>
 						</label>
 						<label
 							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
@@ -166,7 +166,7 @@
 								value="random"
 								bind:group={hostColor}
 							/>
-							<span>Aléatoire</span>
+							<span>{$_('home.colorRandom')}</span>
 						</label>
 					</div>
 				</div>
@@ -174,16 +174,16 @@
 		</fieldset>
 
 		<details class="rounded-md border border-gray-200 p-3">
-			<summary class="cursor-pointer text-sm font-medium">Options avancées</summary>
+			<summary class="cursor-pointer text-sm font-medium">{$_('home.advancedOptions')}</summary>
 			<div class="mt-3 space-y-3">
 				<label class="flex items-center gap-2 text-sm">
 					<input type="checkbox" bind:checked={timeControlEnabled} />
-					<span>Activer une limite de temps</span>
+					<span>{$_('home.enableTimeControl')}</span>
 				</label>
 
 				{#if timeControlEnabled}
 					<label class="block space-y-2">
-						<span class="text-sm">Durée par joueur (minutes)</span>
+						<span class="text-sm">{$_('home.timePerPlayer')}</span>
 						<input
 							type="number"
 							min="1"
@@ -203,11 +203,11 @@
 			class="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
 		>
 			{#if isSubmitting}
-				Création...
+				{$_('home.creating')}
 			{:else if opponentType === 'ai'}
-				Jouer contre l'IA
+				{$_('home.playVsAi')}
 			{:else}
-				Créer une nouvelle partie
+				{$_('home.createGame')}
 			{/if}
 		</button>
 

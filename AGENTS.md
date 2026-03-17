@@ -26,8 +26,10 @@ Server is the source of truth for game state. Avoid optimistic client-side mutat
 - Unit tests (watch): `pnpm test:unit`
 - Unit tests (single run): `pnpm test`
 - Production build: `pnpm build`
+- i18n validation (unused keys): `pnpm dlx i18n-unused display-unused` (when `svelte-i18n` is used)
+- i18n validation (missing keys): `pnpm dlx i18n-unused display-missed` (when `svelte-i18n` is used)
 
-Preferred verification before completion: `pnpm check && pnpm lint && pnpm test`.
+Preferred verification before completion: `pnpm check && pnpm lint && pnpm test`, then run i18n validation commands when `svelte-i18n` is used.
 
 ## Conventions
 

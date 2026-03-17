@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { ChessBishop, ChessKnight, ChessPawn, ChessRook } from '@lucide/svelte';
+	import { _ } from 'svelte-i18n';
 	import type { PieceType } from '$lib/types/game';
 
 	interface Props {
@@ -64,7 +65,7 @@
 				onmouseenter={() => onEnter(reserveColor, piece)}
 				onmouseleave={onLeave}
 				disabled={!isMine || !isMyTurn}
-				title={piece}
+				title={$_(`piece.${piece}`)}
 			>
 				<span
 					class={`inline-flex rounded p-1 ${pieceChipClasses(reserveColor)}`}

@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Snippet } from 'svelte';
+	import { _ } from 'svelte-i18n';
 
 	interface Props {
 		open: boolean;
@@ -51,7 +52,7 @@
 				{/if}
 				{#if closable}
 					<button type="button" onclick={requestClose} class="rounded border px-2 py-1 text-sm"
-						>Fermer</button
+						>{$_('common.close')}</button
 					>
 				{/if}
 			</div>

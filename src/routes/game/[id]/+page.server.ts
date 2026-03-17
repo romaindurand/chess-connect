@@ -3,7 +3,7 @@ import type { PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ params }) => {
 	if (!params.id || params.id.length < 4) {
-		error(404, 'Partie introuvable');
+		error(404);
 	}
 
 	return {

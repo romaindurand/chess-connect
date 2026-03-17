@@ -1,14 +1,16 @@
 import { DEFAULT_GAME_OPTIONS, type GameOptions, type GameOptionValue } from '$lib/types/game';
 
-function humanizeOptionKey(key: string): string {
+type OptionFormatter = (key: string, values?: Record<string, unknown>) => string;
+
+function humanizeOptionKey(key: string, format: OptionFormatter): string {
 	if (key === 'opponentType') {
-		return "Type d'adversaire";
+		return format('options.opponentType');
 	}
 	if (key === 'hostColor') {
-		return 'Couleur choisie';
+		return format('options.hostColor');
 	}
 	if (key === 'aiDifficulty') {
-		return 'Niveau IA';
+		return format('options.aiDifficulty');
 	}
 
 	const withSpaces = key
@@ -18,42 +20,45 @@ function humanizeOptionKey(key: string): string {
 	return withSpaces.charAt(0).toUpperCase() + withSpaces.slice(1);
 }
 
-function formatOptionValue(key: string, value: GameOptionValue): string {
+function formatOptionValue(key: string, value: GameOptionValue, format: OptionFormatter): string {
 	if (key === 'opponentType' && typeof value === 'string') {
-		return value === 'ai' ? 'IA' : 'Humain';
+		return value === 'ai' ? format('options.ai') : format('options.human');
 	}
 	if (key === 'hostColor' && typeof value === 'string') {
 		if (value === 'white') {
-			return 'Blanc';
+			return format('options.white');
 		}
 		if (value === 'black') {
-			return 'Noir';
+			return format('options.black');
 		}
-		return 'Aléatoire';
+		return format('options.random');
 	}
 	if (key === 'aiDifficulty' && typeof value === 'string') {
 		return value === 'baseline' ? 'Baseline' : value;
 	}
 
 	if (typeof value === 'boolean') {
-		return value ? 'Oui' : 'Non';
+		return value ? format('options.yes') : format('options.no');
 	}
 	if (typeof value === 'number') {
 		if (key.toLowerCase().includes('minutes')) {
-			return `${value} min`;
+			return format('options.minutes', { value });
 		}
 		if (key.toLowerCase().includes('seconds')) {
-			return `${value} s`;
+			return format('options.seconds', { value });
 		}
 		return String(value);
 	}
 	if (value === null) {
-		return 'Aucun';
+		return format('options.none');
 	}
 	return value ?? '';
 }
 
-export function listNonDefaultGameOptions(options: GameOptions): string[] {
+export function listNonDefaultGameOptions(
+	options: GameOptions,
+	format: OptionFormatter = (key) => key
+): string[] {
 	const lines: string[] = [];
 	for (const [key, value] of Object.entries(options)) {
 		const defaultValue = (DEFAULT_GAME_OPTIONS[key] ?? null) as GameOptionValue;
@@ -63,7 +68,7 @@ export function listNonDefaultGameOptions(options: GameOptions): string[] {
 		if (value === undefined) {
 			continue;
 		}
-		lines.push(`${humanizeOptionKey(key)}: ${formatOptionValue(key, value)}`);
+		lines.push(`${humanizeOptionKey(key, format)}: ${formatOptionValue(key, value, format)}`);
 	}
 	return lines;
 }

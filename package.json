@@ -51,7 +51,8 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^0.577.0",
-		"@tensorflow/tfjs": "^4.22.0"
+		"@tensorflow/tfjs": "^4.22.0",
+		"svelte-i18n": "^4.0.1"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [

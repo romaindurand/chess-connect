@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
+	import { _, locale } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Confetti } from 'svelte-confetti';
@@ -10,17 +11,25 @@
 	import MoveHistoryPanel from '$lib/components/game/MoveHistoryPanel.svelte';
 	import ReserveRow from '$lib/components/game/ReserveRow.svelte';
 	import GameDialog from '$lib/components/GameDialog.svelte';
-	import { buildPageTitle, OG_IMAGE_ALT, toAbsoluteUrl, TWITTER_CARD } from '$lib/seo';
+	import { isSupportedLanguage, setLanguage, type SupportedLanguage } from '$lib/i18n';
+	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import { createGameState } from '$lib/state/game.svelte';
 	import favicon from '$lib/assets/favicon.png';
 
 	const props = $props<{ data: { gameId: string } }>();
 	const state = createGameState(() => props.data.gameId);
-	const pageTitle = $derived(`Partie ${props.data.gameId}`);
-	const pageDescription =
-		"Rejoignez une partie Chess Connect et jouez en ligne a ce melange d'echecs et de puissance 4 contre un ami ou l'IA.";
+	const pageTitle = $derived($_('game.pageTitle', { values: { id: props.data.gameId } }));
+	const pageDescription = $derived($_('game.pageDescription'));
 	const canonicalUrl = $derived(page.url.href);
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
+	const currentLanguage = $derived(($locale === 'fr' ? 'fr' : 'en') as SupportedLanguage);
+
+	function onChangeLanguage(language: SupportedLanguage): void {
+		if (!isSupportedLanguage(language)) {
+			return;
+		}
+		setLanguage(language);
+	}
 
 	onMount(async () => {
 		await state.lifecycle.init();
@@ -40,8 +49,8 @@
 	<meta property="og:description" content={pageDescription} />
 	<meta property="og:url" content={canonicalUrl} />
 	<meta property="og:image" content={ogImageUrl} />
-	<meta property="og:image:alt" content={OG_IMAGE_ALT} />
-	<meta name="twitter:card" content={TWITTER_CARD} />
+	<meta property="og:image:alt" content={$_('meta.ogImageAlt')} />
+	<meta name="twitter:card" content={$_('meta.twitterCard')} />
 	<meta name="twitter:title" content={buildPageTitle(pageTitle)} />
 	<meta name="twitter:description" content={pageDescription} />
 	<meta name="twitter:image" content={ogImageUrl} />
@@ -55,14 +64,16 @@
 		copying={state.view.copying}
 		historyOpen={state.view.showHistoryPanel}
 		onToggleHistory={state.actions.toggleHistoryPanel}
+		{currentLanguage}
+		{onChangeLanguage}
 		onShowRules={() => state.actions.setShowRulesModal(true)}
 		onCopyInvite={() => state.actions.copyInviteLink(window.location.href)}
 	/>
 
 	{#if state.view.loading}
-		<p>Chargement...</p>
+		<p>{$_('common.loading')}</p>
 	{:else if !state.view.game}
-		<p class="text-red-600">{state.view.errorMessage || 'Partie introuvable'}</p>
+		<p class="text-red-600">{state.view.errorMessage || $_('common.gameNotFound')}</p>
 	{:else}
 		{#if state.view.game.viewerRole === 'guest' && state.view.game.joinAllowed && !state.view.game.viewerIsInviter}
 			<InvitationJoinCard
@@ -88,7 +99,9 @@
 							disabled={state.view.isSubmittingRematch}
 							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
 						>
-							{state.view.isSubmittingRematch ? 'Envoi...' : 'Proposer une revanche'}
+							{state.view.isSubmittingRematch
+								? $_('game.rematch.sending')
+								: $_('game.rematch.request')}
 						</button>
 					{:else if state.view.canAcceptRematch}
 						<button
@@ -97,12 +110,14 @@
 							disabled={state.view.isSubmittingRematch}
 							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
 						>
-							{state.view.isSubmittingRematch ? 'Demarrage...' : 'Accepter la revanche'}
+							{state.view.isSubmittingRematch
+								? $_('game.rematch.starting')
+								: $_('game.rematch.accept')}
 						</button>
 					{:else if state.view.game?.state.rematchRequestedBy}
-						<p class="text-sm text-gray-700">Demande de revanche en attente...</p>
+						<p class="text-sm text-gray-700">{$_('game.rematch.pending')}</p>
 					{:else if state.view.game?.state.bestOfWinner}
-						<p class="text-sm text-gray-700">Ce match est termine.</p>
+						<p class="text-sm text-gray-700">{$_('game.rematch.finished')}</p>
 					{/if}
 
 					<button
@@ -110,7 +125,7 @@
 						onclick={() => goto(resolve('/'))}
 						class="rounded border px-4 py-2 text-sm font-medium"
 					>
-						Nouvelle partie
+						{$_('game.rematch.newGame')}
 					</button>
 				</div>
 			</section>
@@ -121,7 +136,7 @@
 		>
 			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-1' : ''}>
 				<ReserveRow
-					playerName={state.view.game.state.players.black?.name ?? 'En attente'}
+					playerName={state.view.game.state.players.black?.name ?? $_('common.waiting')}
 					playerScore={state.view.topPlayerScore}
 					isActiveTurn={state.view.displayTurn === 'black'}
 					reserveColor={state.view.topReserveColor}
@@ -151,7 +166,7 @@
 
 			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-3' : ''}>
 				<ReserveRow
-					playerName={state.view.game.state.players.white?.name ?? 'En attente'}
+					playerName={state.view.game.state.players.white?.name ?? $_('common.waiting')}
 					playerScore={state.view.bottomPlayerScore}
 					isActiveTurn={state.view.displayTurn === 'white'}
 					reserveColor={state.view.bottomReserveColor}
@@ -201,12 +216,12 @@
 	<GameDialog
 		open={state.view.showRulesModal}
 		closable={true}
-		title="Règles"
+		title={$_('game.rules.title')}
 		onClose={() => state.actions.setShowRulesModal(false)}
 	>
 		<div class="space-y-2">
 			{#each state.view.rulesLines as rule (rule)}
-				<p>{rule}</p>
+				<p>{$_(rule)}</p>
 			{/each}
 		</div>
 	</GameDialog>
@@ -218,7 +233,7 @@
 		onClose={() => state.actions.setShowRepetitionDrawModal(false)}
 	>
 		<p class="mt-2">{state.view.repetitionDrawModalSubtitle}</p>
-		<p class="mt-2">Le score n'a pas changé, les joueurs échangent de couleur.</p>
+		<p class="mt-2">{$_('game.repetition.details')}</p>
 	</GameDialog>
 
 	{#if state.view.errorMessage}
