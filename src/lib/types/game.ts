@@ -41,6 +41,7 @@ export type GameOptionValue = string | number | boolean | null | undefined;
 export interface GameOptions {
 	timeLimitMinutes: number | null;
 	roundLimit?: number | null;
+	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
@@ -50,6 +51,7 @@ export interface GameOptions {
 export const DEFAULT_GAME_OPTIONS: GameOptions = {
 	timeLimitMinutes: null,
 	roundLimit: null,
+	allowAiTrainingData: true,
 	opponentType: 'human',
 	hostColor: 'random',
 	aiDifficulty: 'baseline'
@@ -141,6 +143,7 @@ export interface CreateGamePayload {
 	name: string;
 	timeLimitMinutes?: number;
 	roundLimit?: number;
+	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;

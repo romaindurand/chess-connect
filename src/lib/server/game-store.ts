@@ -53,6 +53,7 @@ interface Store {
 interface CreateGameOptions {
 	timeLimitMinutes?: number;
 	roundLimit?: number;
+	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
@@ -143,6 +144,7 @@ function createNewState(
 	const gameOptions: GameOptions = {
 		timeLimitMinutes: options?.timeLimitMinutes ?? DEFAULT_GAME_OPTIONS.timeLimitMinutes,
 		roundLimit: options?.roundLimit ?? DEFAULT_GAME_OPTIONS.roundLimit,
+		allowAiTrainingData: options?.allowAiTrainingData ?? DEFAULT_GAME_OPTIONS.allowAiTrainingData,
 		opponentType: options?.opponentType ?? DEFAULT_GAME_OPTIONS.opponentType,
 		hostColor: options?.hostColor ?? DEFAULT_GAME_OPTIONS.hostColor,
 		aiDifficulty: options?.aiDifficulty ?? DEFAULT_GAME_OPTIONS.aiDifficulty

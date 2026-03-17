@@ -14,9 +14,10 @@ const format = (key: string, values?: Record<string, unknown>): string => {
 	const labels: Record<string, string> = {
 		'options.opponentType': "Type d'adversaire",
 		'options.hostColor': 'Couleur choisie',
-		'options.aiDifficulty': 'Niveau IA',
+		'options.aiDifficulty': 'Niveau ordinateur',
 		'options.roundLimit': 'Nombre de manches',
-		'options.ai': 'IA',
+		'options.allowAiTrainingData': "Parties utilisées pour entraîner l'ordinateur",
+		'options.ai': 'Ordinateur',
 		'options.human': 'Humain',
 		'options.white': 'Blanc',
 		'options.black': 'Noir',
@@ -58,12 +59,18 @@ describe('game options listing', () => {
 				},
 				format
 			)
-		).toEqual(["Type d'adversaire: IA", 'Couleur choisie: Noir']);
+		).toEqual(["Type d'adversaire: Ordinateur", 'Couleur choisie: Noir']);
 	});
 
 	it('includes odd round limit when configured', () => {
 		expect(listNonDefaultGameOptions({ timeLimitMinutes: null, roundLimit: 5 }, format)).toEqual([
 			'Nombre de manches: 5 manches'
 		]);
+	});
+
+	it('shows training consent option only when disabled', () => {
+		expect(
+			listNonDefaultGameOptions({ timeLimitMinutes: null, allowAiTrainingData: false }, format)
+		).toEqual(["Parties utilisées pour entraîner l'ordinateur: Non"]);
 	});
 });

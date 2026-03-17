@@ -27,6 +27,10 @@ export function extractMovesFromHistory(state: GameState): RecordedMove[] {
 }
 
 export function recordCompletedGame(state: GameState, outputPath: string): void {
+	if (state.options.allowAiTrainingData === false) {
+		return;
+	}
+
 	if (!state.winner || state.moveHistory.length === 0) {
 		return;
 	}

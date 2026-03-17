@@ -14,10 +14,15 @@ function makeActiveState(turn: Color = 'white'): GameState {
 		status: 'active',
 		inviter: { name: 'Alice', joinedAt: now },
 		hostColor: 'white',
-		options: { timeLimitMinutes: null, opponentType: 'ai', hostColor: 'white' },
+		options: {
+			timeLimitMinutes: null,
+			allowAiTrainingData: true,
+			opponentType: 'ai',
+			hostColor: 'white'
+		},
 		players: {
 			white: { name: 'Alice', joinedAt: now },
-			black: { name: 'IA', joinedAt: now }
+			black: { name: 'Ordinateur', joinedAt: now }
 		},
 		board: createInitialBoard(),
 		reserves: { white: makeEmptyReserve(), black: makeEmptyReserve() },

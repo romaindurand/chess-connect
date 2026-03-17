@@ -327,7 +327,7 @@ describe('game-store time control', () => {
 		expect(state.options.hostColor).toBe('black');
 		expect(state.hostColor).toBe('black');
 		expect(state.players.black?.name).toBe('Alice');
-		expect(state.players.white?.name).toBe('IA');
+		expect(state.players.white?.name).toBe('Ordinateur');
 		expect(state.pliesPlayed).toBe(1);
 		expect(state.moveHistory).toHaveLength(1);
 		expect(state.turn).toBe('black');
@@ -366,7 +366,7 @@ async function waitFor(condition: () => boolean, timeoutMs = 250): Promise<void>
 	const startedAt = Date.now();
 	while (!condition()) {
 		if (Date.now() - startedAt > timeoutMs) {
-			throw new Error('Timeout en attente du coup IA');
+			throw new Error('Timeout en attente du coup ordinateur');
 		}
 		await new Promise((resolve) => setTimeout(resolve, 5));
 	}

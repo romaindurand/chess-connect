@@ -15,6 +15,9 @@ function humanizeOptionKey(key: string, format: OptionFormatter): string {
 	if (key === 'roundLimit') {
 		return format('options.roundLimit');
 	}
+	if (key === 'allowAiTrainingData') {
+		return format('options.allowAiTrainingData');
+	}
 
 	const withSpaces = key
 		.replace(/([a-z0-9])([A-Z])/g, '$1 $2')

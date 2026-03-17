@@ -13,24 +13,24 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] historique
 - [x] coordonnées des cases
 - [x] pas de coups qui se répètent
-- [x] créer une IA
+- [x] créer un ordinateur
 - [x] couleurs alternées pour la revanche
 - [x] choix noir/blanc dans les options
 - [x] n'importe quel joueur doit pouvoir proposer une revanche
 - [x] internationalisation
 - [x] ne pas limiter à un BO3, rendre le nombre de parties configurable
 - [ ] création de compte avec token d'auth (pas de login/password, juste un token généré aléatoirement à la création du compte)
-- [ ] permettre de refuser l'utilisation de sa partie pour l'entraînement de l'IA
-- [ ] permettre le choix de la couleur en joueur contre joueur (pas juste en joueur contre IA)
+- [x] permettre de refuser l'utilisation de sa partie pour l'entraînement de l'ordinateur
+- [ ] permettre le choix de la couleur en joueur contre joueur (pas juste en joueur contre ordinateur)
 - [ ] en temps limité, ajouter une option qui ajoute des secondes à chaque coup joué (ex: 30s + 10s par coup)
 - [ ] pour le temps limité, permettre de préciser les secondes (pour le moment on ne gère que les minites)
 - [ ] matchmaking
 
 ## IA
 
-### Jouer contre l'IA
+### Jouer contre l'ordinateur
 
-Sur la page d'accueil, sélectionner **"Contre l'IA"** puis choisir la couleur souhaitée (Blanc / Noir / Aléatoire) avant de créer la partie.
+Sur la page d'accueil, sélectionner **"Contre l'ordinateur"** puis choisir la couleur souhaitée (Blanc / Noir / Aléatoire) avant de créer la partie.
 
 Le moteur IA utilise MCTS (Monte-Carlo Tree Search) guidé par un réseau conv-résiduel (style AlphaZero-lite) chargé depuis un checkpoint TensorFlow.js au démarrage du serveur.  
 Sans checkpoint, le serveur refuse de démarrer — voir section _Entraînement_ ci-dessous.
@@ -39,7 +39,7 @@ Sans checkpoint, le serveur refuse de démarrer — voir section _Entraînement_
 
 Le serveur nécessite un checkpoint `checkpoints/model/model.json` au démarrage. Ce checkpoint n'est pas inclus dans git et doit être généré localement.
 
-**Pipeline requis pour jouer contre l'IA :**
+**Pipeline requis pour jouer contre l'ordinateur :**
 
 ```bash
 # 1. Générer des parties d'auto-jeu → artifacts/ai/self-play.json
@@ -83,7 +83,7 @@ Le dossier `checkpoints/model/` est également ignoré par git — il doit être
 
 ### Réutiliser les parties humaines pour l'entraînement
 
-Les parties terminées (joueur vs joueur et joueur vs IA) peuvent être enregistrées automatiquement
+Les parties terminées (joueur vs joueur et joueur vs ordinateur) peuvent être enregistrées automatiquement
 dans un fichier JSONL local :
 
 ```env

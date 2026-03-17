@@ -23,6 +23,7 @@
 	let timeLimitMinutes = $state(5);
 	let roundLimitEnabled = $state(false);
 	let roundLimit = $state(5);
+	let allowAiTrainingData = $state(true);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 
@@ -60,6 +61,7 @@
 				name: trimmed,
 				timeLimitMinutes: timeControlEnabled ? timeLimitMinutes : undefined,
 				roundLimit: roundLimitEnabled ? roundLimit : undefined,
+				allowAiTrainingData,
 				opponentType,
 				hostColor
 			});
@@ -222,6 +224,11 @@
 						/>
 					</label>
 				{/if}
+
+				<label class="flex items-center gap-2 text-sm">
+					<input type="checkbox" bind:checked={allowAiTrainingData} />
+					<span>{$_('home.allowAiTrainingData')}</span>
+				</label>
 			</div>
 		</details>
 

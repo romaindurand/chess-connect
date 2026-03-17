@@ -12,6 +12,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 		name: unknown;
 		timeLimitMinutes?: unknown;
 		roundLimit?: unknown;
+		allowAiTrainingData?: unknown;
 		opponentType?: unknown;
 		hostColor?: unknown;
 		aiDifficulty?: unknown;
@@ -37,7 +38,11 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 
 	const aiDifficulty = input.aiDifficulty ?? 'baseline';
 	if (aiDifficulty !== 'baseline') {
-		throw new Error("Le niveau d'IA est invalide");
+		throw new Error("Le niveau d'ordinateur est invalide");
+	}
+
+	if (input.allowAiTrainingData !== undefined && typeof input.allowAiTrainingData !== 'boolean') {
+		throw new Error("L'option d'entraînement ordinateur est invalide");
 	}
 
 	if (input.timeLimitMinutes !== undefined) {
@@ -62,6 +67,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 		name,
 		timeLimitMinutes: input.timeLimitMinutes,
 		roundLimit: input.roundLimit,
+		allowAiTrainingData: input.allowAiTrainingData,
 		opponentType,
 		hostColor,
 		aiDifficulty
@@ -74,6 +80,7 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 		const { state, token, color } = await createGame(payload.name, {
 			timeLimitMinutes: payload.timeLimitMinutes,
 			roundLimit: payload.roundLimit,
+			allowAiTrainingData: payload.allowAiTrainingData,
 			opponentType: payload.opponentType,
 			hostColor: payload.hostColor,
 			aiDifficulty: payload.aiDifficulty
