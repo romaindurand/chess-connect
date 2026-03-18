@@ -40,6 +40,7 @@ export type GameOptionValue = string | number | boolean | null | undefined;
 
 export interface GameOptions {
 	timeLimitSeconds: number | null;
+	incrementPerMoveSeconds?: number;
 	roundLimit?: number | null;
 	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
@@ -50,6 +51,7 @@ export interface GameOptions {
 
 export const DEFAULT_GAME_OPTIONS: GameOptions = {
 	timeLimitSeconds: null,
+	incrementPerMoveSeconds: 10,
 	roundLimit: null,
 	allowAiTrainingData: true,
 	opponentType: 'human',
@@ -142,6 +144,7 @@ export type PlayerMove = PlaceMove | BoardMove;
 export interface CreateGamePayload {
 	name: string;
 	timeLimitSeconds?: number;
+	incrementPerMoveSeconds?: number;
 	roundLimit?: number;
 	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;

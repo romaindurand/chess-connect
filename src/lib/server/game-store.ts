@@ -52,6 +52,7 @@ interface Store {
 
 interface CreateGameOptions {
 	timeLimitSeconds?: number;
+	incrementPerMoveSeconds?: number;
 	roundLimit?: number;
 	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
@@ -143,6 +144,8 @@ function createNewState(
 	const now = Date.now();
 	const gameOptions: GameOptions = {
 		timeLimitSeconds: options?.timeLimitSeconds ?? DEFAULT_GAME_OPTIONS.timeLimitSeconds,
+		incrementPerMoveSeconds:
+			options?.incrementPerMoveSeconds ?? DEFAULT_GAME_OPTIONS.incrementPerMoveSeconds,
 		roundLimit: options?.roundLimit ?? DEFAULT_GAME_OPTIONS.roundLimit,
 		allowAiTrainingData: options?.allowAiTrainingData ?? DEFAULT_GAME_OPTIONS.allowAiTrainingData,
 		opponentType: options?.opponentType ?? DEFAULT_GAME_OPTIONS.opponentType,
@@ -527,6 +530,17 @@ function applyResolvedMove(
 	}
 }
 
+function applyPerMoveIncrement(state: GameState, actorColor: Color): void {
+	if (!state.timeControlEnabled || !state.timeRemainingMs) {
+		return;
+	}
+	const incrementSeconds = state.options.incrementPerMoveSeconds ?? 0;
+	if (incrementSeconds <= 0) {
+		return;
+	}
+	state.timeRemainingMs[actorColor] += incrementSeconds * SECOND_MS;
+}
+
 async function applyAiTurns(record: GameRecord): Promise<void> {
 	while (true) {
 		const aiColor = getAiColor(record.state);
@@ -560,6 +574,7 @@ async function applyAiTurns(record: GameRecord): Promise<void> {
 			return;
 		}
 
+		applyPerMoveIncrement(record.state, aiColor);
 		applyResolvedMove(record, aiColor, move, now);
 	}
 }
@@ -725,6 +740,7 @@ export async function playMove(
 			record.state.timeRemainingMs[actorColor] = remaining;
 		}
 
+		applyPerMoveIncrement(record.state, actorColor);
 		applyResolvedMove(record, actorColor, move, now);
 		emitSnapshot(record);
 		if (isAiGame(record.state)) {

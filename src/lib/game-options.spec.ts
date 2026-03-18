@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { listNonDefaultGameOptions } from '$lib/game-options';
+import { listInvitationGameOptions, listNonDefaultGameOptions } from '$lib/game-options';
 
 const format = (key: string, values?: Record<string, unknown>): string => {
 	if (key === 'options.minutes') {
@@ -20,6 +20,7 @@ const format = (key: string, values?: Record<string, unknown>): string => {
 		'options.aiDifficulty': 'Niveau ordinateur',
 		'options.roundLimit': 'Nombre de manches',
 		'options.allowAiTrainingData': "Parties utilisées pour entraîner l'ordinateur",
+		'options.incrementPerMove': 'Incrément par coup',
 		'options.ai': 'Ordinateur',
 		'options.human': 'Humain',
 		'options.white': 'Blanc',
@@ -75,5 +76,29 @@ describe('game options listing', () => {
 		expect(
 			listNonDefaultGameOptions({ timeLimitSeconds: null, allowAiTrainingData: false }, format)
 		).toEqual(["Parties utilisées pour entraîner l'ordinateur: Non"]);
+	});
+
+	it('hides increment option in invitation card when time control is disabled', () => {
+		expect(
+			listInvitationGameOptions(
+				{
+					timeLimitSeconds: null,
+					incrementPerMoveSeconds: 10
+				},
+				format
+			)
+		).toEqual(['Limit de temps: Aucun']);
+	});
+
+	it('shows increment option in invitation card when time control is enabled', () => {
+		expect(
+			listInvitationGameOptions(
+				{
+					timeLimitSeconds: 120,
+					incrementPerMoveSeconds: 10
+				},
+				format
+			)
+		).toEqual(['Limit de temps: 2:00', 'Incrément par coup: 10 s']);
 	});
 });

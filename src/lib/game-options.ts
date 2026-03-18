@@ -18,6 +18,9 @@ function humanizeOptionKey(key: string, format: OptionFormatter): string {
 	if (key === 'timeLimitSeconds') {
 		return format('options.timeLimit');
 	}
+	if (key === 'incrementPerMoveSeconds') {
+		return format('options.incrementPerMove');
+	}
 	if (key === 'allowAiTrainingData') {
 		return format('options.allowAiTrainingData');
 	}
@@ -53,6 +56,9 @@ function formatOptionValue(key: string, value: GameOptionValue, format: OptionFo
 		const seconds = value % 60;
 		return `${minutes}:${String(seconds).padStart(2, '0')}`;
 	}
+	if (key === 'incrementPerMoveSeconds' && typeof value === 'number') {
+		return format('options.seconds', { value });
+	}
 
 	if (typeof value === 'boolean') {
 		return value ? format('options.yes') : format('options.no');
@@ -87,6 +93,10 @@ export function listInvitationGameOptions(
 		}
 		// Skip aiDifficulty for human-vs-human games
 		if (key === 'aiDifficulty' && options.opponentType === 'human') {
+			continue;
+		}
+		// Increment is only meaningful for timed games
+		if (key === 'incrementPerMoveSeconds' && options.timeLimitSeconds === null) {
 			continue;
 		}
 		lines.push(`${humanizeOptionKey(key, format)}: ${formatOptionValue(key, value, format)}`);

@@ -11,6 +11,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 	const input = body as {
 		name: unknown;
 		timeLimitSeconds?: unknown;
+		incrementPerMoveSeconds?: unknown;
 		roundLimit?: unknown;
 		allowAiTrainingData?: unknown;
 		opponentType?: unknown;
@@ -54,6 +55,18 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 		}
 	}
 
+	if (input.incrementPerMoveSeconds !== undefined) {
+		if (
+			typeof input.incrementPerMoveSeconds !== 'number' ||
+			!Number.isInteger(input.incrementPerMoveSeconds)
+		) {
+			throw new Error("L'incrément par coup doit être un entier (en secondes)");
+		}
+		if (input.incrementPerMoveSeconds < 0 || input.incrementPerMoveSeconds > 60) {
+			throw new Error("L'incrément par coup doit être entre 0 et 60 secondes");
+		}
+	}
+
 	if (input.roundLimit !== undefined) {
 		if (typeof input.roundLimit !== 'number' || !Number.isInteger(input.roundLimit)) {
 			throw new Error('Le nombre de manches doit être un entier');
@@ -66,6 +79,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 	return {
 		name,
 		timeLimitSeconds: input.timeLimitSeconds,
+		incrementPerMoveSeconds: input.incrementPerMoveSeconds,
 		roundLimit: input.roundLimit,
 		allowAiTrainingData: input.allowAiTrainingData,
 		opponentType,
@@ -79,6 +93,7 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 		const payload = parseCreatePayload(await request.json());
 		const { state, token, color } = await createGame(payload.name, {
 			timeLimitSeconds: payload.timeLimitSeconds,
+			incrementPerMoveSeconds: payload.incrementPerMoveSeconds,
 			roundLimit: payload.roundLimit,
 			allowAiTrainingData: payload.allowAiTrainingData,
 			opponentType: payload.opponentType,

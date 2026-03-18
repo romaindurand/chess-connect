@@ -20,8 +20,9 @@
 	let opponentType = $state<OpponentType>('human');
 	let hostColor = $state<HostColorPreference>('random');
 	let timeControlEnabled = $state(false);
-	let timeLimitMinutesInput = $state(5);
+	let timeLimitMinutesInput = $state(2);
 	let timeLimitSecondsInput = $state(0);
+	let incrementPerMoveSecondsInput = $state(10);
 	let roundLimitEnabled = $state(false);
 	let roundLimit = $state(5);
 	let allowAiTrainingData = $state(true);
@@ -43,6 +44,7 @@
 		}
 
 		let timeLimitSeconds: number | undefined;
+		let incrementPerMoveSeconds: number | undefined;
 		if (timeControlEnabled) {
 			if (
 				!Number.isInteger(timeLimitMinutesInput) ||
@@ -53,11 +55,20 @@
 				errorMessage = $_('errors.timeLimitRange');
 				return;
 			}
+			if (
+				!Number.isInteger(incrementPerMoveSecondsInput) ||
+				incrementPerMoveSecondsInput < 0 ||
+				incrementPerMoveSecondsInput > 60
+			) {
+				errorMessage = $_('errors.incrementPerMoveRange');
+				return;
+			}
 			timeLimitSeconds = timeLimitMinutesInput * 60 + timeLimitSecondsInput;
 			if (timeLimitSeconds < 1 || timeLimitSeconds > 1800) {
 				errorMessage = $_('errors.timeLimitRange');
 				return;
 			}
+			incrementPerMoveSeconds = incrementPerMoveSecondsInput;
 		}
 
 		if (
@@ -73,6 +84,7 @@
 			const result = await createGameRemote({
 				name: trimmed,
 				timeLimitSeconds,
+				incrementPerMoveSeconds,
 				roundLimit: roundLimitEnabled ? roundLimit : undefined,
 				allowAiTrainingData,
 				opponentType,
@@ -231,6 +243,17 @@
 								/>
 							</label>
 						</div>
+						<label class="block space-y-1">
+							<span class="text-xs text-gray-600">{$_('home.incrementPerMove')}</span>
+							<input
+								type="number"
+								min="0"
+								max="60"
+								step="1"
+								bind:value={incrementPerMoveSecondsInput}
+								class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+							/>
+						</label>
 					</div>
 				{/if}
 

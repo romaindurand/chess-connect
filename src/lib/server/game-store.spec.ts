@@ -83,6 +83,35 @@ describe('game-store time control', () => {
 		expect(record.state.timeRemainingMs?.white).toBe(0);
 	});
 
+	it('adds configured increment after a legal move in timed games', async () => {
+		const { state, token: hostToken } = await createGame('Alice', {
+			timeLimitSeconds: 60,
+			incrementPerMoveSeconds: 10
+		});
+		const joinResult = await joinGame(state.id, 'Bob');
+		const record = getGameOrThrow(state.id);
+
+		const hostColor = record.state.hostColor;
+		expect(hostColor === 'white' || hostColor === 'black').toBe(true);
+
+		const whiteToken = hostColor === 'white' ? hostToken : joinResult.token;
+
+		record.state.turn = 'white';
+		record.state.turnStartedAt = Date.now() - 5_000;
+		if (record.state.timeRemainingMs) {
+			record.state.timeRemainingMs.white = 60_000;
+		}
+
+		await playMove(state.id, whiteToken, {
+			kind: 'place',
+			piece: 'pawn',
+			to: { x: 0, y: 0 }
+		});
+
+		// 60s - 5s spent + 10s increment = 65s
+		expect(record.state.timeRemainingMs?.white).toBe(65_000);
+	});
+
 	it('alternates colors between players on each accepted rematch', async () => {
 		const { state, token: hostToken } = await createGame('Alice');
 		const joinResult = await joinGame(state.id, 'Bob');
