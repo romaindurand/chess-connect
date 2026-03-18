@@ -1,7 +1,7 @@
 import { SvelteSet } from 'svelte/reactivity';
 import { fromStore } from 'svelte/store';
 import { _, locale } from 'svelte-i18n';
-import { listNonDefaultGameOptions } from '$lib/game-options';
+import { listInvitationGameOptions } from '$lib/game-options';
 import {
 	coordKey,
 	PIECES,
@@ -138,7 +138,7 @@ export function createGameView(input: GameViewFactoryInput) {
 		if (!game) {
 			return [] as string[];
 		}
-		return listNonDefaultGameOptions(game.state.options, t);
+		return listInvitationGameOptions(game.state.options, t);
 	});
 
 	const targetHints = $derived.by(() => {

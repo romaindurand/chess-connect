@@ -32,16 +32,14 @@
 	<p class="w-full text-sm text-gray-700">
 		{$_('game.invite.pending', { values: { name: inviterName } })}
 	</p>
-	{#if options.length > 0}
-		<div class="w-full rounded border border-gray-200 bg-gray-50 p-2 text-xs text-gray-700">
-			<p class="font-medium">{$_('game.invite.options')}</p>
-			<ul class="mt-1 list-inside list-disc space-y-1">
-				{#each options as option (option)}
-					<li>{option}</li>
-				{/each}
-			</ul>
-		</div>
-	{/if}
+	<div class="w-full rounded border border-gray-200 bg-gray-50 p-2 text-xs text-gray-700">
+		<p class="font-medium">{$_('game.invite.options')}</p>
+		<ul class="mt-1 list-inside list-disc space-y-1">
+			{#each options as option (option)}
+				<li>{option}</li>
+			{/each}
+		</ul>
+	</div>
 	<label class="grow space-y-2">
 		<span class="text-sm font-medium">{$_('game.invite.nameLabel')}</span>
 		<input

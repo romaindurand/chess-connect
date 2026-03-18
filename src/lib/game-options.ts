@@ -64,6 +64,28 @@ function formatOptionValue(key: string, value: GameOptionValue, format: OptionFo
 	return value ?? '';
 }
 
+export function listInvitationGameOptions(
+	options: GameOptions,
+	format: OptionFormatter = (key) => key
+): string[] {
+	const lines: string[] = [];
+	for (const [key, value] of Object.entries(options)) {
+		if (value === undefined) {
+			continue;
+		}
+		// Skip opponentType when it's 'human' (obvious context for invitations)
+		if (key === 'opponentType' && value === 'human') {
+			continue;
+		}
+		// Skip aiDifficulty for human-vs-human games
+		if (key === 'aiDifficulty' && options.opponentType === 'human') {
+			continue;
+		}
+		lines.push(`${humanizeOptionKey(key, format)}: ${formatOptionValue(key, value, format)}`);
+	}
+	return lines;
+}
+
 export function listNonDefaultGameOptions(
 	options: GameOptions,
 	format: OptionFormatter = (key) => key

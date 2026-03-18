@@ -21,7 +21,7 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] ne pas limiter à un BO3, rendre le nombre de parties configurable
 - [ ] création de compte avec token d'auth (pas de login/password, juste un token généré aléatoirement à la création du compte)
 - [x] permettre de refuser l'utilisation de sa partie pour l'entraînement de l'ordinateur
-- [ ] permettre le choix de la couleur en joueur contre joueur (pas juste en joueur contre ordinateur)
+- [x] permettre le choix de la couleur en joueur contre joueur (pas juste en joueur contre ordinateur)
 - [ ] en temps limité, ajouter une option qui ajoute des secondes à chaque coup joué (ex: 30s + 10s par coup)
 - [ ] pour le temps limité, permettre de préciser les secondes (pour le moment on ne gère que les minites)
 - [ ] matchmaking
