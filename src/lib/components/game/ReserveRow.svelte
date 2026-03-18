@@ -6,6 +6,8 @@
 	interface Props {
 		playerName: string;
 		playerScore: number;
+		clockText: string | null;
+		clockUrgent: boolean;
 		isActiveTurn: boolean;
 		reserveColor: 'white' | 'black';
 		pieces: PieceType[];
@@ -21,6 +23,8 @@
 	let {
 		playerName,
 		playerScore,
+		clockText,
+		clockUrgent,
 		isActiveTurn,
 		reserveColor,
 		pieces,
@@ -54,7 +58,16 @@
 </script>
 
 <div class={`rounded border p-2 ${isActiveTurn ? 'border-black' : 'border-gray-300'}`}>
-	<p class="mb-1 text-gray-700">{playerName} - {playerScore}</p>
+	<div class="mb-1 flex items-center justify-between gap-3 text-gray-700">
+		<p class="min-w-0 truncate">{playerName} - {playerScore}</p>
+		{#if clockText}
+			<span
+				class={`shrink-0 rounded px-2 py-0.5 font-mono text-sm ${clockUrgent ? 'bg-red-600 text-white' : isActiveTurn ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}`}
+			>
+				{clockText}
+			</span>
+		{/if}
+	</div>
 	<div class="flex h-16 flex-wrap content-start gap-2 overflow-hidden p-2">
 		{#each pieces as piece (piece)}
 			{@const Icon = pieceIcon(piece)}

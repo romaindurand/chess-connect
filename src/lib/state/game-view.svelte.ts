@@ -50,7 +50,10 @@ export function createGameView(input: GameViewFactoryInput) {
 		const interpolationValues = values as
 			| Record<string, string | number | boolean | Date | null | undefined>
 			| undefined;
-		return formatter(key, interpolationValues ? { values: interpolationValues } : undefined) as string;
+		return formatter(
+			key,
+			interpolationValues ? { values: interpolationValues } : undefined
+		) as string;
 	}
 
 	const topReserveColor = $derived('black' as const);
@@ -344,6 +347,22 @@ export function createGameView(input: GameViewFactoryInput) {
 		return getRemainingClockMs('black');
 	});
 
+	const topClockText = $derived.by(() => {
+		return formatClockMs(blackTimeRemainingMs);
+	});
+
+	const bottomClockText = $derived.by(() => {
+		return formatClockMs(whiteTimeRemainingMs);
+	});
+
+	const topClockUrgent = $derived.by(() => {
+		return isClockUrgent(blackTimeRemainingMs);
+	});
+
+	const bottomClockUrgent = $derived.by(() => {
+		return isClockUrgent(whiteTimeRemainingMs);
+	});
+
 	function getRemainingClockMs(color: Color): number | null {
 		const game = input.getGame();
 		if (!game || !game.state.timeControlEnabled || !game.state.timeRemainingMs) {
@@ -360,6 +379,21 @@ export function createGameView(input: GameViewFactoryInput) {
 		}
 
 		return Math.max(0, Math.floor(remaining));
+	}
+
+	function formatClockMs(remainingMs: number | null): string | null {
+		if (remainingMs === null) {
+			return null;
+		}
+
+		const totalSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+		const minutes = Math.floor(totalSeconds / 60);
+		const seconds = totalSeconds % 60;
+		return `${minutes}:${String(seconds).padStart(2, '0')}`;
+	}
+
+	function isClockUrgent(remainingMs: number | null): boolean {
+		return remainingMs !== null && remainingMs <= 10_000;
 	}
 
 	function boardPieceTransitionName(coord: Coord): string | null {
@@ -492,6 +526,18 @@ export function createGameView(input: GameViewFactoryInput) {
 		},
 		get blackTimeRemainingMs() {
 			return blackTimeRemainingMs;
+		},
+		get topClockText() {
+			return topClockText;
+		},
+		get bottomClockText() {
+			return bottomClockText;
+		},
+		get topClockUrgent() {
+			return topClockUrgent;
+		},
+		get bottomClockUrgent() {
+			return bottomClockUrgent;
 		},
 		get showHistoryPanel() {
 			return showHistoryPanel;

@@ -25,7 +25,7 @@ import {
 } from '$lib/types/game';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
-const HEARTBEAT_MS = 15_000;
+const HEARTBEAT_MS = 1_000;
 const SECRET = process.env.CHESS_CONNECT_SECRET ?? randomUUID();
 const SECOND_MS = 1000;
 

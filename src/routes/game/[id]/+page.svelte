@@ -138,6 +138,8 @@
 				<ReserveRow
 					playerName={state.view.game.state.players.black?.name ?? $_('common.waiting')}
 					playerScore={state.view.topPlayerScore}
+					clockText={state.view.topClockText}
+					clockUrgent={state.view.topClockUrgent}
 					isActiveTurn={state.view.displayTurn === 'black'}
 					reserveColor={state.view.topReserveColor}
 					pieces={state.view.topReservePieces}
@@ -168,6 +170,8 @@
 				<ReserveRow
 					playerName={state.view.game.state.players.white?.name ?? $_('common.waiting')}
 					playerScore={state.view.bottomPlayerScore}
+					clockText={state.view.bottomClockText}
+					clockUrgent={state.view.bottomClockUrgent}
 					isActiveTurn={state.view.displayTurn === 'white'}
 					reserveColor={state.view.bottomReserveColor}
 					pieces={state.view.bottomReservePieces}

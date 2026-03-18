@@ -59,6 +59,30 @@ describe('game-store time control', () => {
 		expect(record.state.board[0][0]).toBeNull();
 	});
 
+	it('detects timeout via heartbeat shortly after time expires with no player action', async () => {
+		const { state } = await createGame('Alice', { timeLimitSeconds: 1 });
+		await joinGame(state.id, 'Bob');
+		const record = getGameOrThrow(state.id);
+
+		const hostColor = record.state.hostColor;
+		expect(hostColor === 'white' || hostColor === 'black').toBe(true);
+
+		// Set white's turn and expire their time, but make sure they haven't tried to play
+		record.state.turn = 'white';
+		record.state.turnStartedAt = Date.now() - 2_000; // 2 seconds ago, but only 1 second budget
+		if (record.state.timeRemainingMs) {
+			record.state.timeRemainingMs.white = 1_000; // 1 second budget
+		}
+
+		// Without calling playMove (which triggers applyTimeoutIfExpired explicitly),
+		// the server must detect the timeout via heartbeat within ~1 second (after fix: HEARTBEAT_MS = 1_000)
+		await new Promise((resolve) => setTimeout(resolve, 1_500));
+
+		expect(record.state.status).toBe('finished');
+		expect(record.state.winner).toBe('black');
+		expect(record.state.timeRemainingMs?.white).toBe(0);
+	});
+
 	it('alternates colors between players on each accepted rematch', async () => {
 		const { state, token: hostToken } = await createGame('Alice');
 		const joinResult = await joinGame(state.id, 'Bob');

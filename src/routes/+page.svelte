@@ -45,8 +45,10 @@
 		let timeLimitSeconds: number | undefined;
 		if (timeControlEnabled) {
 			if (
-				!Number.isInteger(timeLimitMinutesInput) || timeLimitMinutesInput < 0 ||
-				!Number.isInteger(timeLimitSecondsInput) || timeLimitSecondsInput < 0
+				!Number.isInteger(timeLimitMinutesInput) ||
+				timeLimitMinutesInput < 0 ||
+				!Number.isInteger(timeLimitSecondsInput) ||
+				timeLimitSecondsInput < 0
 			) {
 				errorMessage = $_('errors.timeLimitRange');
 				return;

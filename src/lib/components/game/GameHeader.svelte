@@ -49,12 +49,15 @@
 		>
 			<History class="h-4 w-4" />
 		</button>
-		<label class="flex items-center gap-2 rounded border px-2 py-2 text-sm" title={$_('game.header.language')}>
+		<label
+			class="flex items-center gap-2 rounded border px-2 py-2 text-sm"
+			title={$_('game.header.language')}
+		>
 			<Languages class="h-4 w-4" aria-hidden="true" />
 			<span class="sr-only">{$_('game.header.language')}</span>
 			<span class="relative">
 				<select
-					class="appearance-none border-0 bg-transparent bg-none py-0 pl-0 pr-5 text-sm focus:ring-0"
+					class="appearance-none border-0 bg-transparent bg-none py-0 pr-5 pl-0 text-sm focus:ring-0"
 					value={currentLanguage}
 					onchange={(event) =>
 						onChangeLanguage((event.currentTarget as HTMLSelectElement).value as SupportedLanguage)}
@@ -64,7 +67,7 @@
 					<option value="en">{$_('language.english')}</option>
 				</select>
 				<ChevronDown
-					class="pointer-events-none absolute right-0 top-1/2 h-3 w-3 -translate-y-1/2 text-gray-500"
+					class="pointer-events-none absolute top-1/2 right-0 h-3 w-3 -translate-y-1/2 text-gray-500"
 					aria-hidden="true"
 				/>
 			</span>
