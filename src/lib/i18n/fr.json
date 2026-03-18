@@ -197,6 +197,7 @@
 		"logout": "Se déconnecter",
 		"loggedInAs": "Connecté en tant que {username}",
 		"loginSubmit": "Se connecter",
+		"validateLogin": "Valider",
 		"registerSubmit": "Créer mon compte",
 		"backToLogin": "Déjà un compte ?"
 	}

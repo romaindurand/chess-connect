@@ -6,7 +6,7 @@ declare global {
 }
 
 const adapter = new PrismaBetterSqlite3({
-	url: process.env.DATABASE_URL ?? 'file:./dev.db'
+	url: process.env.DATABASE_URL ?? 'file:./prisma/dev.db'
 });
 
 export const db: PrismaClient =

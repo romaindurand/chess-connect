@@ -2,7 +2,7 @@
 	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
 	import { createGameRemote } from '$lib/client/game-api';
@@ -36,12 +36,14 @@
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
 	let authState = $state<AuthState>({ authenticated: false });
-	let authTab = $state<'register' | 'login'>('register');
 	let recoveryKeyInput = $state('');
 	let authError = $state('');
 	let isAuthSubmitting = $state(false);
 	let shownToken = $state<string | null>(null);
 	let tokenCopied = $state(false);
+	let showLoginForm = $state(false);
+	let nameInput: HTMLInputElement | null = $state(null);
+	let recoveryKeyField: HTMLInputElement | null = $state(null);
 
 	onMount(async () => {
 		name = loadPlayerName();
@@ -117,17 +119,37 @@
 		}
 	}
 
-	async function handleRegister() {
+	function validateNameForSignup(): boolean {
+		if (!name.trim()) {
+			authError = '';
+			nameInput?.focus();
+			nameInput?.reportValidity();
+			return false;
+		}
+
 		const trimmed = name.trim();
 		if (trimmed.length < 2) {
 			authError = $_('errors.nameLength');
+			nameInput?.focus();
+			return false;
+		}
+
+		return true;
+	}
+
+	async function handleRegister() {
+		if (!validateNameForSignup()) {
 			return;
 		}
+
+		const trimmed = name.trim();
+		showLoginForm = false;
 		authError = '';
 		isAuthSubmitting = true;
 		try {
 			const result = await registerRemote(trimmed);
 			shownToken = result.rawToken;
+			tokenCopied = false;
 			authState = await getAuthStateRemote();
 			if (authState.authenticated && authState.username) {
 				name = authState.username;
@@ -140,8 +162,10 @@
 	}
 
 	async function handleLoginToken() {
+		shownToken = null;
 		if (!recoveryKeyInput.trim().startsWith('ccrec_')) {
 			authError = $_('errors.invalidKeyFormat');
+			recoveryKeyField?.focus();
 			return;
 		}
 		authError = '';
@@ -161,6 +185,13 @@
 		}
 	}
 
+	async function revealLoginForm() {
+		showLoginForm = true;
+		authError = '';
+		await tick();
+		recoveryKeyField?.focus();
+	}
+
 	async function copyShownToken() {
 		if (!shownToken) return;
 		await navigator.clipboard.writeText(shownToken);
@@ -172,6 +203,11 @@
 		authState = { authenticated: false };
 		shownToken = null;
 		name = loadPlayerName();
+	}
+
+	function dismissShownToken() {
+		shownToken = null;
+		tokenCopied = false;
 	}
 </script>
 
@@ -197,6 +233,43 @@
 		{$_('home.subtitle')}
 	</p>
 
+	{#if shownToken}
+		<div class="mb-6 space-y-3 rounded-md border border-green-300 bg-green-50 p-4">
+			<p class="text-sm font-medium text-green-800">{$_('auth.recoveryKeyHint')}</p>
+			<div class="flex gap-2">
+				<input
+					class="grow rounded border border-green-400 bg-white px-2 py-1 font-mono text-xs"
+					type="text"
+					readonly
+					value={shownToken}
+				/>
+				<button
+					type="button"
+					class="rounded bg-green-700 px-2 py-1 text-xs text-white"
+					onclick={copyShownToken}
+				>
+					{tokenCopied ? $_('auth.keyCopied') : $_('auth.copyKey')}
+				</button>
+			</div>
+
+			{#if authState.authenticated && authState.username}
+				<p class="text-xs text-green-800">
+					{$_('auth.loggedInAs', { values: { username: authState.username } })}
+				</p>
+			{/if}
+
+			<div class="flex justify-end">
+				<button
+					type="button"
+					class="rounded border border-green-700 px-3 py-1 text-xs text-green-800"
+					onclick={dismissShownToken}
+				>
+					{$_('common.close')}
+				</button>
+			</div>
+		</div>
+	{/if}
+
 	{#if authState.authenticated && authState.username}
 		<div class="mb-6">
 			<AccountPanel username={authState.username} onLogout={handleAuthLogout} />
@@ -205,66 +278,44 @@
 		<div class="mb-6 space-y-3 rounded-md border border-gray-200 p-4">
 			<div class="flex gap-2 text-sm">
 				<button
-					class={`rounded px-3 py-1 ${authTab === 'register' ? 'bg-black text-white' : 'border border-gray-300'}`}
-					onclick={() => {
-						authTab = 'register';
-						authError = '';
-					}}>{$_('auth.createAccount')}</button
-				>
-				<button
-					class={`rounded px-3 py-1 ${authTab === 'login' ? 'bg-black text-white' : 'border border-gray-300'}`}
-					onclick={() => {
-						authTab = 'login';
-						authError = '';
-					}}>{$_('auth.backToLogin')}</button
-				>
-			</div>
-
-			{#if authTab === 'register'}
-				<p class="text-xs text-gray-500">{$_('auth.recoveryKeyHint')}</p>
-				<button
 					type="button"
 					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
 					onclick={handleRegister}
-					disabled={isAuthSubmitting || name.trim().length < 2}>{$_('auth.registerSubmit')}</button
+					disabled={isAuthSubmitting}
 				>
-
-				{#if shownToken}
-					<div class="space-y-1">
-						<p class="text-xs font-medium text-green-700">{$_('auth.recoveryKeyHint')}</p>
-						<div class="flex gap-2">
-							<input
-								class="grow rounded border border-green-400 bg-green-50 px-2 py-1 font-mono text-xs"
-								type="text"
-								readonly
-								value={shownToken}
-							/>
-							<button
-								type="button"
-								class="rounded bg-green-700 px-2 py-1 text-xs text-white"
-								onclick={copyShownToken}
-							>
-								{tokenCopied ? $_('auth.keyCopied') : $_('auth.copyKey')}
-							</button>
-						</div>
-					</div>
-				{/if}
-			{:else}
-				<label class="block space-y-1">
-					<span class="text-sm font-medium">{$_('auth.recoveryKeyLabel')}</span>
-					<input
-						class="w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm"
-						type="text"
-						bind:value={recoveryKeyInput}
-						placeholder={$_('auth.recoveryKeyPlaceholder')}
-					/>
-				</label>
+					{$_('auth.createAccount')}
+				</button>
 				<button
 					type="button"
-					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
-					onclick={handleLoginToken}
-					disabled={isAuthSubmitting}>{$_('auth.loginSubmit')}</button
+					class="rounded border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+					onclick={revealLoginForm}
+					disabled={isAuthSubmitting}
 				>
+					{$_('auth.loginSubmit')}
+				</button>
+			</div>
+
+			{#if showLoginForm}
+				<label class="block space-y-1">
+					<span class="text-sm font-medium">{$_('auth.recoveryKeyLabel')}</span>
+					<div class="flex gap-2">
+						<input
+							bind:this={recoveryKeyField}
+							class="w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm"
+							type="text"
+							bind:value={recoveryKeyInput}
+							placeholder={$_('auth.recoveryKeyPlaceholder')}
+						/>
+						<button
+							type="button"
+							class="rounded border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+							onclick={handleLoginToken}
+							disabled={isAuthSubmitting}
+						>
+							{isAuthSubmitting ? $_('common.loading') : $_('auth.validateLogin')}
+						</button>
+					</div>
+				</label>
 			{/if}
 
 			{#if authError}
@@ -277,6 +328,7 @@
 		<label class="block space-y-2">
 			<span class="text-sm font-medium">{$_('home.nameLabel')}</span>
 			<input
+				bind:this={nameInput}
 				class="w-full rounded-md border border-gray-300 px-3 py-2"
 				type="text"
 				name="name"

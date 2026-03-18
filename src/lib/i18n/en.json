@@ -197,6 +197,7 @@
 		"logout": "Log out",
 		"loggedInAs": "Signed in as {username}",
 		"loginSubmit": "Sign in",
+		"validateLogin": "Submit",
 		"registerSubmit": "Create my account",
 		"backToLogin": "Already have an account?"
 	}
