@@ -51,6 +51,10 @@ const SERVER_ERROR_KEYS: Record<string, string> = {
 	'Impossible de démarrer la revanche': 'errors.startRematchFailed',
 	'Impossible de charger la partie': 'errors.loadGameFailed',
 	'Coup invalide': 'errors.invalidMove',
+	"Ce nom d'utilisateur est déjà pris": 'errors.usernameAlreadyTaken',
+	'Clé de récupération invalide ou révoquée': 'errors.invalidRecoveryKey',
+	'Format de clé invalide': 'errors.invalidKeyFormat',
+	'Non authentifié': 'errors.notAuthenticated',
 	'Erreur inattendue': 'errors.unexpected'
 };
 

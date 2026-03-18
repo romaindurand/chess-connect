@@ -178,6 +178,26 @@
 		"gameAlreadyStarted": "Game is already started",
 		"invalidPlayerSession": "Invalid player session",
 		"roundNotFinished": "Current round is not finished",
-		"matchFinished": "This match is already finished"
+		"matchFinished": "This match is already finished",
+		"usernameAlreadyTaken": "This username is already taken",
+		"invalidRecoveryKey": "Invalid or revoked recovery key",
+		"invalidKeyFormat": "Invalid key format",
+		"notAuthenticated": "Not authenticated"
+	},
+	"auth": {
+		"createAccount": "Create an account",
+		"loginWithKey": "Sign in with a key",
+		"recoveryKeyLabel": "Recovery key",
+		"recoveryKeyPlaceholder": "ccrec_...",
+		"recoveryKeyHint": "Copy this key and keep it safe. It will not be shown again.",
+		"copyKey": "Copy key",
+		"keyCopied": "Key copied!",
+		"rotateKey": "Regenerate key",
+		"rotateKeyConfirm": "The old key will be permanently invalidated. Continue?",
+		"logout": "Log out",
+		"loggedInAs": "Signed in as {username}",
+		"loginSubmit": "Sign in",
+		"registerSubmit": "Create my account",
+		"backToLogin": "Already have an account?"
 	}
 }

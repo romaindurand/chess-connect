@@ -178,6 +178,26 @@
 		"gameAlreadyStarted": "La partie est déjà démarrée",
 		"invalidPlayerSession": "Session joueur invalide",
 		"roundNotFinished": "La manche en cours n'est pas terminée",
-		"matchFinished": "Le match est déjà terminé"
+		"matchFinished": "Le match est déjà terminé",
+		"usernameAlreadyTaken": "Ce nom d'utilisateur est déjà pris",
+		"invalidRecoveryKey": "Clé de récupération invalide ou révoquée",
+		"invalidKeyFormat": "Format de clé invalide",
+		"notAuthenticated": "Non authentifié"
+	},
+	"auth": {
+		"createAccount": "Créer un compte",
+		"loginWithKey": "Se connecter avec une clé",
+		"recoveryKeyLabel": "Clé de récupération",
+		"recoveryKeyPlaceholder": "ccrec_...",
+		"recoveryKeyHint": "Copiez cette clé et conservez-la précieusement. Elle ne sera plus affichée.",
+		"copyKey": "Copier la clé",
+		"keyCopied": "Clé copiée !",
+		"rotateKey": "Régénérer la clé",
+		"rotateKeyConfirm": "L'ancienne clé sera invalidée définitivement. Continuer ?",
+		"logout": "Se déconnecter",
+		"loggedInAs": "Connecté en tant que {username}",
+		"loginSubmit": "Se connecter",
+		"registerSubmit": "Créer mon compte",
+		"backToLogin": "Déjà un compte ?"
 	}
 }
