@@ -19,7 +19,11 @@
 		"ai:reanalyse-games": "tsx scripts/ai/reanalyse-games.ts",
 		"ai:train-network": "tsx scripts/ai/train-network.ts",
 		"test:unit": "vitest",
-		"test": "npm run test:unit -- --run"
+		"test": "npm run test:unit -- --run",
+		"prisma:generate": "prisma generate",
+		"prisma:migrate:dev": "prisma migrate dev",
+		"prisma:migrate:deploy": "prisma migrate deploy",
+		"prisma:studio": "prisma studio"
 	},
 	"devDependencies": {
 		"@eslint/compat": "^2.0.2",
@@ -39,6 +43,7 @@
 		"prettier": "^3.8.1",
 		"prettier-plugin-svelte": "^3.4.1",
 		"prettier-plugin-tailwindcss": "^0.7.2",
+		"prisma": "^6.19.2",
 		"svelte": "^5.51.0",
 		"svelte-check": "^4.4.2",
 		"svelte-confetti": "^2.3.2",
@@ -51,12 +56,16 @@
 	},
 	"dependencies": {
 		"@lucide/svelte": "^0.577.0",
+		"@prisma/client": "^6.19.2",
 		"@tensorflow/tfjs": "^4.22.0",
 		"svelte-i18n": "^4.0.1"
 	},
 	"pnpm": {
 		"onlyBuiltDependencies": [
-			"@tensorflow/tfjs-node"
+			"@prisma/client",
+			"@prisma/engines",
+			"@tensorflow/tfjs-node",
+			"prisma"
 		]
 	}
 }
