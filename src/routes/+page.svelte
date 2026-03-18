@@ -10,6 +10,13 @@
 	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import type { HostColorPreference, OpponentType } from '$lib/types/game';
 	import favicon from '$lib/assets/favicon.png';
+	import AccountPanel from '$lib/components/AccountPanel.svelte';
+	import {
+		getAuthStateRemote,
+		registerRemote,
+		loginWithTokenRemote,
+		type AuthState
+	} from '$lib/client/auth-api';
 
 	const pageTitle = $derived($_('home.pageTitle'));
 	const pageDescription = $derived($_('home.pageDescription'));
@@ -28,9 +35,20 @@
 	let allowAiTrainingData = $state(true);
 	let isSubmitting = $state(false);
 	let errorMessage = $state('');
+	let authState = $state<AuthState>({ authenticated: false });
+	let authTab = $state<'register' | 'login'>('register');
+	let recoveryKeyInput = $state('');
+	let authError = $state('');
+	let isAuthSubmitting = $state(false);
+	let shownToken = $state<string | null>(null);
+	let tokenCopied = $state(false);
 
-	onMount(() => {
+	onMount(async () => {
 		name = loadPlayerName();
+		authState = await getAuthStateRemote();
+		if (authState.authenticated && authState.username) {
+			name = authState.username;
+		}
 	});
 
 	async function onCreateGame(event: SubmitEvent): Promise<void> {
@@ -98,6 +116,63 @@
 			isSubmitting = false;
 		}
 	}
+
+	async function handleRegister() {
+		const trimmed = name.trim();
+		if (trimmed.length < 2) {
+			authError = $_('errors.nameLength');
+			return;
+		}
+		authError = '';
+		isAuthSubmitting = true;
+		try {
+			const result = await registerRemote(trimmed);
+			shownToken = result.rawToken;
+			authState = await getAuthStateRemote();
+			if (authState.authenticated && authState.username) {
+				name = authState.username;
+			}
+		} catch (e) {
+			authError = e instanceof Error ? e.message : $_('errors.unexpected');
+		} finally {
+			isAuthSubmitting = false;
+		}
+	}
+
+	async function handleLoginToken() {
+		if (!recoveryKeyInput.trim().startsWith('ccrec_')) {
+			authError = $_('errors.invalidKeyFormat');
+			return;
+		}
+		authError = '';
+		isAuthSubmitting = true;
+		try {
+			await loginWithTokenRemote(recoveryKeyInput.trim());
+			authState = await getAuthStateRemote();
+			if (authState.authenticated && authState.username) {
+				name = authState.username;
+			}
+			recoveryKeyInput = '';
+			shownToken = null;
+		} catch (e) {
+			authError = e instanceof Error ? e.message : $_('errors.unexpected');
+		} finally {
+			isAuthSubmitting = false;
+		}
+	}
+
+	async function copyShownToken() {
+		if (!shownToken) return;
+		await navigator.clipboard.writeText(shownToken);
+		tokenCopied = true;
+		setTimeout(() => (tokenCopied = false), 2000);
+	}
+
+	function handleAuthLogout() {
+		authState = { authenticated: false };
+		shownToken = null;
+		name = loadPlayerName();
+	}
 </script>
 
 <svelte:head>
@@ -121,6 +196,82 @@
 	<p class="mb-8 text-sm text-gray-600">
 		{$_('home.subtitle')}
 	</p>
+
+	{#if authState.authenticated && authState.username}
+		<div class="mb-6">
+			<AccountPanel username={authState.username} onLogout={handleAuthLogout} />
+		</div>
+	{:else}
+		<div class="mb-6 rounded-md border border-gray-200 p-4 space-y-3">
+			<div class="flex gap-2 text-sm">
+				<button
+					class={`rounded px-3 py-1 ${authTab === 'register' ? 'bg-black text-white' : 'border border-gray-300'}`}
+					onclick={() => {
+						authTab = 'register';
+						authError = '';
+					}}
+				>{$_('auth.createAccount')}</button>
+				<button
+					class={`rounded px-3 py-1 ${authTab === 'login' ? 'bg-black text-white' : 'border border-gray-300'}`}
+					onclick={() => {
+						authTab = 'login';
+						authError = '';
+					}}
+				>{$_('auth.backToLogin')}</button>
+			</div>
+
+			{#if authTab === 'register'}
+				<p class="text-xs text-gray-500">{$_('auth.recoveryKeyHint')}</p>
+				<button
+					type="button"
+					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+					onclick={handleRegister}
+					disabled={isAuthSubmitting || name.trim().length < 2}
+				>{$_('auth.registerSubmit')}</button>
+
+				{#if shownToken}
+					<div class="space-y-1">
+						<p class="text-xs font-medium text-green-700">{$_('auth.recoveryKeyHint')}</p>
+						<div class="flex gap-2">
+							<input
+								class="grow rounded border border-green-400 bg-green-50 px-2 py-1 text-xs font-mono"
+								type="text"
+								readonly
+								value={shownToken}
+							/>
+							<button
+								type="button"
+								class="rounded bg-green-700 px-2 py-1 text-xs text-white"
+								onclick={copyShownToken}
+							>
+								{tokenCopied ? $_('auth.keyCopied') : $_('auth.copyKey')}
+							</button>
+						</div>
+					</div>
+				{/if}
+			{:else}
+				<label class="block space-y-1">
+					<span class="text-sm font-medium">{$_('auth.recoveryKeyLabel')}</span>
+					<input
+						class="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
+						type="text"
+						bind:value={recoveryKeyInput}
+						placeholder={$_('auth.recoveryKeyPlaceholder')}
+					/>
+				</label>
+				<button
+					type="button"
+					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+					onclick={handleLoginToken}
+					disabled={isAuthSubmitting}
+				>{$_('auth.loginSubmit')}</button>
+			{/if}
+
+			{#if authError}
+				<p class="text-sm text-red-600">{authError}</p>
+			{/if}
+		</div>
+	{/if}
 
 	<form class="space-y-4" onsubmit={onCreateGame}>
 		<label class="block space-y-2">
