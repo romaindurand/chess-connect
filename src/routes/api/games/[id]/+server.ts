@@ -20,17 +20,17 @@ import type { RequestHandler } from './$types';
 
 function parseActionPayload(body: unknown): GameActionPayload {
 	if (!body || typeof body !== 'object' || !('type' in body)) {
-		throw new Error('Payload invalide');
+		throw new Error('errors.invalidPayload');
 	}
 
 	if (body.type === 'join') {
 		const joinBody = body as Partial<JoinGamePayload>;
 		if (typeof joinBody.name !== 'string') {
-			throw new Error('Le nom est obligatoire');
+			throw new Error('errors.nameRequired');
 		}
 		const name = joinBody.name.trim();
 		if (name.length < 2 || name.length > 24) {
-			throw new Error('Le nom doit contenir entre 2 et 24 caractères');
+			throw new Error('errors.nameLength');
 		}
 		return {
 			type: 'join',
@@ -41,7 +41,7 @@ function parseActionPayload(body: unknown): GameActionPayload {
 	if (body.type === 'play') {
 		const playBody = body as Partial<PlayMovePayload>;
 		if (!playBody.move || typeof playBody.move !== 'object' || !('kind' in playBody.move)) {
-			throw new Error('Coup invalide');
+			throw new Error('errors.invalidMove');
 		}
 		return {
 			type: 'play',
@@ -61,7 +61,7 @@ function parseActionPayload(body: unknown): GameActionPayload {
 		} as RematchAcceptPayload;
 	}
 
-	throw new Error("Type d'action inconnu");
+	throw new Error('errors.invalidActionType');
 }
 
 export const GET: RequestHandler = async ({ params, cookies }) => {
@@ -71,7 +71,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 		const view = getViewForRequest(gameId, token);
 		return json(view);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Erreur de lecture de partie';
+		const message = error instanceof Error ? error.message : 'errors.readGameError';
 		return json({ error: message }, { status: 404 });
 	}
 };
@@ -101,7 +101,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 
 		const token = cookies.get(cookieName(gameId));
 		if (!token) {
-			return json({ error: 'Session joueur manquante' }, { status: 401 });
+			return json({ error: 'errors.missingPlayerSession' }, { status: 401 });
 		}
 
 		if (payload.type === 'play') {
@@ -116,7 +116,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		const view = getViewForRequest(gameId, token);
 		return json(view);
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Action impossible';
+		const message = error instanceof Error ? error.message : 'errors.actionImpossible';
 		return json({ error: message }, { status: 400 });
 	}
 };

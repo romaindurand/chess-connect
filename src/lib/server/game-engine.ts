@@ -181,16 +181,16 @@ function hasAlignedFour(state: GameState, color: Color): boolean {
 
 function validateTurn(state: GameState, color: Color): void {
 	if (state.status !== 'active') {
-		throw new Error("La partie n'est pas active");
+		throw new Error('errors.gameNotActive');
 	}
 	if (state.turn !== color) {
-		throw new Error("Ce n'est pas votre tour");
+		throw new Error('errors.notYourTurn');
 	}
 	if (!state.players.white || !state.players.black) {
-		throw new Error('La partie attend encore un joueur');
+		throw new Error('errors.waitingForPlayer');
 	}
 	if (state.winner) {
-		throw new Error('La partie est déjà terminée');
+		throw new Error('errors.gameAlreadyFinished');
 	}
 }
 
@@ -225,7 +225,7 @@ export function applyPlayerMove(state: GameState, color: Color, move: PlayerMove
 	validateTurn(state, color);
 
 	if (state.pliesPlayed < 6 && move.kind !== 'place') {
-		throw new Error('Durant les 6 premiers tours, seul le placement est autorisé');
+		throw new Error('errors.openingPlacementOnly');
 	}
 
 	const board = cloneBoard(state.board);
@@ -233,13 +233,13 @@ export function applyPlayerMove(state: GameState, color: Color, move: PlayerMove
 
 	if (move.kind === 'place') {
 		if (!reserves[color][move.piece]) {
-			throw new Error('Pièce indisponible dans la réserve');
+			throw new Error('errors.pieceUnavailable');
 		}
 		if (!isInside(move.to)) {
-			throw new Error('Case invalide');
+			throw new Error('errors.invalidCell');
 		}
 		if (board[move.to.y][move.to.x]) {
-			throw new Error('Case déjà occupée');
+			throw new Error('errors.cellOccupied');
 		}
 
 		board[move.to.y][move.to.x] = {
@@ -255,17 +255,17 @@ export function applyPlayerMove(state: GameState, color: Color, move: PlayerMove
 		reserves[color][move.piece] = false;
 	} else {
 		if (!isInside(move.from) || !isInside(move.to)) {
-			throw new Error('Case invalide');
+			throw new Error('errors.invalidCell');
 		}
 
 		const movingPiece = board[move.from.y][move.from.x];
 		if (!movingPiece || movingPiece.owner !== color) {
-			throw new Error('Pièce de départ invalide');
+			throw new Error('errors.invalidStartPiece');
 		}
 
 		const legalTargets = getPieceMoves({ ...state, board }, move.from);
 		if (!legalTargets.some((coord) => coord.x === move.to.x && coord.y === move.to.y)) {
-			throw new Error('Déplacement illégal');
+			throw new Error('errors.illegalMove');
 		}
 
 		const captured = board[move.to.y][move.to.x];

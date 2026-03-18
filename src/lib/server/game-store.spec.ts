@@ -211,7 +211,33 @@ describe('game-store time control', () => {
 		record.state.matchScore.guest = 1;
 		record.state.bestOfWinner = record.state.hostColor;
 
-		await expect(requestRematch(state.id, hostToken)).rejects.toThrow('Le match est déjà terminé');
+		await expect(requestRematch(state.id, hostToken)).rejects.toThrow('errors.matchFinished');
+	});
+
+	it('starts AI rematch immediately and lets the AI open after rematch when host becomes black', async () => {
+		const { state, token: hostToken } = await createGame('Alice', {
+			opponentType: 'ai',
+			hostColor: 'white'
+		});
+		const record = getGameOrThrow(state.id);
+
+		record.state.status = 'finished';
+		record.state.winner = 'white';
+		record.state.rematchRequestedBy = null;
+
+		const rematchState = await requestRematch(state.id, hostToken);
+
+		expect(rematchState.status).toBe('active');
+		expect(rematchState.hostColor).toBe('black');
+		expect(rematchState.turn).toBe('white');
+		expect(rematchState.pliesPlayed).toBe(0);
+		expect(rematchState.moveHistory).toHaveLength(0);
+
+		await waitFor(() => record.state.pliesPlayed === 1);
+
+		expect(record.state.turn).toBe('black');
+		expect(record.state.moveHistory).toHaveLength(1);
+		expect(record.state.board.flat().some((cell) => cell?.owner === 'white')).toBe(true);
 	});
 
 	it('tracks match score by player across color swaps', async () => {
@@ -377,7 +403,7 @@ describe('game-store time control', () => {
 		expect(record.state.board.flat().every((cell) => cell === null)).toBe(true);
 	});
 
-	it('starts an AI game immediately and lets the AI open when the host chooses black', async () => {
+	it('starts an AI game immediately and lets the AI open after creation when the host chooses black', async () => {
 		const { state } = await createGame('Alice', {
 			opponentType: 'ai',
 			hostColor: 'black'
@@ -389,10 +415,16 @@ describe('game-store time control', () => {
 		expect(state.hostColor).toBe('black');
 		expect(state.players.black?.name).toBe('Alice');
 		expect(state.players.white?.name).toBe('Ordinateur');
-		expect(state.pliesPlayed).toBe(1);
-		expect(state.moveHistory).toHaveLength(1);
-		expect(state.turn).toBe('black');
-		expect(state.board.flat().some((cell) => cell?.owner === 'white')).toBe(true);
+		expect(state.pliesPlayed).toBe(0);
+		expect(state.moveHistory).toHaveLength(0);
+		expect(state.turn).toBe('white');
+
+		const record = getGameOrThrow(state.id);
+		await waitFor(() => record.state.pliesPlayed === 1);
+
+		expect(record.state.moveHistory).toHaveLength(1);
+		expect(record.state.turn).toBe('black');
+		expect(record.state.board.flat().some((cell) => cell?.owner === 'white')).toBe(true);
 	});
 
 	it('answers automatically after a human move in an AI game', async () => {

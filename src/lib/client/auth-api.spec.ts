@@ -7,6 +7,7 @@ import {
 	registerRemote,
 	rotateTokenRemote
 } from '$lib/client/auth-api';
+import { initI18n, setLanguage } from '$lib/i18n';
 
 function createJsonResponse(payload: unknown, init?: ResponseInit): Response {
 	return new Response(JSON.stringify(payload), {
@@ -16,6 +17,9 @@ function createJsonResponse(payload: unknown, init?: ResponseInit): Response {
 }
 
 describe('auth api', () => {
+	initI18n();
+	setLanguage('fr');
+
 	afterEach(() => {
 		vi.unstubAllGlobals();
 	});
@@ -43,7 +47,7 @@ describe('auth api', () => {
 			vi
 				.fn()
 				.mockResolvedValue(
-					createJsonResponse({ error: "Ce nom d'utilisateur est déjà pris" }, { status: 409 })
+					createJsonResponse({ error: 'errors.usernameAlreadyTaken' }, { status: 409 })
 				)
 		);
 

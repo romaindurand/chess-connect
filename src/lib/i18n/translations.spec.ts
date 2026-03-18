@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import en from '$lib/i18n/en.json';
 import fr from '$lib/i18n/fr.json';
+import { initI18n, localizeServerError, setLanguage } from '$lib/i18n';
 
 function flattenKeys(input: unknown, prefix = ''): string[] {
 	if (!input || typeof input !== 'object' || Array.isArray(input)) {
@@ -28,5 +29,21 @@ describe('translation dictionaries', () => {
 		expect(fr.game.header.history).toBeTypeOf('string');
 		expect(fr.game.header.rules).toBeTypeOf('string');
 		expect(fr.game.header.language).toBeTypeOf('string');
+	});
+
+	it('localizes server error keys directly', () => {
+		initI18n();
+		setLanguage('fr');
+
+		expect(localizeServerError('errors.invalidPayload')).toBe('Payload invalide');
+		expect(localizeServerError('common.gameNotFound')).toBe('Partie introuvable');
+	});
+
+	it('keeps unknown server errors as-is', () => {
+		initI18n();
+		setLanguage('fr');
+
+		expect(localizeServerError('unmapped.error')).toBe('unmapped.error');
+		expect(localizeServerError('Erreur brute')).toBe('Erreur brute');
 	});
 });

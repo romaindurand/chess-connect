@@ -437,13 +437,13 @@ function hasThreefoldRepetition(moveHistory: MoveHistoryEntry[]): boolean {
 function createNextRoundState(state: GameState, swapColors: boolean): GameState {
 	const previousHostColor = state.hostColor;
 	if (!previousHostColor) {
-		throw new Error('Couleur hote indisponible');
+		throw new Error('errors.hostColorUnavailable');
 	}
 	const nextHostColor = swapColors ? oppositeColor(previousHostColor) : previousHostColor;
 	const hostPlayer = state.players[previousHostColor];
 	const guestPlayer = state.players[oppositeColor(previousHostColor)];
 	if (!hostPlayer || !guestPlayer) {
-		throw new Error('Deux joueurs sont requis pour lancer la manche suivante');
+		throw new Error('errors.twoPlayersRequired');
 	}
 
 	const nextPlayers: GameState['players'] = {
@@ -610,8 +610,9 @@ export async function createGame(
 		subscribers: new Set()
 	});
 
-	const record = getGameOrThrow(gameId);
-	await applyAiTurns(record);
+	if (state.options.opponentType === 'ai') {
+		queueAiTurns(gameId);
+	}
 
 	const token = signPayload({
 		gameId,
@@ -619,13 +620,13 @@ export async function createGame(
 		color: null,
 		rnd: randomUUID().slice(0, 12)
 	});
-	return { state: record.state, token, color: record.state.hostColor };
+	return { state, token, color: state.hostColor };
 }
 
 export function getGameOrThrow(gameId: string): GameRecord {
 	const game = getStore().games.get(gameId);
 	if (!game) {
-		throw new Error('Partie introuvable');
+		throw new Error('common.gameNotFound');
 	}
 	return game;
 }
@@ -671,7 +672,7 @@ export async function joinGame(
 	return queueMutation(gameId, () => {
 		const record = getGameOrThrow(gameId);
 		if (record.state.status !== 'waiting') {
-			throw new Error('La partie est déjà démarrée');
+			throw new Error('errors.gameAlreadyStarted');
 		}
 		const now = Date.now();
 		const preferredHostColor = record.state.options.hostColor;
@@ -713,7 +714,7 @@ export async function playMove(
 ): Promise<GameState> {
 	const payload = readToken(token);
 	if (!payload || payload.gameId !== gameId) {
-		throw new Error('Session joueur invalide');
+		throw new Error('errors.invalidPlayerSession');
 	}
 
 	return queueMutation(gameId, async () => {
@@ -726,7 +727,7 @@ export async function playMove(
 
 		const actorColor = resolveActorColor(record.state, payload);
 		if (!actorColor) {
-			throw new Error('Session joueur invalide');
+			throw new Error('errors.invalidPlayerSession');
 		}
 
 		if (record.state.timeControlEnabled && record.state.timeRemainingMs) {
@@ -753,7 +754,7 @@ export async function playMove(
 export async function requestRematch(gameId: string, token: string): Promise<GameState> {
 	const payload = readToken(token);
 	if (!payload || payload.gameId !== gameId) {
-		throw new Error('Session joueur invalide');
+		throw new Error('errors.invalidPlayerSession');
 	}
 
 	return queueMutation(gameId, async () => {
@@ -761,23 +762,23 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 		const state = record.state;
 		const actorColor = resolveActorColor(state, payload);
 		if (!actorColor) {
-			throw new Error('Session joueur invalide');
+			throw new Error('errors.invalidPlayerSession');
 		}
 
 		if (!state.winner || state.status !== 'finished') {
-			throw new Error("La manche en cours n'est pas terminée");
+			throw new Error('errors.roundNotFinished');
 		}
 		if (isBestOfFinished(state)) {
-			throw new Error('Le match est déjà terminé');
+			throw new Error('errors.matchFinished');
 		}
 		if (isAiGame(state)) {
 			record.state = createNextRoundState(state, true);
-			await applyAiTurns(record);
 			emitSnapshot(record);
+			queueAiTurns(gameId);
 			return record.state;
 		}
 		if (state.rematchRequestedBy) {
-			throw new Error('Une demande de revanche est déjà en attente');
+			throw new Error('errors.rematchAlreadyRequested');
 		}
 
 		state.rematchRequestedBy = actorColor;
@@ -792,7 +793,7 @@ export async function requestRematch(gameId: string, token: string): Promise<Gam
 export async function acceptRematch(gameId: string, token: string): Promise<GameState> {
 	const payload = readToken(token);
 	if (!payload || payload.gameId !== gameId) {
-		throw new Error('Session joueur invalide');
+		throw new Error('errors.invalidPlayerSession');
 	}
 
 	return queueMutation(gameId, () => {
@@ -800,25 +801,25 @@ export async function acceptRematch(gameId: string, token: string): Promise<Game
 		const state = record.state;
 		const actorColor = resolveActorColor(state, payload);
 		if (!actorColor) {
-			throw new Error('Session joueur invalide');
+			throw new Error('errors.invalidPlayerSession');
 		}
 
 		if (!state.winner || state.status !== 'finished') {
-			throw new Error("La manche en cours n'est pas terminée");
+			throw new Error('errors.roundNotFinished');
 		}
 		if (isBestOfFinished(state)) {
-			throw new Error('Le match est déjà terminé');
+			throw new Error('errors.matchFinished');
 		}
 		if (!state.rematchRequestedBy) {
-			throw new Error('Aucune demande de revanche en attente');
+			throw new Error('errors.rematchRequestMissing');
 		}
 
 		const expectedAccepter = oppositeColor(state.rematchRequestedBy);
 		if (actorColor !== expectedAccepter) {
-			throw new Error("Seul l'adversaire peut accepter la revanche");
+			throw new Error('errors.rematchAcceptOnlyOpponent');
 		}
 		if (!state.players.white || !state.players.black) {
-			throw new Error('Deux joueurs sont requis pour lancer la revanche');
+			throw new Error('errors.twoPlayersRequiredForRematch');
 		}
 
 		record.state = createNextRoundState(state, true);

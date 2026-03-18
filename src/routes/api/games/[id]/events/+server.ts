@@ -21,7 +21,7 @@ export const GET: RequestHandler = ({ params, cookies }) => {
 				const view = getViewForRequest(gameId, token);
 				controller.enqueue(encoder.encode(encodeSse({ type: 'snapshot', game: view })));
 			} catch {
-				controller.error(error(404, 'Partie introuvable'));
+				controller.error(error(404, 'common.gameNotFound'));
 				return;
 			}
 

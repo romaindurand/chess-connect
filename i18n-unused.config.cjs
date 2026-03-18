@@ -6,7 +6,8 @@ module.exports = {
 	srcExtensions: ['js', 'ts', 'svelte'],
 	ignorePaths: ['src/lib/server/ai', 'build', 'node_modules'],
 	// Match any quoted i18n key literal used in source files.
-	translationKeyMatcher: /['"](?:meta|common|language|home|game|options|piece|errors)\.[^'"]+['"]/g,
+	translationKeyMatcher:
+		/['"](?:meta|common|language|home|game|options|piece|errors|auth)\.[^'"]+['"]/g,
 	missedTranslationParser: (value) => {
 		const match = value.match(/['"`]([^'"`]+)['"`]/);
 		return match ? match[1] : value;

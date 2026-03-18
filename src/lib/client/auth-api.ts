@@ -1,3 +1,5 @@
+import { localizeServerError, translate } from '$lib/i18n';
+
 export interface AuthState {
 	authenticated: boolean;
 	username?: string;
@@ -9,8 +11,8 @@ async function readJsonOrThrow<T>(response: Response): Promise<T> {
 	if (!response.ok) {
 		const message =
 			typeof payload === 'object' && payload !== null && 'error' in payload
-				? String((payload as { error: string }).error)
-				: 'Erreur inattendue';
+				? localizeServerError(String((payload as { error: string }).error))
+				: translate('errors.unexpected');
 		throw new Error(message);
 	}
 	return payload as T;

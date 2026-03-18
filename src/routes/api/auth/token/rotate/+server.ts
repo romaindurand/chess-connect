@@ -11,7 +11,7 @@ export const POST: RequestHandler = async ({ cookies }) => {
 	const cookieValue = cookies.get(AUTH_COOKIE_NAME);
 	const userId = parseAuthCookie(cookieValue);
 	if (!userId) {
-		return json({ error: 'Non authentifié' }, { status: 401 });
+		return json({ error: 'errors.notAuthenticated' }, { status: 401 });
 	}
 	try {
 		const newRawToken = await rotateToken(userId);
@@ -24,7 +24,7 @@ export const POST: RequestHandler = async ({ cookies }) => {
 		});
 		return json({ rawToken: newRawToken });
 	} catch (error) {
-		const message = error instanceof Error ? error.message : 'Erreur de rotation';
+		const message = error instanceof Error ? error.message : 'errors.rotateError';
 		return json({ error: message }, { status: 500 });
 	}
 };
