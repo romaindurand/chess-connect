@@ -13,7 +13,7 @@ function createReplayState(): GameState {
 		inviter: { name: 'A', joinedAt: 0 },
 		hostColor: 'white',
 		options: {
-			timeLimitMinutes: null,
+			timeLimitSeconds: null,
 			opponentType: 'human',
 			hostColor: 'white',
 			aiDifficulty: 'baseline'

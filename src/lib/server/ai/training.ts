@@ -62,7 +62,7 @@ function createSelfPlayState(): GameState {
 		inviter: { name: 'IA Blanc', joinedAt: now },
 		hostColor: 'white',
 		options: {
-			timeLimitMinutes: null,
+			timeLimitSeconds: null,
 			opponentType: 'ai',
 			hostColor: 'white',
 			aiDifficulty: DEFAULT_AI_DIFFICULTY

@@ -15,7 +15,7 @@ function makeActiveState(turn: Color = 'white'): GameState {
 		inviter: { name: 'Alice', joinedAt: now },
 		hostColor: 'white',
 		options: {
-			timeLimitMinutes: null,
+			timeLimitSeconds: null,
 			allowAiTrainingData: true,
 			opponentType: 'ai',
 			hostColor: 'white'

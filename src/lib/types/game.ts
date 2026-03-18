@@ -39,7 +39,7 @@ export interface MatchScore {
 export type GameOptionValue = string | number | boolean | null | undefined;
 
 export interface GameOptions {
-	timeLimitMinutes: number | null;
+	timeLimitSeconds: number | null;
 	roundLimit?: number | null;
 	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
@@ -49,7 +49,7 @@ export interface GameOptions {
 }
 
 export const DEFAULT_GAME_OPTIONS: GameOptions = {
-	timeLimitMinutes: null,
+	timeLimitSeconds: null,
 	roundLimit: null,
 	allowAiTrainingData: true,
 	opponentType: 'human',
@@ -141,7 +141,7 @@ export type PlayerMove = PlaceMove | BoardMove;
 
 export interface CreateGamePayload {
 	name: string;
-	timeLimitMinutes?: number;
+	timeLimitSeconds?: number;
 	roundLimit?: number;
 	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;

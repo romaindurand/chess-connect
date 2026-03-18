@@ -51,7 +51,7 @@ interface Store {
 }
 
 interface CreateGameOptions {
-	timeLimitMinutes?: number;
+	timeLimitSeconds?: number;
 	roundLimit?: number;
 	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
@@ -142,7 +142,7 @@ function createNewState(
 ): { state: GameState } {
 	const now = Date.now();
 	const gameOptions: GameOptions = {
-		timeLimitMinutes: options?.timeLimitMinutes ?? DEFAULT_GAME_OPTIONS.timeLimitMinutes,
+		timeLimitSeconds: options?.timeLimitSeconds ?? DEFAULT_GAME_OPTIONS.timeLimitSeconds,
 		roundLimit: options?.roundLimit ?? DEFAULT_GAME_OPTIONS.roundLimit,
 		allowAiTrainingData: options?.allowAiTrainingData ?? DEFAULT_GAME_OPTIONS.allowAiTrainingData,
 		opponentType: options?.opponentType ?? DEFAULT_GAME_OPTIONS.opponentType,
@@ -150,7 +150,7 @@ function createNewState(
 		aiDifficulty: options?.aiDifficulty ?? DEFAULT_GAME_OPTIONS.aiDifficulty
 	};
 	const timeControlPerPlayerSeconds =
-		gameOptions.timeLimitMinutes !== null ? gameOptions.timeLimitMinutes * 60 : null;
+		gameOptions.timeLimitSeconds !== null ? gameOptions.timeLimitSeconds : null;
 	const timeControlEnabled = timeControlPerPlayerSeconds !== null;
 	const timeRemainingMs =
 		timeControlPerPlayerSeconds !== null

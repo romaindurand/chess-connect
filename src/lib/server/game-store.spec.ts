@@ -13,9 +13,9 @@ import {
 
 describe('game-store time control', () => {
 	it('creates a timed game with clocks initialized per player', async () => {
-		const { state } = await createGame('Alice', { timeLimitMinutes: 5 });
+		const { state } = await createGame('Alice', { timeLimitSeconds: 300 });
 
-		expect(state.options.timeLimitMinutes).toBe(5);
+		expect(state.options.timeLimitSeconds).toBe(300);
 		expect(state.timeControlEnabled).toBe(true);
 		expect(state.timeControlPerPlayerSeconds).toBe(300);
 		expect(state.timeRemainingMs).toEqual({ white: 300_000, black: 300_000 });
@@ -23,7 +23,7 @@ describe('game-store time control', () => {
 	});
 
 	it('starts the turn clock when the second player joins', async () => {
-		const { state } = await createGame('Alice', { timeLimitMinutes: 3 });
+		const { state } = await createGame('Alice', { timeLimitSeconds: 180 });
 		await joinGame(state.id, 'Bob');
 		const record = getGameOrThrow(state.id);
 
@@ -32,7 +32,7 @@ describe('game-store time control', () => {
 	});
 
 	it('loses on time when current player has no time left before move validation', async () => {
-		const { state, token: hostToken } = await createGame('Alice', { timeLimitMinutes: 1 });
+		const { state, token: hostToken } = await createGame('Alice', { timeLimitSeconds: 60 });
 		const joinResult = await joinGame(state.id, 'Bob');
 		const record = getGameOrThrow(state.id);
 
@@ -154,7 +154,7 @@ describe('game-store time control', () => {
 	});
 
 	it('tracks match score by player across color swaps', async () => {
-		const { state, token: hostToken } = await createGame('Alice', { timeLimitMinutes: 1 });
+		const { state, token: hostToken } = await createGame('Alice', { timeLimitSeconds: 60 });
 		const joinResult = await joinGame(state.id, 'Bob');
 		const playerToken = joinResult.token;
 		const record = getGameOrThrow(state.id);

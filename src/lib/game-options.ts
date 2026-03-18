@@ -15,6 +15,9 @@ function humanizeOptionKey(key: string, format: OptionFormatter): string {
 	if (key === 'roundLimit') {
 		return format('options.roundLimit');
 	}
+	if (key === 'timeLimitSeconds') {
+		return format('options.timeLimit');
+	}
 	if (key === 'allowAiTrainingData') {
 		return format('options.allowAiTrainingData');
 	}
@@ -44,6 +47,11 @@ function formatOptionValue(key: string, value: GameOptionValue, format: OptionFo
 	}
 	if (key === 'roundLimit' && typeof value === 'number') {
 		return format('options.rounds', { value });
+	}
+	if (key === 'timeLimitSeconds' && typeof value === 'number') {
+		const minutes = Math.floor(value / 60);
+		const seconds = value % 60;
+		return `${minutes}:${String(seconds).padStart(2, '0')}`;
 	}
 
 	if (typeof value === 'boolean') {

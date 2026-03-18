@@ -10,7 +10,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 	}
 	const input = body as {
 		name: unknown;
-		timeLimitMinutes?: unknown;
+		timeLimitSeconds?: unknown;
 		roundLimit?: unknown;
 		allowAiTrainingData?: unknown;
 		opponentType?: unknown;
@@ -45,12 +45,12 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 		throw new Error("L'option d'entraînement ordinateur est invalide");
 	}
 
-	if (input.timeLimitMinutes !== undefined) {
-		if (typeof input.timeLimitMinutes !== 'number' || !Number.isInteger(input.timeLimitMinutes)) {
-			throw new Error('La limite de temps doit être un entier');
+	if (input.timeLimitSeconds !== undefined) {
+		if (typeof input.timeLimitSeconds !== 'number' || !Number.isInteger(input.timeLimitSeconds)) {
+			throw new Error('La limite de temps doit être un entier (en secondes)');
 		}
-		if (input.timeLimitMinutes < 1 || input.timeLimitMinutes > 30) {
-			throw new Error('La limite de temps doit être entre 1 et 30 minutes');
+		if (input.timeLimitSeconds < 1 || input.timeLimitSeconds > 1800) {
+			throw new Error('La limite de temps doit être entre 1 et 1800 secondes (30 minutes max)');
 		}
 	}
 
@@ -65,7 +65,7 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 
 	return {
 		name,
-		timeLimitMinutes: input.timeLimitMinutes,
+		timeLimitSeconds: input.timeLimitSeconds,
 		roundLimit: input.roundLimit,
 		allowAiTrainingData: input.allowAiTrainingData,
 		opponentType,
@@ -78,7 +78,7 @@ export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	try {
 		const payload = parseCreatePayload(await request.json());
 		const { state, token, color } = await createGame(payload.name, {
-			timeLimitMinutes: payload.timeLimitMinutes,
+			timeLimitSeconds: payload.timeLimitSeconds,
 			roundLimit: payload.roundLimit,
 			allowAiTrainingData: payload.allowAiTrainingData,
 			opponentType: payload.opponentType,

@@ -20,7 +20,8 @@
 	let opponentType = $state<OpponentType>('human');
 	let hostColor = $state<HostColorPreference>('random');
 	let timeControlEnabled = $state(false);
-	let timeLimitMinutes = $state(5);
+	let timeLimitMinutesInput = $state(5);
+	let timeLimitSecondsInput = $state(0);
 	let roundLimitEnabled = $state(false);
 	let roundLimit = $state(5);
 	let allowAiTrainingData = $state(true);
@@ -40,13 +41,23 @@
 			errorMessage = $_('errors.nameLength');
 			return;
 		}
-		if (
-			timeControlEnabled &&
-			(!Number.isInteger(timeLimitMinutes) || timeLimitMinutes < 1 || timeLimitMinutes > 30)
-		) {
-			errorMessage = $_('errors.timeLimitRange');
-			return;
+
+		let timeLimitSeconds: number | undefined;
+		if (timeControlEnabled) {
+			if (
+				!Number.isInteger(timeLimitMinutesInput) || timeLimitMinutesInput < 0 ||
+				!Number.isInteger(timeLimitSecondsInput) || timeLimitSecondsInput < 0
+			) {
+				errorMessage = $_('errors.timeLimitRange');
+				return;
+			}
+			timeLimitSeconds = timeLimitMinutesInput * 60 + timeLimitSecondsInput;
+			if (timeLimitSeconds < 1 || timeLimitSeconds > 1800) {
+				errorMessage = $_('errors.timeLimitRange');
+				return;
+			}
 		}
+
 		if (
 			roundLimitEnabled &&
 			(!Number.isInteger(roundLimit) || roundLimit <= 0 || roundLimit % 2 === 0)
@@ -59,7 +70,7 @@
 		try {
 			const result = await createGameRemote({
 				name: trimmed,
-				timeLimitMinutes: timeControlEnabled ? timeLimitMinutes : undefined,
+				timeLimitSeconds,
 				roundLimit: roundLimitEnabled ? roundLimit : undefined,
 				allowAiTrainingData,
 				opponentType,
@@ -192,17 +203,33 @@
 				</label>
 
 				{#if timeControlEnabled}
-					<label class="block space-y-2">
+					<div class="space-y-2">
 						<span class="text-sm">{$_('home.timePerPlayer')}</span>
-						<input
-							type="number"
-							min="1"
-							max="30"
-							step="1"
-							bind:value={timeLimitMinutes}
-							class="w-full rounded-md border border-gray-300 px-3 py-2"
-						/>
-					</label>
+						<div class="grid grid-cols-2 gap-2">
+							<label class="block space-y-1">
+								<span class="text-xs text-gray-600">{$_('home.minutes')}</span>
+								<input
+									type="number"
+									min="0"
+									max="30"
+									step="1"
+									bind:value={timeLimitMinutesInput}
+									class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+								/>
+							</label>
+							<label class="block space-y-1">
+								<span class="text-xs text-gray-600">{$_('home.seconds')}</span>
+								<input
+									type="number"
+									min="0"
+									max="59"
+									step="1"
+									bind:value={timeLimitSecondsInput}
+									class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+								/>
+							</label>
+						</div>
+					</div>
 				{/if}
 
 				<label class="flex items-center gap-2 text-sm">

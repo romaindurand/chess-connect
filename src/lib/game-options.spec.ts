@@ -11,6 +11,9 @@ const format = (key: string, values?: Record<string, unknown>): string => {
 	if (key === 'options.rounds') {
 		return `${values?.value} manches`;
 	}
+	if (key === 'options.timeLimit') {
+		return 'Limit de temps';
+	}
 	const labels: Record<string, string> = {
 		'options.opponentType': "Type d'adversaire",
 		'options.hostColor': 'Couleur choisie',
@@ -31,15 +34,15 @@ const format = (key: string, values?: Record<string, unknown>): string => {
 
 describe('game options listing', () => {
 	it('returns only non-default options', () => {
-		expect(listNonDefaultGameOptions({ timeLimitMinutes: null }, format)).toEqual([]);
-		expect(listNonDefaultGameOptions({ timeLimitMinutes: 5 }, format)).toEqual([
-			'Time limit minutes: 5 min'
+		expect(listNonDefaultGameOptions({ timeLimitSeconds: null }, format)).toEqual([]);
+		expect(listNonDefaultGameOptions({ timeLimitSeconds: 300 }, format)).toEqual([
+			'Limit de temps: 5:00'
 		]);
 	});
 
 	it('includes future options automatically when not at default', () => {
 		const options = {
-			timeLimitMinutes: null,
+			timeLimitSeconds: null,
 			allowTakeback: true,
 			maxHints: 3
 		};
@@ -53,7 +56,7 @@ describe('game options listing', () => {
 		expect(
 			listNonDefaultGameOptions(
 				{
-					timeLimitMinutes: null,
+					timeLimitSeconds: null,
 					opponentType: 'ai',
 					hostColor: 'black'
 				},
@@ -63,14 +66,14 @@ describe('game options listing', () => {
 	});
 
 	it('includes odd round limit when configured', () => {
-		expect(listNonDefaultGameOptions({ timeLimitMinutes: null, roundLimit: 5 }, format)).toEqual([
+		expect(listNonDefaultGameOptions({ timeLimitSeconds: null, roundLimit: 5 }, format)).toEqual([
 			'Nombre de manches: 5 manches'
 		]);
 	});
 
 	it('shows training consent option only when disabled', () => {
 		expect(
-			listNonDefaultGameOptions({ timeLimitMinutes: null, allowAiTrainingData: false }, format)
+			listNonDefaultGameOptions({ timeLimitSeconds: null, allowAiTrainingData: false }, format)
 		).toEqual(["Parties utilisées pour entraîner l'ordinateur: Non"]);
 	});
 });

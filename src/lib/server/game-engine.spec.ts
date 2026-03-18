@@ -10,7 +10,7 @@ function makeActiveState(turn: Color = 'white'): GameState {
 		status: 'active',
 		inviter: { name: 'Alice', joinedAt: now },
 		hostColor: 'white',
-		options: { timeLimitMinutes: null },
+		options: { timeLimitSeconds: null },
 		players: {
 			white: { name: 'Alice', joinedAt: now },
 			black: { name: 'Bob', joinedAt: now }
