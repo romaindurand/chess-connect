@@ -2,7 +2,7 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** Permettre aux joueurs de créer un compte en 1 clic (après saisie du nom), d'obtenir une clé de récupération opaque, et de se reconnecter depuis n'importe quel navigateur en collant cette clé dans un champ dédié. La session est établie via un cookie HttpOnly. Les comptes et tokens sont stockés en PostgreSQL via Prisma ; les parties restent en mémoire.
+**Goal:** Permettre aux joueurs de créer un compte en 1 clic (après saisie du nom), d'obtenir une clé de récupération opaque, et de se reconnecter depuis n'importe quel navigateur en collant cette clé dans un champ dédié. La session est établie via un cookie HttpOnly. Les comptes et tokens sont stockés en SQLite via Prisma ; les parties restent en mémoire.
 
 **Architecture:**
 
@@ -11,7 +11,7 @@
 - `src/routes/api/auth/*` — endpoints REST dédiés, isolés du flux existant `api/games/*`.
 - Le cookie `cc_auth` (HttpOnly, SameSite lax) contient un jeton signé HMAC référençant l'ID utilisateur. Les tokens de partie `cc_player_<gameId>` restent inchangés.
 
-**Tech Stack:** SvelteKit 2, TypeScript, Prisma 6 + @prisma/client, PostgreSQL, Node.js crypto (built-in), pnpm.
+**Tech Stack:** SvelteKit 2, TypeScript, Prisma 6 + @prisma/client, SQLite, Node.js crypto (built-in), pnpm.
 
 **Token design:**
 
@@ -25,9 +25,9 @@
 
 1. Créer un fichier `.env` (ignoré par git) à la racine du worktree avec :
    ```
-   DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/chess_connect_dev?schema=public"
+   DATABASE_URL="file:./dev.db"
    ```
-2. S'assurer qu'une instance PostgreSQL tourne en local (ou adapter l'URL pour une instance existante).
+2. S'assurer que le répertoire `prisma/` est accessible en écriture pour créer le fichier SQLite local.
 3. Travailler depuis le worktree : `cd .worktrees/feature/auth`
 
 ---
@@ -52,7 +52,7 @@ Attendu : `package.json` mis à jour, `pnpm-lock.yaml` mis à jour.
 **Step 1.2: Initialiser Prisma**
 
 ```bash
-npx prisma init --datasource-provider postgresql
+npx prisma init --datasource-provider sqlite
 ```
 
 Cela crée `prisma/schema.prisma` (avec `datasource db`) et un `.env` vide.
@@ -65,7 +65,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+	provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -105,7 +105,7 @@ Dans la section `"scripts"`, ajouter :
 CHESS_CONNECT_SECRET=change-me-in-production
 
 # Base de données
-DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/chess_connect_dev?schema=public"
+DATABASE_URL="file:./dev.db"
 
 # IA (existant)
 # AI_CHECKPOINT_PATH=checkpoints/model

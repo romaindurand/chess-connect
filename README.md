@@ -6,6 +6,25 @@ This is a SvelteKit application that serves as the frontend and backend for the 
 
 This project is mostly a playground for me to experiment with SvelteKit and local-llms.
 
+## Base de donnees (SQLite)
+
+La persistance des comptes d'authentification utilise Prisma avec SQLite.
+
+- En dev: `DATABASE_URL="file:./dev.db"` (fichier cree dans le dossier `prisma/`)
+- En prod: definir `DATABASE_URL` vers un fichier persistant, par exemple `file:/var/lib/chess-connect/prod.db`
+
+Appliquer les migrations:
+
+```bash
+pnpm prisma:migrate:deploy
+```
+
+En local, creer/appliquer une migration de dev:
+
+```bash
+pnpm prisma:migrate:dev -- --name init-auth
+```
+
 ## TODO
 
 - [x] animation des pieces
