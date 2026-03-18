@@ -42,7 +42,7 @@
 	}
 </script>
 
-<div class="rounded-md border border-gray-200 bg-gray-50 p-4 space-y-3">
+<div class="space-y-3 rounded-md border border-gray-200 bg-gray-50 p-4">
 	<p class="text-sm font-medium">{$_('auth.loggedInAs', { values: { username } })}</p>
 
 	{#if newToken}
@@ -50,15 +50,12 @@
 			<p class="text-xs text-gray-600">{$_('auth.recoveryKeyHint')}</p>
 			<div class="flex gap-2">
 				<input
-					class="grow rounded border border-gray-300 px-2 py-1 text-xs font-mono"
+					class="grow rounded border border-gray-300 px-2 py-1 font-mono text-xs"
 					type="text"
 					readonly
 					value={newToken}
 				/>
-				<button
-					class="rounded bg-black px-2 py-1 text-xs text-white"
-					onclick={copyToken}
-				>
+				<button class="rounded bg-black px-2 py-1 text-xs text-white" onclick={copyToken}>
 					{copied ? $_('auth.keyCopied') : $_('auth.copyKey')}
 				</button>
 			</div>
@@ -77,10 +74,7 @@
 		>
 			{$_('auth.rotateKey')}
 		</button>
-		<button
-			class="rounded border border-gray-300 px-3 py-1 text-xs"
-			onclick={handleLogout}
-		>
+		<button class="rounded border border-gray-300 px-3 py-1 text-xs" onclick={handleLogout}>
 			{$_('auth.logout')}
 		</button>
 	</div>

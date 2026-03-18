@@ -9,11 +9,11 @@ export const AUTH_COOKIE_NAME = 'cc_auth';
 // ---------------------------------------------------------------------------
 
 function generateRawToken(): string {
-  return 'ccrec_' + randomBytes(32).toString('base64url');
+	return 'ccrec_' + randomBytes(32).toString('base64url');
 }
 
 function hashToken(rawToken: string): string {
-  return createHash('sha256').update(rawToken).digest('hex');
+	return createHash('sha256').update(rawToken).digest('hex');
 }
 
 // ---------------------------------------------------------------------------
@@ -21,21 +21,21 @@ function hashToken(rawToken: string): string {
 // ---------------------------------------------------------------------------
 
 export function signAuthCookie(userId: string): string {
-  const rnd = randomBytes(8).toString('base64url');
-  const raw = `${userId}:${rnd}`;
-  const sig = createHmac('sha256', SECRET).update(raw).digest('base64url');
-  return `${raw}:${sig}`;
+	const rnd = randomBytes(8).toString('base64url');
+	const raw = `${userId}:${rnd}`;
+	const sig = createHmac('sha256', SECRET).update(raw).digest('base64url');
+	return `${raw}:${sig}`;
 }
 
 export function parseAuthCookie(value: string | undefined): string | null {
-  if (!value) return null;
-  const parts = value.split(':');
-  if (parts.length !== 3) return null;
-  const [userId, rnd, sig] = parts;
-  const raw = `${userId}:${rnd}`;
-  const expected = createHmac('sha256', SECRET).update(raw).digest('base64url');
-  if (expected !== sig) return null;
-  return userId;
+	if (!value) return null;
+	const parts = value.split(':');
+	if (parts.length !== 3) return null;
+	const [userId, rnd, sig] = parts;
+	const raw = `${userId}:${rnd}`;
+	const expected = createHmac('sha256', SECRET).update(raw).digest('base64url');
+	if (expected !== sig) return null;
+	return userId;
 }
 
 // ---------------------------------------------------------------------------
@@ -43,72 +43,88 @@ export function parseAuthCookie(value: string | undefined): string | null {
 // ---------------------------------------------------------------------------
 
 export async function registerAccount(
-  username: string
+	username: string
 ): Promise<{ userId: string; rawToken: string }> {
-  const rawToken = generateRawToken();
-  const tokenHash = hashToken(rawToken);
+	const rawToken = generateRawToken();
+	const tokenHash = hashToken(rawToken);
 
-  const user = await db.userAccount.create({
-    data: {
-      username,
-      tokens: {
-        create: { tokenHash }
-      }
-    }
-  });
+	const user = await db.userAccount.create({
+		data: {
+			username,
+			tokens: {
+				create: { tokenHash }
+			}
+		}
+	});
 
-  return { userId: user.id, rawToken };
+	return { userId: user.id, rawToken };
 }
 
 export async function loginWithToken(
-  rawToken: string
+	rawToken: string
 ): Promise<{ id: string; username: string } | null> {
-  const tokenHash = hashToken(rawToken);
+	const tokenHash = hashToken(rawToken);
 
-  const token = await db.authToken.findFirst({
-    where: { tokenHash, revokedAt: null },
-    include: { user: true }
-  });
+	const token = await db.authToken.findFirst({
+		where: { tokenHash, revokedAt: null },
+		include: { user: true }
+	});
 
-  if (!token) return null;
+	if (!token) return null;
 
-  await db.authToken.update({
-    where: { id: token.id },
-    data: { lastUsedAt: new Date() }
-  });
+	await db.authToken.update({
+		where: { id: token.id },
+		data: { lastUsedAt: new Date() }
+	});
 
-  return { id: token.user.id, username: token.user.username };
+	return { id: token.user.id, username: token.user.username };
 }
 
 export async function revokeToken(userId: string): Promise<void> {
-  await db.authToken.updateMany({
-    where: { userId, revokedAt: null },
-    data: { revokedAt: new Date() }
-  });
+	await db.authToken.updateMany({
+		where: { userId, revokedAt: null },
+		data: { revokedAt: new Date() }
+	});
 }
 
 export async function rotateToken(userId: string): Promise<string> {
-  const rawToken = generateRawToken();
-  const tokenHash = hashToken(rawToken);
+	const rawToken = generateRawToken();
+	const tokenHash = hashToken(rawToken);
 
-  await db.$transaction([
-    db.authToken.updateMany({
-      where: { userId, revokedAt: null },
-      data: { revokedAt: new Date() }
-    }),
-    db.authToken.create({
-      data: { userId, tokenHash }
-    })
-  ]);
+	await db.$transaction([
+		db.authToken.updateMany({
+			where: { userId, revokedAt: null },
+			data: { revokedAt: new Date() }
+		}),
+		db.authToken.create({
+			data: { userId, tokenHash }
+		})
+	]);
 
-  return rawToken;
+	return rawToken;
 }
 
 export async function getAccountById(
-  userId: string
+	userId: string
 ): Promise<{ id: string; username: string; createdAt: Date } | null> {
-  return db.userAccount.findUnique({
-    where: { id: userId },
-    select: { id: true, username: true, createdAt: true }
-  });
+	return db.userAccount.findUnique({
+		where: { id: userId },
+		select: { id: true, username: true, createdAt: true }
+	});
+}
+
+// ---------------------------------------------------------------------------
+// Gameplay integration
+// ---------------------------------------------------------------------------
+
+export async function resolvePlayerNameFromAuth(
+	authCookieValue: string | undefined
+): Promise<string | null> {
+	if (!authCookieValue) return null;
+
+	const userId = parseAuthCookie(authCookieValue);
+	if (!userId) return null;
+
+	const account = await getAccountById(userId);
+	return account?.username ?? null;
 }

@@ -202,22 +202,22 @@
 			<AccountPanel username={authState.username} onLogout={handleAuthLogout} />
 		</div>
 	{:else}
-		<div class="mb-6 rounded-md border border-gray-200 p-4 space-y-3">
+		<div class="mb-6 space-y-3 rounded-md border border-gray-200 p-4">
 			<div class="flex gap-2 text-sm">
 				<button
 					class={`rounded px-3 py-1 ${authTab === 'register' ? 'bg-black text-white' : 'border border-gray-300'}`}
 					onclick={() => {
 						authTab = 'register';
 						authError = '';
-					}}
-				>{$_('auth.createAccount')}</button>
+					}}>{$_('auth.createAccount')}</button
+				>
 				<button
 					class={`rounded px-3 py-1 ${authTab === 'login' ? 'bg-black text-white' : 'border border-gray-300'}`}
 					onclick={() => {
 						authTab = 'login';
 						authError = '';
-					}}
-				>{$_('auth.backToLogin')}</button>
+					}}>{$_('auth.backToLogin')}</button
+				>
 			</div>
 
 			{#if authTab === 'register'}
@@ -226,15 +226,15 @@
 					type="button"
 					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
 					onclick={handleRegister}
-					disabled={isAuthSubmitting || name.trim().length < 2}
-				>{$_('auth.registerSubmit')}</button>
+					disabled={isAuthSubmitting || name.trim().length < 2}>{$_('auth.registerSubmit')}</button
+				>
 
 				{#if shownToken}
 					<div class="space-y-1">
 						<p class="text-xs font-medium text-green-700">{$_('auth.recoveryKeyHint')}</p>
 						<div class="flex gap-2">
 							<input
-								class="grow rounded border border-green-400 bg-green-50 px-2 py-1 text-xs font-mono"
+								class="grow rounded border border-green-400 bg-green-50 px-2 py-1 font-mono text-xs"
 								type="text"
 								readonly
 								value={shownToken}
@@ -253,7 +253,7 @@
 				<label class="block space-y-1">
 					<span class="text-sm font-medium">{$_('auth.recoveryKeyLabel')}</span>
 					<input
-						class="w-full rounded border border-gray-300 px-3 py-2 text-sm font-mono"
+						class="w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm"
 						type="text"
 						bind:value={recoveryKeyInput}
 						placeholder={$_('auth.recoveryKeyPlaceholder')}
@@ -263,8 +263,8 @@
 					type="button"
 					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
 					onclick={handleLoginToken}
-					disabled={isAuthSubmitting}
-				>{$_('auth.loginSubmit')}</button>
+					disabled={isAuthSubmitting}>{$_('auth.loginSubmit')}</button
+				>
 			{/if}
 
 			{#if authError}

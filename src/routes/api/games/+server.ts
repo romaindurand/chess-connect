@@ -1,6 +1,7 @@
 import { json } from '@sveltejs/kit';
 
 import { cookieName, createGame } from '$lib/server/game-store';
+import { AUTH_COOKIE_NAME, resolvePlayerNameFromAuth } from '$lib/server/auth-store';
 import type { CreateGamePayload } from '$lib/types/game';
 import type { RequestHandler } from './$types';
 
@@ -91,7 +92,13 @@ function parseCreatePayload(body: unknown): CreateGamePayload {
 export const POST: RequestHandler = async ({ request, cookies, url }) => {
 	try {
 		const payload = parseCreatePayload(await request.json());
-		const { state, token, color } = await createGame(payload.name, {
+
+		// Try to use authenticated account username if available
+		const authCookieValue = cookies.get(AUTH_COOKIE_NAME);
+		const authenticatedUsername = await resolvePlayerNameFromAuth(authCookieValue);
+		const playerName = authenticatedUsername ?? payload.name;
+
+		const { state, token, color } = await createGame(playerName, {
 			timeLimitSeconds: payload.timeLimitSeconds,
 			incrementPerMoveSeconds: payload.incrementPerMoveSeconds,
 			roundLimit: payload.roundLimit,

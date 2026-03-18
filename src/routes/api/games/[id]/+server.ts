@@ -8,6 +8,7 @@ import {
 	playMove,
 	requestRematch
 } from '$lib/server/game-store';
+import { AUTH_COOKIE_NAME, resolvePlayerNameFromAuth } from '$lib/server/auth-store';
 import type {
 	GameActionPayload,
 	JoinGamePayload,
@@ -81,7 +82,12 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		const payload = parseActionPayload(await request.json());
 
 		if (payload.type === 'join') {
-			const result = await joinGame(gameId, payload.name);
+			// Try to use authenticated account username if available
+			const authCookieValue = cookies.get(AUTH_COOKIE_NAME);
+			const authenticatedUsername = await resolvePlayerNameFromAuth(authCookieValue);
+			const playerName = authenticatedUsername ?? payload.name;
+
+			const result = await joinGame(gameId, playerName);
 			cookies.set(cookieName(gameId), result.token, {
 				path: '/',
 				httpOnly: true,

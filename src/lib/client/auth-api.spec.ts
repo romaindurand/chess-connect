@@ -21,9 +21,9 @@ describe('auth api', () => {
 	});
 
 	it('registers a user and returns the raw token payload', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(
-			createJsonResponse({ rawToken: 'ccrec_token', username: 'Romain' })
-		);
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValue(createJsonResponse({ rawToken: 'ccrec_token', username: 'Romain' }));
 		vi.stubGlobal('fetch', fetchMock);
 
 		await expect(registerRemote('Romain')).resolves.toEqual({
@@ -40,22 +40,24 @@ describe('auth api', () => {
 	it('throws the server error message when registration fails', async () => {
 		vi.stubGlobal(
 			'fetch',
-			vi.fn().mockResolvedValue(
-				createJsonResponse({ error: 'Ce nom d\'utilisateur est déjà pris' }, { status: 409 })
-			)
+			vi
+				.fn()
+				.mockResolvedValue(
+					createJsonResponse({ error: "Ce nom d'utilisateur est déjà pris" }, { status: 409 })
+				)
 		);
 
-		await expect(registerRemote('Romain')).rejects.toThrow(
-			"Ce nom d'utilisateur est déjà pris"
-		);
+		await expect(registerRemote('Romain')).rejects.toThrow("Ce nom d'utilisateur est déjà pris");
 	});
 
 	it('loads the current auth state', async () => {
 		vi.stubGlobal(
 			'fetch',
-			vi.fn().mockResolvedValue(
-				createJsonResponse({ authenticated: true, username: 'Romain', userId: 'user-1' })
-			)
+			vi
+				.fn()
+				.mockResolvedValue(
+					createJsonResponse({ authenticated: true, username: 'Romain', userId: 'user-1' })
+				)
 		);
 
 		await expect(getAuthStateRemote()).resolves.toEqual({
