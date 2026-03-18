@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { GameState } from '$lib/types/game';
 
 import {
@@ -84,32 +84,40 @@ describe('game-store time control', () => {
 	});
 
 	it('adds configured increment after a legal move in timed games', async () => {
-		const { state, token: hostToken } = await createGame('Alice', {
-			timeLimitSeconds: 60,
-			incrementPerMoveSeconds: 10
-		});
-		const joinResult = await joinGame(state.id, 'Bob');
-		const record = getGameOrThrow(state.id);
+		vi.useFakeTimers();
+		vi.setSystemTime(new Date('2026-03-18T12:00:00.000Z'));
 
-		const hostColor = record.state.hostColor;
-		expect(hostColor === 'white' || hostColor === 'black').toBe(true);
+		try {
+			const { state, token: hostToken } = await createGame('Alice', {
+				timeLimitSeconds: 60,
+				incrementPerMoveSeconds: 10
+			});
+			const joinResult = await joinGame(state.id, 'Bob');
+			const record = getGameOrThrow(state.id);
 
-		const whiteToken = hostColor === 'white' ? hostToken : joinResult.token;
+			const hostColor = record.state.hostColor;
+			expect(hostColor === 'white' || hostColor === 'black').toBe(true);
 
-		record.state.turn = 'white';
-		record.state.turnStartedAt = Date.now() - 5_000;
-		if (record.state.timeRemainingMs) {
-			record.state.timeRemainingMs.white = 60_000;
+			const whiteToken = hostColor === 'white' ? hostToken : joinResult.token;
+			const now = Date.now();
+
+			record.state.turn = 'white';
+			record.state.turnStartedAt = now - 5_000;
+			if (record.state.timeRemainingMs) {
+				record.state.timeRemainingMs.white = 60_000;
+			}
+
+			await playMove(state.id, whiteToken, {
+				kind: 'place',
+				piece: 'pawn',
+				to: { x: 0, y: 0 }
+			});
+
+			// 60s - 5s spent + 10s increment = 65s
+			expect(record.state.timeRemainingMs?.white).toBe(65_000);
+		} finally {
+			vi.useRealTimers();
 		}
-
-		await playMove(state.id, whiteToken, {
-			kind: 'place',
-			piece: 'pawn',
-			to: { x: 0, y: 0 }
-		});
-
-		// 60s - 5s spent + 10s increment = 65s
-		expect(record.state.timeRemainingMs?.white).toBe(65_000);
 	});
 
 	it('alternates colors between players on each accepted rematch', async () => {
