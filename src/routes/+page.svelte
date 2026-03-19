@@ -25,6 +25,7 @@
 		loginWithTokenRemote,
 		type AuthState
 	} from '$lib/client/auth-api';
+	import { slide } from 'svelte/transition';
 
 	const pageTitle = $derived($_('home.pageTitle'));
 	const pageDescription = $derived($_('home.pageDescription'));
@@ -50,8 +51,10 @@
 	let authError = $state('');
 	let isAuthSubmitting = $state(false);
 	let shownToken = $state<string | null>(null);
-	let tokenCopied = $state(false);
 	let showLoginForm = $state(false);
+	let advancedOptionsOpen = $state(false);
+	let advancedOptionsMounted = $state(false);
+	let advancedOptionsCloseTimer: ReturnType<typeof setTimeout> | null = null;
 	let queueStatus = $state<RankedQueueStatus | null>(null);
 	let rankedModalOpen = $state(false);
 	let rankedBusy = $state(false);
@@ -297,7 +300,6 @@
 		try {
 			const result = await registerRemote(trimmed);
 			shownToken = result.rawToken;
-			tokenCopied = false;
 			authState = await getAuthStateRemote();
 			if (authState.authenticated && authState.username) {
 				name = authState.username;
@@ -310,7 +312,6 @@
 	}
 
 	async function handleLoginToken() {
-		shownToken = null;
 		if (!recoveryKeyInput.trim().startsWith('ccrec_')) {
 			authError = $_('errors.invalidKeyFormat');
 			recoveryKeyField?.focus();
@@ -340,13 +341,6 @@
 		recoveryKeyField?.focus();
 	}
 
-	async function copyShownToken() {
-		if (!shownToken) return;
-		await navigator.clipboard.writeText(shownToken);
-		tokenCopied = true;
-		setTimeout(() => (tokenCopied = false), 2000);
-	}
-
 	function handleAuthLogout() {
 		authState = { authenticated: false };
 		shownToken = null;
@@ -360,10 +354,35 @@
 		}
 	}
 
-	function dismissShownToken() {
-		shownToken = null;
-		tokenCopied = false;
+	function toggleAdvancedOptions(event: MouseEvent) {
+		event.preventDefault();
+
+		if (advancedOptionsCloseTimer) {
+			clearTimeout(advancedOptionsCloseTimer);
+			advancedOptionsCloseTimer = null;
+		}
+
+		if (advancedOptionsOpen) {
+			advancedOptionsOpen = false;
+			advancedOptionsCloseTimer = setTimeout(() => {
+				advancedOptionsMounted = false;
+				advancedOptionsCloseTimer = null;
+			}, 300);
+			return;
+		}
+
+		advancedOptionsMounted = true;
+		setTimeout(() => {
+			advancedOptionsOpen = true;
+		}, 0);
 	}
+
+	$effect(() => {
+		if (selectedMode === 'ranked' && advancedOptionsCloseTimer) {
+			clearTimeout(advancedOptionsCloseTimer);
+			advancedOptionsCloseTimer = null;
+		}
+	});
 </script>
 
 <svelte:head>
@@ -384,50 +403,13 @@
 
 <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-8">
 	<h1 class="mb-4 text-3xl font-semibold">Chess Connect</h1>
-	<p class="mb-8 text-sm text-gray-600">
-		{$_('home.subtitle')}
-	</p>
-
-	{#if shownToken}
-		<div class="mb-6 space-y-3 rounded-md border border-green-300 bg-green-50 p-4">
-			<p class="text-sm font-medium text-green-800">{$_('auth.recoveryKeyHint')}</p>
-			<div class="flex gap-2">
-				<input
-					class="grow rounded border border-green-400 bg-white px-2 py-1 font-mono text-xs"
-					type="text"
-					readonly
-					value={shownToken}
-				/>
-				<button
-					type="button"
-					class="rounded bg-green-700 px-2 py-1 text-xs text-white"
-					onclick={copyShownToken}
-				>
-					{tokenCopied ? $_('auth.keyCopied') : $_('auth.copyKey')}
-				</button>
-			</div>
-
-			{#if authState.authenticated && authState.username}
-				<p class="text-xs text-green-800">
-					{$_('auth.loggedInAs', { values: { username: authState.username } })}
-				</p>
-			{/if}
-
-			<div class="flex justify-end">
-				<button
-					type="button"
-					class="rounded border border-green-700 px-3 py-1 text-xs text-green-800"
-					onclick={dismissShownToken}
-				>
-					{$_('common.close')}
-				</button>
-			</div>
-		</div>
-	{/if}
-
 	{#if authState.authenticated && authState.username}
 		<div class="mb-6">
-			<AccountPanel username={authState.username} onLogout={handleAuthLogout} />
+			<AccountPanel
+				username={authState.username}
+				onLogout={handleAuthLogout}
+				initialToken={shownToken}
+			/>
 		</div>
 	{:else}
 		<div class="mb-6 space-y-3 rounded-md border border-gray-200 p-4">
@@ -480,19 +462,21 @@
 	{/if}
 
 	<form class="space-y-4" onsubmit={onCreateGame}>
-		<label class="block space-y-2">
-			<span class="text-sm font-medium">{$_('home.nameLabel')}</span>
-			<input
-				bind:this={nameInput}
-				class="w-full rounded-md border border-gray-300 px-3 py-2"
-				type="text"
-				name="name"
-				bind:value={name}
-				maxlength="24"
-				placeholder={$_('home.namePlaceholder')}
-				required
-			/>
-		</label>
+		{#if !authState.authenticated}
+			<label class="block space-y-2">
+				<span class="text-sm font-medium">{$_('home.nameLabel')}</span>
+				<input
+					bind:this={nameInput}
+					class="w-full rounded-md border border-gray-300 px-3 py-2"
+					type="text"
+					name="name"
+					bind:value={name}
+					maxlength="24"
+					placeholder={$_('home.namePlaceholder')}
+					required
+				/>
+			</label>
+		{/if}
 
 		<fieldset class="rounded-md border border-gray-200 p-3">
 			<legend class="px-1 text-sm font-medium">{$_('home.gameType')}</legend>
@@ -538,128 +522,153 @@
 					</label>
 				{/if}
 			</div>
+			<p class="mt-3 text-sm text-gray-600">
+				{#if selectedMode === 'human'}
+					{$_('home.modeDescriptionHuman')}
+				{:else if selectedMode === 'ai'}
+					{$_('home.modeDescriptionAi')}
+				{:else}
+					{$_('home.modeDescriptionRanked')}
+				{/if}
+			</p>
 		</fieldset>
 
 		{#if selectedMode !== 'ranked'}
-			<details class="rounded-md border border-gray-200 p-3">
-				<summary class="cursor-pointer text-sm font-medium">{$_('home.advancedOptions')}</summary>
-				<div class="mt-3 space-y-3">
-					<div class="space-y-2">
-						<span class="text-sm font-medium">{$_('home.yourColor')}</span>
-						<div class="grid gap-2 sm:grid-cols-3">
-							<label
-								class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-							>
-								<input
-									class="sr-only"
-									type="radio"
-									name="hostColor"
-									value="white"
-									bind:group={hostColor}
-								/>
-								<span>{$_('home.colorWhite')}</span>
+			<details
+				transition:slide
+				class="rounded-md border border-gray-200 p-3"
+				open={advancedOptionsMounted}
+			>
+				<summary
+					class="cursor-pointer text-sm font-medium"
+					onclick={toggleAdvancedOptions}
+					aria-expanded={advancedOptionsOpen}
+				>
+					{$_('home.advancedOptions')}
+				</summary>
+				<div
+					class={`grid transition-all duration-300 ease-out ${
+						advancedOptionsOpen
+							? 'mt-3 grid-rows-[1fr] opacity-100'
+							: 'mt-0 grid-rows-[0fr] opacity-0'
+					}`}
+				>
+					<div class="overflow-hidden">
+						<div class="space-y-3 pb-1">
+							<div class="space-y-2">
+								<span class="text-sm font-medium">{$_('home.yourColor')}</span>
+								<div class="grid gap-2 sm:grid-cols-3">
+									<label
+										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+									>
+										<input
+											class="sr-only"
+											type="radio"
+											name="hostColor"
+											value="white"
+											bind:group={hostColor}
+										/>
+										<span>{$_('home.colorWhite')}</span>
+									</label>
+									<label
+										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+									>
+										<input
+											class="sr-only"
+											type="radio"
+											name="hostColor"
+											value="black"
+											bind:group={hostColor}
+										/>
+										<span>{$_('home.colorBlack')}</span>
+									</label>
+									<label
+										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+									>
+										<input
+											class="sr-only"
+											type="radio"
+											name="hostColor"
+											value="random"
+											bind:group={hostColor}
+										/>
+										<span>{$_('home.colorRandom')}</span>
+									</label>
+								</div>
+							</div>
+
+							<label class="flex items-center gap-2 text-sm">
+								<input type="checkbox" bind:checked={timeControlEnabled} />
+								<span>{$_('home.enableTimeControl')}</span>
 							</label>
-							<label
-								class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-							>
-								<input
-									class="sr-only"
-									type="radio"
-									name="hostColor"
-									value="black"
-									bind:group={hostColor}
-								/>
-								<span>{$_('home.colorBlack')}</span>
+
+							{#if timeControlEnabled}
+								<div class="space-y-2">
+									<span class="text-sm">{$_('home.timePerPlayer')}</span>
+									<div class="grid grid-cols-2 gap-2">
+										<label class="block space-y-1">
+											<span class="text-xs text-gray-600">{$_('home.minutes')}</span>
+											<input
+												type="number"
+												min="0"
+												max="30"
+												step="1"
+												bind:value={timeLimitMinutesInput}
+												class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+											/>
+										</label>
+										<label class="block space-y-1">
+											<span class="text-xs text-gray-600">{$_('home.seconds')}</span>
+											<input
+												type="number"
+												min="0"
+												max="59"
+												step="1"
+												bind:value={timeLimitSecondsInput}
+												class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+											/>
+										</label>
+									</div>
+									<label class="block space-y-1">
+										<span class="text-xs text-gray-600">{$_('home.incrementPerMove')}</span>
+										<input
+											type="number"
+											min="0"
+											max="60"
+											step="1"
+											bind:value={incrementPerMoveSecondsInput}
+											class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+										/>
+									</label>
+								</div>
+							{/if}
+
+							<label class="flex items-center gap-2 text-sm">
+								<input type="checkbox" bind:checked={roundLimitEnabled} />
+								<span>{$_('home.enableRoundLimit')}</span>
 							</label>
-							<label
-								class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-							>
-								<input
-									class="sr-only"
-									type="radio"
-									name="hostColor"
-									value="random"
-									bind:group={hostColor}
-								/>
-								<span>{$_('home.colorRandom')}</span>
+
+							{#if roundLimitEnabled}
+								<label class="block space-y-2">
+									<span class="text-sm">{$_('home.roundLimit')}</span>
+									<input
+										type="number"
+										min="1"
+										step="2"
+										bind:value={roundLimit}
+										class="w-full rounded-md border border-gray-300 px-3 py-2"
+									/>
+								</label>
+							{/if}
+
+							<label class="flex items-center gap-2 text-sm">
+								<input type="checkbox" bind:checked={allowAiTrainingData} />
+								<span>{$_('home.allowAiTrainingData')}</span>
 							</label>
 						</div>
 					</div>
-
-					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" bind:checked={timeControlEnabled} />
-						<span>{$_('home.enableTimeControl')}</span>
-					</label>
-
-					{#if timeControlEnabled}
-						<div class="space-y-2">
-							<span class="text-sm">{$_('home.timePerPlayer')}</span>
-							<div class="grid grid-cols-2 gap-2">
-								<label class="block space-y-1">
-									<span class="text-xs text-gray-600">{$_('home.minutes')}</span>
-									<input
-										type="number"
-										min="0"
-										max="30"
-										step="1"
-										bind:value={timeLimitMinutesInput}
-										class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-									/>
-								</label>
-								<label class="block space-y-1">
-									<span class="text-xs text-gray-600">{$_('home.seconds')}</span>
-									<input
-										type="number"
-										min="0"
-										max="59"
-										step="1"
-										bind:value={timeLimitSecondsInput}
-										class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-									/>
-								</label>
-							</div>
-							<label class="block space-y-1">
-								<span class="text-xs text-gray-600">{$_('home.incrementPerMove')}</span>
-								<input
-									type="number"
-									min="0"
-									max="60"
-									step="1"
-									bind:value={incrementPerMoveSecondsInput}
-									class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
-								/>
-							</label>
-						</div>
-					{/if}
-
-					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" bind:checked={roundLimitEnabled} />
-						<span>{$_('home.enableRoundLimit')}</span>
-					</label>
-
-					{#if roundLimitEnabled}
-						<label class="block space-y-2">
-							<span class="text-sm">{$_('home.roundLimit')}</span>
-							<input
-								type="number"
-								min="1"
-								step="2"
-								bind:value={roundLimit}
-								class="w-full rounded-md border border-gray-300 px-3 py-2"
-							/>
-						</label>
-					{/if}
-
-					<label class="flex items-center gap-2 text-sm">
-						<input type="checkbox" bind:checked={allowAiTrainingData} />
-						<span>{$_('home.allowAiTrainingData')}</span>
-					</label>
 				</div>
 			</details>
-		{:else}
-			<p class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-				{$_('home.rankedDescription')}
-			</p>
 		{/if}
 
 		{#if authState.authenticated}

@@ -1,7 +1,9 @@
 <script lang="ts">
+	import { resolve } from '$app/paths';
 	import { ChevronDown, History, Languages, Share2 } from '@lucide/svelte';
 	import { _ } from 'svelte-i18n';
 	import type { SupportedLanguage } from '$lib/i18n';
+	import favicon from '$lib/assets/favicon.png';
 
 	interface Props {
 		gameId: string;
@@ -31,13 +33,18 @@
 </script>
 
 <header class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-	<div>
-		<h1 class="text-2xl font-semibold">{$_('game.pageTitle', { values: { id: gameId } })}</h1>
-		{#if turnLineText}
-			<p class={`text-sm ${isViewerTurnNow ? 'font-bold text-gray-900' : 'text-gray-700'} h-5`}>
-				{turnLineText}
-			</p>
-		{/if}
+	<div class="flex items-stretch gap-3">
+		<a href={resolve('/')} class="flex shrink-0 items-stretch" aria-label={$_('home.pageTitle')}>
+			<img src={favicon} alt="Chess Connect" width="52" />
+		</a>
+		<div class="flex min-h-[3.25rem] flex-col justify-between">
+			<h1 class="text-2xl font-semibold">{$_('game.pageTitle', { values: { id: gameId } })}</h1>
+			{#if turnLineText}
+				<p class={`text-sm ${isViewerTurnNow ? 'font-bold text-gray-900' : 'text-gray-700'} h-5`}>
+					{turnLineText}
+				</p>
+			{/if}
+		</div>
 	</div>
 	<div class="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
 		<button
