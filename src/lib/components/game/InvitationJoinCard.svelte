@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import { _ } from 'svelte-i18n';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
+	import { getAuthStateRemote } from '$lib/client/auth-api';
 
 	interface Props {
 		inviterName: string;
@@ -12,9 +13,16 @@
 	let { inviterName, options, onJoin }: Props = $props();
 
 	let name = $state('');
+	let isAuthenticated = $state(false);
 
-	onMount(() => {
-		name = loadPlayerName();
+	onMount(async () => {
+		const auth = await getAuthStateRemote();
+		if (auth.authenticated && auth.username) {
+			name = auth.username;
+			isAuthenticated = true;
+		} else {
+			name = loadPlayerName();
+		}
 	});
 
 	async function submit(event: SubmitEvent): Promise<void> {
@@ -43,10 +51,13 @@
 	<label class="grow space-y-2">
 		<span class="text-sm font-medium">{$_('game.invite.nameLabel')}</span>
 		<input
-			class="w-full rounded border border-gray-300 px-3 py-2"
+			class="w-full rounded border border-gray-300 px-3 py-2 {isAuthenticated
+				? 'cursor-not-allowed bg-gray-100 text-gray-500'
+				: ''}"
 			type="text"
 			bind:value={name}
 			maxlength="24"
+			readonly={isAuthenticated}
 			required
 		/>
 	</label>
