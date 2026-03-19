@@ -11,6 +11,8 @@
 	import MoveHistoryPanel from '$lib/components/game/MoveHistoryPanel.svelte';
 	import ReserveRow from '$lib/components/game/ReserveRow.svelte';
 	import GameDialog from '$lib/components/GameDialog.svelte';
+	import RulesEn from '$lib/i18n/en/rules.md';
+	import RulesFr from '$lib/i18n/fr/rules.md';
 	import { isSupportedLanguage, setLanguage, type SupportedLanguage } from '$lib/i18n';
 	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import { createGameState } from '$lib/state/game.svelte';
@@ -23,6 +25,7 @@
 	const canonicalUrl = $derived(page.url.href);
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
 	const currentLanguage = $derived(($locale === 'fr' ? 'fr' : 'en') as SupportedLanguage);
+	const RulesContent = $derived($locale === 'fr' ? RulesFr : RulesEn);
 
 	function onChangeLanguage(language: SupportedLanguage): void {
 		if (!isSupportedLanguage(language)) {
@@ -223,10 +226,10 @@
 		title={$_('game.rules.title')}
 		onClose={() => state.actions.setShowRulesModal(false)}
 	>
-		<div class="space-y-2">
-			{#each state.view.rulesLines as rule (rule)}
-				<p>{$_(rule)}</p>
-			{/each}
+		<div
+			class="text-gray-700 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+		>
+			<RulesContent />
 		</div>
 	</GameDialog>
 

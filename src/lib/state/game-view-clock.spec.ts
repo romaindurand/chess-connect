@@ -83,7 +83,6 @@ describe('game view clocks', () => {
 
 		const view = createGameView({
 			getGameId: () => 'g-clock',
-			rulesLines: [],
 			getGame: () => game,
 			getHoveredBoardFrom: () => null,
 			getHoveredReservePiece: () => null,
@@ -128,7 +127,6 @@ describe('game view clocks', () => {
 
 		const view = createGameView({
 			getGameId: () => 'g-clock',
-			rulesLines: [],
 			getGame: () => game,
 			getHoveredBoardFrom: () => null,
 			getHoveredReservePiece: () => null,

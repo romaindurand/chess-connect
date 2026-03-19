@@ -33,15 +33,6 @@ export function createGameState(getGameId: () => string) {
 
 	let stream: EventSource | null = null;
 
-	const rulesLines = [
-		'game.rules.line1',
-		'game.rules.line2',
-		'game.rules.line3',
-		'game.rules.line4',
-		'game.rules.line5',
-		'game.rules.line6'
-	] as const;
-
 	const lifecycle = createGameLifecycle({
 		getGameId,
 		getSelectedBoardFrom: () => selectedBoardFrom,
@@ -103,7 +94,6 @@ export function createGameState(getGameId: () => string) {
 
 	const view = createGameView({
 		getGameId,
-		rulesLines,
 		getGame: () => game,
 		getHoveredBoardFrom: () => hoveredBoardFrom,
 		getHoveredReservePiece: () => hoveredReservePiece,

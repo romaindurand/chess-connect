@@ -1,0 +1,6 @@
+- The game is played on a 4x4 board.
+- The first 6 half-moves are reserve placements only.
+- After that, pieces move like chess pieces, with captures allowed.
+- A pawn that reaches an edge reverses direction on its next move.
+- A captured piece returns to its owner's reserve.
+- You win by aligning 4 of your pieces (row, column, or diagonal)

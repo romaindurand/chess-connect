@@ -1,0 +1,6 @@
+- La partie se joue sur un plateau 4x4.
+- Les 6 premiers demi-coups servent uniquement à poser les pièces depuis la réserve.
+- Ensuite, les pièces se déplacent comme aux échecs, avec capture autorisée.
+- Un pion qui atteint un bord repart dans l'autre sens au coup suivant.
+- Une pièce capturée retourne dans la réserve de son propriétaire.
+- Vous gagnez en alignant 4 de vos pièces (ligne, colonne ou diagonale)

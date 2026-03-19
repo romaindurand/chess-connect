@@ -132,7 +132,6 @@ describe('game view history interactions', () => {
 
 		const view = createGameView({
 			getGameId: () => 'g1',
-			rulesLines: [],
 			getGame: () => game,
 			getHoveredBoardFrom: () => null,
 			getHoveredReservePiece: () => null,
@@ -170,7 +169,6 @@ describe('game view history interactions', () => {
 
 		const view = createGameView({
 			getGameId: () => 'g1',
-			rulesLines: [],
 			getGame: () => game,
 			getHoveredBoardFrom: () => hoveredBoardFrom,
 			getHoveredReservePiece: () => null,

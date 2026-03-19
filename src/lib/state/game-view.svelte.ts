@@ -14,7 +14,6 @@ import {
 
 interface GameViewFactoryInput {
 	getGameId: () => string;
-	rulesLines: readonly string[];
 	getGame: () => GameView | null;
 	getHoveredBoardFrom: () => Coord | null;
 	getHoveredReservePiece: () => PieceType | null;
@@ -430,7 +429,6 @@ export function createGameView(input: GameViewFactoryInput) {
 		get gameId() {
 			return input.getGameId();
 		},
-		rulesLines: input.rulesLines,
 		get game() {
 			return input.getGame();
 		},
