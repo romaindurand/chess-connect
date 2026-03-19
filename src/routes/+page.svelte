@@ -367,53 +367,53 @@
 					<span>{$_('home.versusAi')}</span>
 				</label>
 			</div>
-
-			<div class="mt-3 space-y-2">
-				<span class="text-sm font-medium">{$_('home.yourColor')}</span>
-				<div class="grid gap-2 sm:grid-cols-3">
-					<label
-						class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-					>
-						<input
-							class="sr-only"
-							type="radio"
-							name="hostColor"
-							value="white"
-							bind:group={hostColor}
-						/>
-						<span>{$_('home.colorWhite')}</span>
-					</label>
-					<label
-						class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-					>
-						<input
-							class="sr-only"
-							type="radio"
-							name="hostColor"
-							value="black"
-							bind:group={hostColor}
-						/>
-						<span>{$_('home.colorBlack')}</span>
-					</label>
-					<label
-						class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-					>
-						<input
-							class="sr-only"
-							type="radio"
-							name="hostColor"
-							value="random"
-							bind:group={hostColor}
-						/>
-						<span>{$_('home.colorRandom')}</span>
-					</label>
-				</div>
-			</div>
 		</fieldset>
 
 		<details class="rounded-md border border-gray-200 p-3">
 			<summary class="cursor-pointer text-sm font-medium">{$_('home.advancedOptions')}</summary>
 			<div class="mt-3 space-y-3">
+				<div class="space-y-2">
+					<span class="text-sm font-medium">{$_('home.yourColor')}</span>
+					<div class="grid gap-2 sm:grid-cols-3">
+						<label
+							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+						>
+							<input
+								class="sr-only"
+								type="radio"
+								name="hostColor"
+								value="white"
+								bind:group={hostColor}
+							/>
+							<span>{$_('home.colorWhite')}</span>
+						</label>
+						<label
+							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+						>
+							<input
+								class="sr-only"
+								type="radio"
+								name="hostColor"
+								value="black"
+								bind:group={hostColor}
+							/>
+							<span>{$_('home.colorBlack')}</span>
+						</label>
+						<label
+							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+						>
+							<input
+								class="sr-only"
+								type="radio"
+								name="hostColor"
+								value="random"
+								bind:group={hostColor}
+							/>
+							<span>{$_('home.colorRandom')}</span>
+						</label>
+					</div>
+				</div>
+
 				<label class="flex items-center gap-2 text-sm">
 					<input type="checkbox" bind:checked={timeControlEnabled} />
 					<span>{$_('home.enableTimeControl')}</span>
