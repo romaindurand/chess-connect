@@ -106,6 +106,12 @@ export async function decideRankedProposalRemote(
 	return readJsonOrThrow<RankedMatchDecisionResponse>(response);
 }
 
+export async function claimRankedGameSessionRemote(
+	proposalId: string
+): Promise<RankedMatchDecisionResponse> {
+	return decideRankedProposalRemote(proposalId, true);
+}
+
 export function openRankedQueueEventStream(
 	onEvent: (event: RankedQueueServerEvent) => void
 ): EventSource {

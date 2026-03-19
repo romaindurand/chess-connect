@@ -111,56 +111,66 @@ export async function applyRankedResult(input: {
 		config: DEFAULT_RANKING_CONFIG
 	});
 
-	await db.playerRating.update({
-		where: { userId: input.winnerUserId },
-		data: {
-			rating: update.winner.next.rating,
-			ratingDeviation: update.winner.next.ratingDeviation,
-			volatility: update.winner.next.volatility,
-			gamesPlayed: update.winner.next.gamesPlayed
+	const rankedResult = await db.$transaction(async (tx) => {
+		const recheck = await tx.rankedResult.findUnique({
+			where: { gameId: input.gameId }
+		});
+		if (recheck) {
+			return recheck;
 		}
-	});
 
-	await db.playerRating.update({
-		where: { userId: input.loserUserId },
-		data: {
-			rating: update.loser.next.rating,
-			ratingDeviation: update.loser.next.ratingDeviation,
-			volatility: update.loser.next.volatility,
-			gamesPlayed: update.loser.next.gamesPlayed
-		}
-	});
+		await tx.playerRating.update({
+			where: { userId: input.winnerUserId },
+			data: {
+				rating: update.winner.next.rating,
+				ratingDeviation: update.winner.next.ratingDeviation,
+				volatility: update.winner.next.volatility,
+				gamesPlayed: update.winner.next.gamesPlayed
+			}
+		});
 
-	await db.userAccount.update({
-		where: { id: input.winnerUserId },
-		data: { rankedWins: { increment: 1 } }
-	});
-	await db.userAccount.update({
-		where: { id: input.loserUserId },
-		data: { rankedLosses: { increment: 1 } }
-	});
+		await tx.playerRating.update({
+			where: { userId: input.loserUserId },
+			data: {
+				rating: update.loser.next.rating,
+				ratingDeviation: update.loser.next.ratingDeviation,
+				volatility: update.loser.next.volatility,
+				gamesPlayed: update.loser.next.gamesPlayed
+			}
+		});
 
-	await db.rankedResult.create({
-		data: {
-			gameId: input.gameId,
-			winnerUserId: input.winnerUserId,
-			loserUserId: input.loserUserId,
-			winnerBefore: winnerCurrent.rating,
-			winnerAfter: update.winner.next.rating,
-			loserBefore: loserCurrent.rating,
-			loserAfter: update.loser.next.rating,
-			winnerDelta: update.winner.delta,
-			loserDelta: update.loser.delta
-		}
+		await tx.userAccount.update({
+			where: { id: input.winnerUserId },
+			data: { rankedWins: { increment: 1 } }
+		});
+		await tx.userAccount.update({
+			where: { id: input.loserUserId },
+			data: { rankedLosses: { increment: 1 } }
+		});
+
+		const result = await tx.rankedResult.create({
+			data: {
+				gameId: input.gameId,
+				winnerUserId: input.winnerUserId,
+				loserUserId: input.loserUserId,
+				winnerBefore: winnerCurrent.rating,
+				winnerAfter: update.winner.next.rating,
+				loserBefore: loserCurrent.rating,
+				loserAfter: update.loser.next.rating,
+				winnerDelta: update.winner.delta,
+				loserDelta: update.loser.delta
+			}
+		});
+		return result;
 	});
 
 	return {
-		winnerBefore: winnerCurrent.rating,
-		winnerAfter: update.winner.next.rating,
-		winnerDelta: update.winner.delta,
-		loserBefore: loserCurrent.rating,
-		loserAfter: update.loser.next.rating,
-		loserDelta: update.loser.delta
+		winnerBefore: rankedResult.winnerBefore,
+		winnerAfter: rankedResult.winnerAfter,
+		winnerDelta: rankedResult.winnerDelta,
+		loserBefore: rankedResult.loserBefore,
+		loserAfter: rankedResult.loserAfter,
+		loserDelta: rankedResult.loserDelta
 	};
 }
 

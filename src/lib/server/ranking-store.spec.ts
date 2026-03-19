@@ -36,6 +36,70 @@ const results: ResultRecord[] = [];
 vi.mock('./db', () => {
 	return {
 		db: {
+			$transaction: vi.fn(async (callback) => {
+				// Create a transaction object that behaves like the db object
+				const tx = {
+					playerRating: {
+						findUnique: vi.fn(async ({ where }: { where: { userId: string } }) => {
+							return ratings.find((item) => item.userId === where.userId) ?? null;
+						}),
+						update: vi.fn(
+							async ({
+								where,
+								data
+							}: {
+								where: { userId: string };
+								data: Partial<RatingRecord>;
+							}) => {
+								const found = ratings.find((item) => item.userId === where.userId);
+								if (!found) {
+									throw new Error('not found');
+								}
+								Object.assign(found, data);
+								return found;
+							}
+						)
+					},
+					userAccount: {
+						update: vi.fn(
+							async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+								const found = users.find((item) => item.id === where.id);
+								if (!found) {
+									throw new Error('not found');
+								}
+								if (
+									typeof data.rankedWins === 'object' &&
+									data.rankedWins &&
+									'increment' in data.rankedWins
+								) {
+									found.rankedWins += Number((data.rankedWins as { increment: number }).increment);
+								}
+								if (
+									typeof data.rankedLosses === 'object' &&
+									data.rankedLosses &&
+									'increment' in data.rankedLosses
+								) {
+									found.rankedLosses += Number(
+										(data.rankedLosses as { increment: number }).increment
+									);
+								}
+								return found;
+							}
+						)
+					},
+					rankedResult: {
+						findUnique: vi.fn(async ({ where }: { where: { gameId: string } }) => {
+							return results.find((item) => item.gameId === where.gameId) ?? null;
+						}),
+						create: vi.fn(async ({ data }: { data: Omit<ResultRecord, 'id'> }) => {
+							const next = { id: `rr_${Math.random().toString(36).slice(2)}`, ...data };
+							results.push(next);
+							return next;
+						})
+					}
+				};
+				return callback(tx);
+			}),
 			playerRating: {
 				findUnique: vi.fn(async ({ where }: { where: { userId: string } }) => {
 					return ratings.find((item) => item.userId === where.userId) ?? null;

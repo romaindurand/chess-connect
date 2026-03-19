@@ -6,12 +6,14 @@
 	import { _ } from 'svelte-i18n';
 
 	import {
+		claimRankedGameSessionRemote,
 		createGameRemote,
 		decideRankedProposalRemote,
 		joinRankedQueueRemote,
 		leaveRankedQueueRemote,
 		openRankedQueueEventStream
 	} from '$lib/client/game-api';
+	import { hasAcceptedCurrentProposal } from '$lib/client/ranked-queue';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
 	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import type { HostColorPreference, OpponentType, RankedQueueStatus } from '$lib/types/game';
@@ -54,9 +56,17 @@
 	let rankedModalOpen = $state(false);
 	let rankedBusy = $state(false);
 	let rankedError = $state('');
+	let locallyAcceptedProposalId = $state<string | null>(null);
 	let rankedSource: EventSource | null = null;
 	let nameInput: HTMLInputElement | null = $state(null);
 	let recoveryKeyField: HTMLInputElement | null = $state(null);
+	const hasAcceptedProposal = $derived(
+		hasAcceptedCurrentProposal({
+			status: queueStatus,
+			username: authState.username,
+			locallyAcceptedProposalId
+		})
+	);
 
 	onMount(() => {
 		name = loadPlayerName();
@@ -162,8 +172,17 @@
 				return;
 			}
 			queueStatus = event.status;
+			if (!event.status.proposal || event.status.proposal.id !== locallyAcceptedProposalId) {
+				locallyAcceptedProposalId = null;
+			}
 			const proposal = event.status.proposal;
 			if (proposal?.gameId) {
+				try {
+					await claimRankedGameSessionRemote(proposal.id);
+				} catch (error) {
+					rankedError = error instanceof Error ? error.message : $_('errors.unexpected');
+					return;
+				}
 				rankedModalOpen = false;
 				if (rankedSource) {
 					rankedSource.close();
@@ -199,6 +218,7 @@
 		try {
 			await leaveRankedQueueRemote();
 			queueStatus = null;
+			locallyAcceptedProposalId = null;
 			rankedModalOpen = false;
 			rankedError = '';
 			if (rankedSource) {
@@ -218,9 +238,15 @@
 		}
 		rankedBusy = true;
 		rankedError = '';
+		const proposalId = queueStatus.proposal.id;
+		const previousAcceptedProposalId = locallyAcceptedProposalId;
+		if (accept) {
+			locallyAcceptedProposalId = proposalId;
+		}
 		try {
-			const result = await decideRankedProposalRemote(queueStatus.proposal.id, accept);
+			const result = await decideRankedProposalRemote(proposalId, accept);
 			if (result.gameId) {
+				locallyAcceptedProposalId = null;
 				rankedModalOpen = false;
 				if (rankedSource) {
 					rankedSource.close();
@@ -230,9 +256,11 @@
 				return;
 			}
 			if (!accept) {
+				locallyAcceptedProposalId = null;
 				rankedModalOpen = false;
 			}
 		} catch (error) {
+			locallyAcceptedProposalId = previousAcceptedProposalId;
 			rankedError = error instanceof Error ? error.message : $_('errors.unexpected');
 		} finally {
 			rankedBusy = false;
@@ -324,6 +352,7 @@
 		shownToken = null;
 		name = loadPlayerName();
 		queueStatus = null;
+		locallyAcceptedProposalId = null;
 		rankedModalOpen = false;
 		if (rankedSource) {
 			rankedSource.close();
@@ -682,24 +711,26 @@
 								{participant.username} ({participant.rating})
 							</p>
 						{/each}
-						<div class="mt-3 flex gap-2">
-							<button
-								type="button"
-								class="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
-								onclick={() => decideRankedProposal(true)}
-								disabled={rankedBusy}
-							>
-								{$_('home.acceptMatch')}
-							</button>
-							<button
-								type="button"
-								class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
-								onclick={() => decideRankedProposal(false)}
-								disabled={rankedBusy}
-							>
-								{$_('home.rejectMatch')}
-							</button>
-						</div>
+						{#if !hasAcceptedProposal}
+							<div class="mt-3 flex gap-2">
+								<button
+									type="button"
+									class="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+									onclick={() => decideRankedProposal(true)}
+									disabled={rankedBusy}
+								>
+									{$_('home.acceptMatch')}
+								</button>
+								<button
+									type="button"
+									class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+									onclick={() => decideRankedProposal(false)}
+									disabled={rankedBusy}
+								>
+									{$_('home.rejectMatch')}
+								</button>
+							</div>
+						{/if}
 					</div>
 				{/if}
 

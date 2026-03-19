@@ -1,6 +1,7 @@
 import { error } from '@sveltejs/kit';
 
 import { cookieName, getViewForRequest, subscribeToGame } from '$lib/server/game-store';
+import { maybeApplyRankedResultForGame } from '$lib/server/ranked-results';
 import type { ServerEvent } from '$lib/types/game';
 import type { RequestHandler } from './$types';
 
@@ -15,9 +16,10 @@ export const GET: RequestHandler = ({ params, cookies }) => {
 	let teardown: (() => void) | null = null;
 
 	const stream = new ReadableStream<Uint8Array>({
-		start(controller) {
+		async start(controller) {
 			const encoder = new TextEncoder();
 			try {
+				await maybeApplyRankedResultForGame(gameId);
 				const view = getViewForRequest(gameId, token);
 				controller.enqueue(encoder.encode(encodeSse({ type: 'snapshot', game: view })));
 			} catch {
@@ -27,8 +29,11 @@ export const GET: RequestHandler = ({ params, cookies }) => {
 
 			teardown = subscribeToGame(gameId, (event) => {
 				if (event.type === 'snapshot') {
-					const view = getViewForRequest(gameId, token);
-					controller.enqueue(encoder.encode(encodeSse({ type: 'snapshot', game: view })));
+					void (async () => {
+						await maybeApplyRankedResultForGame(gameId);
+						const view = getViewForRequest(gameId, token);
+						controller.enqueue(encoder.encode(encodeSse({ type: 'snapshot', game: view })));
+					})();
 					return;
 				}
 				controller.enqueue(encoder.encode(encodeSse(event)));

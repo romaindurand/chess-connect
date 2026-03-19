@@ -46,6 +46,8 @@ export interface GameOptions {
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
+	isRanked?: boolean;
+	rankedRoundKeyApplied?: string;
 	[key: string]: GameOptionValue;
 }
 
@@ -56,7 +58,9 @@ export const DEFAULT_GAME_OPTIONS: GameOptions = {
 	allowAiTrainingData: true,
 	opponentType: 'human',
 	hostColor: 'random',
-	aiDifficulty: 'baseline'
+	aiDifficulty: 'baseline',
+	isRanked: false,
+	rankedRoundKeyApplied: undefined
 };
 
 export interface GameState {

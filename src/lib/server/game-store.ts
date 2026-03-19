@@ -58,6 +58,8 @@ interface CreateGameOptions {
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
+	isRanked?: boolean;
+	rankedRoundKeyApplied?: string;
 }
 
 declare global {
@@ -150,7 +152,10 @@ function createNewState(
 		allowAiTrainingData: options?.allowAiTrainingData ?? DEFAULT_GAME_OPTIONS.allowAiTrainingData,
 		opponentType: options?.opponentType ?? DEFAULT_GAME_OPTIONS.opponentType,
 		hostColor: options?.hostColor ?? DEFAULT_GAME_OPTIONS.hostColor,
-		aiDifficulty: options?.aiDifficulty ?? DEFAULT_GAME_OPTIONS.aiDifficulty
+		aiDifficulty: options?.aiDifficulty ?? DEFAULT_GAME_OPTIONS.aiDifficulty,
+		isRanked: options?.isRanked ?? DEFAULT_GAME_OPTIONS.isRanked,
+		rankedRoundKeyApplied:
+			options?.rankedRoundKeyApplied ?? DEFAULT_GAME_OPTIONS.rankedRoundKeyApplied
 	};
 	const timeControlPerPlayerSeconds =
 		gameOptions.timeLimitSeconds !== null ? gameOptions.timeLimitSeconds : null;

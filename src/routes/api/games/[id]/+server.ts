@@ -3,16 +3,14 @@ import { json } from '@sveltejs/kit';
 import {
 	acceptRematch,
 	cookieName,
-	getGameOrThrow,
 	getViewForRequest,
 	joinGame,
 	playMove,
 	requestRematch
 } from '$lib/server/game-store';
 import { AUTH_COOKIE_NAME, resolvePlayerNameFromAuth } from '$lib/server/auth-store';
-import { applyRankedResultByUsernames } from '$lib/server/ranking-store';
+import { maybeApplyRankedResultForGame } from '$lib/server/ranked-results';
 import type {
-	Color,
 	GameActionPayload,
 	JoinGamePayload,
 	PlayMovePayload,
@@ -66,48 +64,10 @@ function parseActionPayload(body: unknown): GameActionPayload {
 
 	throw new Error('errors.invalidActionType');
 }
-
-async function maybeApplyRankedResult(gameId: string): Promise<void> {
-	const record = getGameOrThrow(gameId);
-	const state = record.state;
-	if (state.status !== 'finished' || !state.winner) {
-		return;
-	}
-	if (state.options.isRanked !== true) {
-		return;
-	}
-
-	const roundKey = `${state.id}#${state.gameNumber}`;
-	if (state.options.rankedRoundKeyApplied === roundKey) {
-		return;
-	}
-
-	const winnerColor = state.winner as Color;
-	const loserColor = winnerColor === 'white' ? 'black' : 'white';
-	const winnerName = state.players[winnerColor]?.name;
-	const loserName = state.players[loserColor]?.name;
-	if (!winnerName || !loserName) {
-		return;
-	}
-
-	const result = await applyRankedResultByUsernames({
-		gameRoundKey: roundKey,
-		winnerUsername: winnerName,
-		loserUsername: loserName
-	});
-	if (!result) {
-		return;
-	}
-
-	state.options.rankedRoundKeyApplied = roundKey;
-	state.options.rankedWhiteDelta = winnerColor === 'white' ? result.winnerDelta : result.loserDelta;
-	state.options.rankedBlackDelta = winnerColor === 'black' ? result.winnerDelta : result.loserDelta;
-}
-
 export const GET: RequestHandler = async ({ params, cookies }) => {
 	try {
 		const gameId = params.id;
-		await maybeApplyRankedResult(gameId);
+		await maybeApplyRankedResultForGame(gameId);
 		const token = cookies.get(cookieName(gameId));
 		const view = getViewForRequest(gameId, token);
 		return json(view);
@@ -147,7 +107,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 
 		if (payload.type === 'play') {
 			await playMove(gameId, token, payload.move);
-			await maybeApplyRankedResult(gameId);
+			await maybeApplyRankedResultForGame(gameId);
 		}
 		if (payload.type === 'rematch-request') {
 			await requestRematch(gameId, token);
