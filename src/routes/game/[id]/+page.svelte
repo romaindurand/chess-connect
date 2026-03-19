@@ -26,6 +26,21 @@
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
 	const currentLanguage = $derived(($locale === 'fr' ? 'fr' : 'en') as SupportedLanguage);
 	const RulesContent = $derived($locale === 'fr' ? RulesFr : RulesEn);
+	const rankedDeltaText = $derived.by(() => {
+		const game = state.view.game;
+		if (!game || game.state.options.isRanked !== true || !game.viewerColor) {
+			return null;
+		}
+		const raw =
+			game.viewerColor === 'white'
+				? game.state.options.rankedWhiteDelta
+				: game.state.options.rankedBlackDelta;
+		if (typeof raw !== 'number') {
+			return null;
+		}
+		const sign = raw >= 0 ? '+' : '';
+		return `${sign}${raw} Elo`;
+	});
 
 	function onChangeLanguage(language: SupportedLanguage): void {
 		if (!isSupportedLanguage(language)) {
@@ -93,6 +108,11 @@
 					<p class="mt-1 text-sm text-gray-700">{state.view.winnerDetailsLine}</p>
 				{/if}
 				<p class="mt-2 text-sm text-gray-700">{state.view.winnerModalSubtitle}</p>
+				{#if rankedDeltaText}
+					<p class="mt-1 text-sm font-semibold text-gray-900">
+						{$_('game.winner.rankedDelta', { values: { delta: rankedDeltaText } })}
+					</p>
+				{/if}
 
 				<div class="mt-4 flex flex-wrap items-center gap-2">
 					{#if state.view.canRequestRematch}

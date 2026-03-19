@@ -5,10 +5,16 @@
 	import { onMount, tick } from 'svelte';
 	import { _ } from 'svelte-i18n';
 
-	import { createGameRemote } from '$lib/client/game-api';
+	import {
+		createGameRemote,
+		decideRankedProposalRemote,
+		joinRankedQueueRemote,
+		leaveRankedQueueRemote,
+		openRankedQueueEventStream
+	} from '$lib/client/game-api';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
 	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
-	import type { HostColorPreference, OpponentType } from '$lib/types/game';
+	import type { HostColorPreference, OpponentType, RankedQueueStatus } from '$lib/types/game';
 	import favicon from '$lib/assets/favicon.png';
 	import AccountPanel from '$lib/components/AccountPanel.svelte';
 	import {
@@ -22,9 +28,11 @@
 	const pageDescription = $derived($_('home.pageDescription'));
 	const canonicalUrl = $derived(page.url.href);
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
+	type HomeMode = OpponentType | 'ranked';
 
 	let name = $state('');
 	let opponentType = $state<OpponentType>('human');
+	let selectedMode = $state<HomeMode>('human');
 	let hostColor = $state<HostColorPreference>('random');
 	let timeControlEnabled = $state(false);
 	let timeLimitMinutesInput = $state(2);
@@ -42,14 +50,34 @@
 	let shownToken = $state<string | null>(null);
 	let tokenCopied = $state(false);
 	let showLoginForm = $state(false);
+	let queueStatus = $state<RankedQueueStatus | null>(null);
+	let rankedModalOpen = $state(false);
+	let rankedBusy = $state(false);
+	let rankedError = $state('');
+	let rankedSource: EventSource | null = null;
 	let nameInput: HTMLInputElement | null = $state(null);
 	let recoveryKeyField: HTMLInputElement | null = $state(null);
 
-	onMount(async () => {
+	onMount(() => {
 		name = loadPlayerName();
-		authState = await getAuthStateRemote();
-		if (authState.authenticated && authState.username) {
-			name = authState.username;
+		void (async () => {
+			authState = await getAuthStateRemote();
+			if (authState.authenticated && authState.username) {
+				name = authState.username;
+			}
+		})();
+		return () => {
+			if (rankedSource) {
+				rankedSource.close();
+				rankedSource = null;
+			}
+		};
+	});
+
+	$effect(() => {
+		if (!authState.authenticated && selectedMode === 'ranked') {
+			selectedMode = 'human';
+			opponentType = 'human';
 		}
 	});
 
@@ -60,6 +88,11 @@
 		const trimmed = name.trim();
 		if (trimmed.length < 2) {
 			errorMessage = $_('errors.nameLength');
+			return;
+		}
+
+		if (selectedMode === 'ranked') {
+			await startRankedSearch(trimmed);
 			return;
 		}
 
@@ -101,6 +134,7 @@
 
 		isSubmitting = true;
 		try {
+			opponentType = selectedMode === 'ai' ? 'ai' : 'human';
 			const result = await createGameRemote({
 				name: trimmed,
 				timeLimitSeconds,
@@ -116,6 +150,92 @@
 			errorMessage = error instanceof Error ? error.message : $_('errors.createGameFailed');
 		} finally {
 			isSubmitting = false;
+		}
+	}
+
+	function connectRankedQueueEvents(): void {
+		if (rankedSource) {
+			rankedSource.close();
+		}
+		rankedSource = openRankedQueueEventStream(async (event) => {
+			if (event.type !== 'queue') {
+				return;
+			}
+			queueStatus = event.status;
+			const proposal = event.status.proposal;
+			if (proposal?.gameId) {
+				rankedModalOpen = false;
+				if (rankedSource) {
+					rankedSource.close();
+					rankedSource = null;
+				}
+				await goto(resolve(`/game/${proposal.gameId}`));
+			}
+		});
+	}
+
+	async function startRankedSearch(trimmedName: string): Promise<void> {
+		if (!authState.authenticated) {
+			errorMessage = $_('errors.notAuthenticated');
+			return;
+		}
+		rankedBusy = true;
+		rankedError = '';
+		try {
+			const status = await joinRankedQueueRemote();
+			savePlayerName(trimmedName);
+			queueStatus = status;
+			rankedModalOpen = true;
+			connectRankedQueueEvents();
+		} catch (error) {
+			rankedError = error instanceof Error ? error.message : $_('errors.unexpected');
+		} finally {
+			rankedBusy = false;
+		}
+	}
+
+	async function leaveRankedSearch(): Promise<void> {
+		rankedBusy = true;
+		try {
+			await leaveRankedQueueRemote();
+			queueStatus = null;
+			rankedModalOpen = false;
+			rankedError = '';
+			if (rankedSource) {
+				rankedSource.close();
+				rankedSource = null;
+			}
+		} catch (error) {
+			rankedError = error instanceof Error ? error.message : $_('errors.unexpected');
+		} finally {
+			rankedBusy = false;
+		}
+	}
+
+	async function decideRankedProposal(accept: boolean): Promise<void> {
+		if (!queueStatus?.proposal) {
+			return;
+		}
+		rankedBusy = true;
+		rankedError = '';
+		try {
+			const result = await decideRankedProposalRemote(queueStatus.proposal.id, accept);
+			if (result.gameId) {
+				rankedModalOpen = false;
+				if (rankedSource) {
+					rankedSource.close();
+					rankedSource = null;
+				}
+				await goto(resolve(`/game/${result.gameId}`));
+				return;
+			}
+			if (!accept) {
+				rankedModalOpen = false;
+			}
+		} catch (error) {
+			rankedError = error instanceof Error ? error.message : $_('errors.unexpected');
+		} finally {
+			rankedBusy = false;
 		}
 	}
 
@@ -203,6 +323,12 @@
 		authState = { authenticated: false };
 		shownToken = null;
 		name = loadPlayerName();
+		queueStatus = null;
+		rankedModalOpen = false;
+		if (rankedSource) {
+			rankedSource.close();
+			rankedSource = null;
+		}
 	}
 
 	function dismissShownToken() {
@@ -341,158 +467,188 @@
 
 		<fieldset class="rounded-md border border-gray-200 p-3">
 			<legend class="px-1 text-sm font-medium">{$_('home.gameType')}</legend>
-			<div class="mt-3 grid gap-2 sm:grid-cols-2">
+			<div
+				class={`mt-3 grid gap-2 ${authState.authenticated ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
+			>
 				<label
-					class={`rounded-md border px-3 py-2 text-sm ${opponentType === 'human' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'human' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
 				>
 					<input
 						class="sr-only"
 						type="radio"
-						name="opponentType"
+						name="homeMode"
 						value="human"
-						bind:group={opponentType}
+						bind:group={selectedMode}
 					/>
 					<span>{$_('home.versusHuman')}</span>
 				</label>
 				<label
-					class={`rounded-md border px-3 py-2 text-sm ${opponentType === 'ai' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'ai' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
 				>
 					<input
 						class="sr-only"
 						type="radio"
-						name="opponentType"
+						name="homeMode"
 						value="ai"
-						bind:group={opponentType}
+						bind:group={selectedMode}
 					/>
 					<span>{$_('home.versusAi')}</span>
 				</label>
+				{#if authState.authenticated}
+					<label
+						class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'ranked' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+					>
+						<input
+							class="sr-only"
+							type="radio"
+							name="homeMode"
+							value="ranked"
+							bind:group={selectedMode}
+						/>
+						<span>{$_('home.ranked')}</span>
+					</label>
+				{/if}
 			</div>
 		</fieldset>
 
-		<details class="rounded-md border border-gray-200 p-3">
-			<summary class="cursor-pointer text-sm font-medium">{$_('home.advancedOptions')}</summary>
-			<div class="mt-3 space-y-3">
-				<div class="space-y-2">
-					<span class="text-sm font-medium">{$_('home.yourColor')}</span>
-					<div class="grid gap-2 sm:grid-cols-3">
-						<label
-							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-						>
-							<input
-								class="sr-only"
-								type="radio"
-								name="hostColor"
-								value="white"
-								bind:group={hostColor}
-							/>
-							<span>{$_('home.colorWhite')}</span>
-						</label>
-						<label
-							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-						>
-							<input
-								class="sr-only"
-								type="radio"
-								name="hostColor"
-								value="black"
-								bind:group={hostColor}
-							/>
-							<span>{$_('home.colorBlack')}</span>
-						</label>
-						<label
-							class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
-						>
-							<input
-								class="sr-only"
-								type="radio"
-								name="hostColor"
-								value="random"
-								bind:group={hostColor}
-							/>
-							<span>{$_('home.colorRandom')}</span>
-						</label>
-					</div>
-				</div>
-
-				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" bind:checked={timeControlEnabled} />
-					<span>{$_('home.enableTimeControl')}</span>
-				</label>
-
-				{#if timeControlEnabled}
+		{#if selectedMode !== 'ranked'}
+			<details class="rounded-md border border-gray-200 p-3">
+				<summary class="cursor-pointer text-sm font-medium">{$_('home.advancedOptions')}</summary>
+				<div class="mt-3 space-y-3">
 					<div class="space-y-2">
-						<span class="text-sm">{$_('home.timePerPlayer')}</span>
-						<div class="grid grid-cols-2 gap-2">
-							<label class="block space-y-1">
-								<span class="text-xs text-gray-600">{$_('home.minutes')}</span>
+						<span class="text-sm font-medium">{$_('home.yourColor')}</span>
+						<div class="grid gap-2 sm:grid-cols-3">
+							<label
+								class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+							>
 								<input
-									type="number"
-									min="0"
-									max="30"
-									step="1"
-									bind:value={timeLimitMinutesInput}
-									class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+									class="sr-only"
+									type="radio"
+									name="hostColor"
+									value="white"
+									bind:group={hostColor}
 								/>
+								<span>{$_('home.colorWhite')}</span>
 							</label>
+							<label
+								class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+							>
+								<input
+									class="sr-only"
+									type="radio"
+									name="hostColor"
+									value="black"
+									bind:group={hostColor}
+								/>
+								<span>{$_('home.colorBlack')}</span>
+							</label>
+							<label
+								class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+							>
+								<input
+									class="sr-only"
+									type="radio"
+									name="hostColor"
+									value="random"
+									bind:group={hostColor}
+								/>
+								<span>{$_('home.colorRandom')}</span>
+							</label>
+						</div>
+					</div>
+
+					<label class="flex items-center gap-2 text-sm">
+						<input type="checkbox" bind:checked={timeControlEnabled} />
+						<span>{$_('home.enableTimeControl')}</span>
+					</label>
+
+					{#if timeControlEnabled}
+						<div class="space-y-2">
+							<span class="text-sm">{$_('home.timePerPlayer')}</span>
+							<div class="grid grid-cols-2 gap-2">
+								<label class="block space-y-1">
+									<span class="text-xs text-gray-600">{$_('home.minutes')}</span>
+									<input
+										type="number"
+										min="0"
+										max="30"
+										step="1"
+										bind:value={timeLimitMinutesInput}
+										class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+									/>
+								</label>
+								<label class="block space-y-1">
+									<span class="text-xs text-gray-600">{$_('home.seconds')}</span>
+									<input
+										type="number"
+										min="0"
+										max="59"
+										step="1"
+										bind:value={timeLimitSecondsInput}
+										class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+									/>
+								</label>
+							</div>
 							<label class="block space-y-1">
-								<span class="text-xs text-gray-600">{$_('home.seconds')}</span>
+								<span class="text-xs text-gray-600">{$_('home.incrementPerMove')}</span>
 								<input
 									type="number"
 									min="0"
-									max="59"
+									max="60"
 									step="1"
-									bind:value={timeLimitSecondsInput}
+									bind:value={incrementPerMoveSecondsInput}
 									class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
 								/>
 							</label>
 						</div>
-						<label class="block space-y-1">
-							<span class="text-xs text-gray-600">{$_('home.incrementPerMove')}</span>
+					{/if}
+
+					<label class="flex items-center gap-2 text-sm">
+						<input type="checkbox" bind:checked={roundLimitEnabled} />
+						<span>{$_('home.enableRoundLimit')}</span>
+					</label>
+
+					{#if roundLimitEnabled}
+						<label class="block space-y-2">
+							<span class="text-sm">{$_('home.roundLimit')}</span>
 							<input
 								type="number"
-								min="0"
-								max="60"
-								step="1"
-								bind:value={incrementPerMoveSecondsInput}
-								class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+								min="1"
+								step="2"
+								bind:value={roundLimit}
+								class="w-full rounded-md border border-gray-300 px-3 py-2"
 							/>
 						</label>
-					</div>
-				{/if}
+					{/if}
 
-				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" bind:checked={roundLimitEnabled} />
-					<span>{$_('home.enableRoundLimit')}</span>
-				</label>
-
-				{#if roundLimitEnabled}
-					<label class="block space-y-2">
-						<span class="text-sm">{$_('home.roundLimit')}</span>
-						<input
-							type="number"
-							min="1"
-							step="2"
-							bind:value={roundLimit}
-							class="w-full rounded-md border border-gray-300 px-3 py-2"
-						/>
+					<label class="flex items-center gap-2 text-sm">
+						<input type="checkbox" bind:checked={allowAiTrainingData} />
+						<span>{$_('home.allowAiTrainingData')}</span>
 					</label>
-				{/if}
+				</div>
+			</details>
+		{:else}
+			<p class="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+				{$_('home.rankedDescription')}
+			</p>
+		{/if}
 
-				<label class="flex items-center gap-2 text-sm">
-					<input type="checkbox" bind:checked={allowAiTrainingData} />
-					<span>{$_('home.allowAiTrainingData')}</span>
-				</label>
-			</div>
-		</details>
+		{#if authState.authenticated}
+			<p class="text-sm text-gray-600">
+				<a class="underline" href={resolve('/ladder')}>{$_('home.openLadder')}</a>
+			</p>
+		{/if}
 
 		<button
 			type="submit"
-			disabled={isSubmitting}
+			disabled={isSubmitting || rankedBusy}
 			class="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
 		>
-			{#if isSubmitting}
+			{#if isSubmitting || rankedBusy}
 				{$_('home.creating')}
-			{:else if opponentType === 'ai'}
+			{:else if selectedMode === 'ranked'}
+				{$_('home.searchGame')}
+			{:else if selectedMode === 'ai'}
 				{$_('home.playVsAi')}
 			{:else}
 				{$_('home.createGame')}
@@ -502,5 +658,62 @@
 		{#if errorMessage}
 			<p class="text-sm text-red-600">{errorMessage}</p>
 		{/if}
+		{#if rankedError}
+			<p class="text-sm text-red-600">{rankedError}</p>
+		{/if}
 	</form>
+
+	{#if rankedModalOpen}
+		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+			<div class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
+				<h2 class="text-lg font-semibold">{$_('home.rankedSearchingTitle')}</h2>
+				<p class="mt-2 text-sm text-gray-700">
+					{$_('home.rankedSearchingTimer', { values: { seconds: queueStatus?.waitSeconds ?? 0 } })}
+				</p>
+				<p class="mt-1 text-sm text-gray-700">
+					{$_('home.rankedSearchRange', { values: { range: queueStatus?.searchRange ?? 0 } })}
+				</p>
+
+				{#if queueStatus?.proposal && !queueStatus.proposal.gameId}
+					<div class="mt-4 rounded-md border border-gray-200 p-3">
+						<p class="text-sm font-medium">{$_('home.matchFound')}</p>
+						{#each queueStatus.proposal.participants as participant (participant.userId)}
+							<p class="mt-1 text-sm text-gray-700">
+								{participant.username} ({participant.rating})
+							</p>
+						{/each}
+						<div class="mt-3 flex gap-2">
+							<button
+								type="button"
+								class="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+								onclick={() => decideRankedProposal(true)}
+								disabled={rankedBusy}
+							>
+								{$_('home.acceptMatch')}
+							</button>
+							<button
+								type="button"
+								class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+								onclick={() => decideRankedProposal(false)}
+								disabled={rankedBusy}
+							>
+								{$_('home.rejectMatch')}
+							</button>
+						</div>
+					</div>
+				{/if}
+
+				<div class="mt-5 flex justify-end">
+					<button
+						type="button"
+						class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+						onclick={leaveRankedSearch}
+						disabled={rankedBusy}
+					>
+						{$_('home.leaveQueue')}
+					</button>
+				</div>
+			</div>
+		</div>
+	{/if}
 </main>

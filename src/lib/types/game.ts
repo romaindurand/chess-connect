@@ -152,6 +152,65 @@ export interface CreateGamePayload {
 	aiDifficulty?: AiDifficulty;
 }
 
+export interface LadderEntry {
+	userId: string;
+	username: string;
+	rating: number;
+	rankedWins: number;
+	rankedLosses: number;
+	gamesPlayed: number;
+}
+
+export interface LadderResponse {
+	ladder: LadderEntry[];
+}
+
+export interface RankedQueueParticipant {
+	userId: string;
+	username: string;
+	rating: number;
+	acceptedAt: string | null;
+	rejectedAt: string | null;
+}
+
+export interface RankedQueueProposal {
+	id: string;
+	expiresAt: string;
+	gameId: string | null;
+	participants: RankedQueueParticipant[];
+}
+
+export interface RankedQueueStatus {
+	queued: boolean;
+	enteredAt: string | null;
+	waitSeconds: number;
+	searchRange: number;
+	proposal: RankedQueueProposal | null;
+}
+
+export interface RankedQueueEvent {
+	type: 'queue';
+	status: RankedQueueStatus;
+}
+
+export interface RankedQueueKeepAliveEvent {
+	type: 'keepalive';
+	at: number;
+}
+
+export type RankedQueueServerEvent = RankedQueueEvent | RankedQueueKeepAliveEvent;
+
+export interface RankedMatchDecisionPayload {
+	accept: boolean;
+}
+
+export interface RankedMatchDecisionResponse {
+	proposalId: string;
+	accepted: boolean;
+	gameId: string | null;
+	token: string | null;
+}
+
 export interface CreateGameResponse {
 	gameId: string;
 	url: string;

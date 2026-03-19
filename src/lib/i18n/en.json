@@ -25,6 +25,17 @@
 		"gameType": "Game type",
 		"versusHuman": "Versus a player",
 		"versusAi": "Versus computer",
+		"ranked": "Ranked",
+		"rankedDescription": "Ranked mode: standardized options, Elo matchmaking, and at most 2 rematches (3 games).",
+		"openLadder": "Open ladder",
+		"searchGame": "Search for match",
+		"rankedSearchingTitle": "Searching ranked match",
+		"rankedSearchingTimer": "Queue time: {seconds}s",
+		"rankedSearchRange": "Current Elo range: +/- {range}",
+		"matchFound": "Match found, do you accept this game?",
+		"acceptMatch": "Accept",
+		"rejectMatch": "Reject",
+		"leaveQueue": "Leave queue",
 		"yourColor": "Your color",
 		"colorWhite": "White",
 		"colorBlack": "Black",
@@ -94,7 +105,8 @@
 			"score": "Current score: {hostName}: {hostScore} - {guestName}: {guestScore}",
 			"whitePlayer": "White player",
 			"blackPlayer": "Black player",
-			"winner": "Winner: {name} ({color})"
+			"winner": "Winner: {name} ({color})",
+			"rankedDelta": "Elo change: {delta}"
 		},
 		"turn": {
 			"finished": "Game finished - winner: {winner}",
@@ -187,7 +199,8 @@
 		"recoveryKeyRequired": "Recovery key is required",
 		"invalidRecoveryKey": "Invalid or revoked recovery key",
 		"invalidKeyFormat": "Invalid key format",
-		"notAuthenticated": "Not authenticated"
+		"notAuthenticated": "Not authenticated",
+		"matchProposalExpired": "Match proposal has expired"
 	},
 	"auth": {
 		"createAccount": "Create an account",
@@ -205,5 +218,16 @@
 		"validateLogin": "Submit",
 		"registerSubmit": "Create my account",
 		"backToLogin": "Already have an account?"
+	},
+	"ladder": {
+		"pageTitle": "Ladder",
+		"pageDescription": "Browse Elo ranked Chess Connect players.",
+		"title": "Elo Ladder",
+		"backHome": "Back home",
+		"empty": "No ranked players yet.",
+		"player": "Player",
+		"elo": "Elo",
+		"games": "Games",
+		"winrate": "Win rate"
 	}
 }

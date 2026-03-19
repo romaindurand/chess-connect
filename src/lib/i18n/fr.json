@@ -25,6 +25,17 @@
 		"gameType": "Type de partie",
 		"versusHuman": "Contre un joueur",
 		"versusAi": "Contre l'ordinateur",
+		"ranked": "Classé",
+		"rankedDescription": "Mode classé: options standardisées, matchmaking Elo et maximum 2 revanches (3 parties).",
+		"openLadder": "Voir le classement",
+		"searchGame": "Rechercher une partie",
+		"rankedSearchingTitle": "Recherche de partie classée",
+		"rankedSearchingTimer": "Temps d'attente: {seconds}s",
+		"rankedSearchRange": "Plage Elo actuelle: +/- {range}",
+		"matchFound": "Adversaire trouvé, acceptez-vous la partie ?",
+		"acceptMatch": "Accepter",
+		"rejectMatch": "Refuser",
+		"leaveQueue": "Quitter la file",
 		"yourColor": "Votre couleur",
 		"colorWhite": "Blanc",
 		"colorBlack": "Noir",
@@ -94,7 +105,8 @@
 			"score": "Score actuel: {hostName}: {hostScore} - {guestName}: {guestScore}",
 			"whitePlayer": "Joueur blanc",
 			"blackPlayer": "Joueur noir",
-			"winner": "Gagnant: {name} ({color})"
+			"winner": "Gagnant: {name} ({color})",
+			"rankedDelta": "Variation Elo: {delta}"
 		},
 		"turn": {
 			"finished": "Partie terminée - gagnant: {winner}",
@@ -187,7 +199,8 @@
 		"recoveryKeyRequired": "Clé de récupération requise",
 		"invalidRecoveryKey": "Clé de récupération invalide ou révoquée",
 		"invalidKeyFormat": "Format de clé invalide",
-		"notAuthenticated": "Non authentifié"
+		"notAuthenticated": "Non authentifié",
+		"matchProposalExpired": "La proposition de match a expiré"
 	},
 	"auth": {
 		"createAccount": "Créer un compte",
@@ -205,5 +218,16 @@
 		"validateLogin": "Valider",
 		"registerSubmit": "Créer mon compte",
 		"backToLogin": "Déjà un compte ?"
+	},
+	"ladder": {
+		"pageTitle": "Classement",
+		"pageDescription": "Consultez le ladder Elo des joueurs Chess Connect classés.",
+		"title": "Ladder Elo",
+		"backHome": "Retour accueil",
+		"empty": "Aucun joueur classé pour le moment.",
+		"player": "Joueur",
+		"elo": "Elo",
+		"games": "Parties",
+		"winrate": "Taux de victoire"
 	}
 }

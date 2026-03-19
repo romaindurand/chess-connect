@@ -21,7 +21,11 @@ vi.mock('./db', () => {
 					async ({
 						data
 					}: {
-						data: { username: string; tokens?: { create: { tokenHash: string } } };
+						data: {
+							username: string;
+							rating?: { create: Record<string, never> };
+							tokens?: { create: { tokenHash: string } };
+						};
 					}) => {
 						const user = {
 							id: `user_${Math.random().toString(36).slice(2)}`,

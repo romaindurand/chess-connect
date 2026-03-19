@@ -51,6 +51,9 @@ export async function registerAccount(
 	const user = await db.userAccount.create({
 		data: {
 			username,
+			rating: {
+				create: {}
+			},
 			tokens: {
 				create: { tokenHash }
 			}

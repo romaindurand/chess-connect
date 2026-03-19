@@ -7,11 +7,18 @@ datasource db {
 }
 
 model UserAccount {
-  id        String      @id @default(cuid())
-  username  String      @unique
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
-  tokens    AuthToken[]
+  id                    String                  @id @default(cuid())
+  username              String                  @unique
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  tokens                AuthToken[]
+  rating                PlayerRating?
+  queueEntry            RankedQueueEntry?
+  rankedWins            Int                     @default(0)
+  rankedLosses          Int                     @default(0)
+  rankedResultsAsWinner RankedResult[]          @relation("RankedWinner")
+  rankedResultsAsLoser  RankedResult[]          @relation("RankedLoser")
+  proposals             RankedMatchParticipant[]
 }
 
 model AuthToken {
@@ -22,4 +29,64 @@ model AuthToken {
   revokedAt  DateTime?
   createdAt  DateTime    @default(now())
   lastUsedAt DateTime?
+}
+
+model PlayerRating {
+  id              String      @id @default(cuid())
+  userId          String      @unique
+  user            UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rating          Int         @default(1200)
+  ratingDeviation Float       @default(350)
+  volatility      Float       @default(0.06)
+  gamesPlayed     Int         @default(0)
+  updatedAt       DateTime    @updatedAt
+}
+
+model RankedQueueEntry {
+  id          String      @id @default(cuid())
+  userId      String      @unique
+  user        UserAccount @relation(fields: [userId], references: [id], onDelete: Cascade)
+  enteredAt   DateTime    @default(now())
+  lastSeenAt  DateTime    @default(now())
+  searchRange Int         @default(75)
+}
+
+model RankedMatchProposal {
+  id           String                   @id @default(cuid())
+  createdAt    DateTime                 @default(now())
+  expiresAt    DateTime
+  gameId       String?
+  participants RankedMatchParticipant[]
+}
+
+model RankedMatchParticipant {
+  id               String              @id @default(cuid())
+  proposalId       String
+  proposal         RankedMatchProposal @relation(fields: [proposalId], references: [id], onDelete: Cascade)
+  userId           String
+  user             UserAccount         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ratingSnapshot   Int
+  ratingDeviation  Float
+  joinedQueueAt    DateTime
+  acceptedAt       DateTime?
+  rejectedAt       DateTime?
+  gameToken        String?
+
+  @@unique([proposalId, userId])
+}
+
+model RankedResult {
+  id            String      @id @default(cuid())
+  gameId        String      @unique
+  winnerUserId  String
+  winner        UserAccount @relation("RankedWinner", fields: [winnerUserId], references: [id], onDelete: Cascade)
+  loserUserId   String
+  loser         UserAccount @relation("RankedLoser", fields: [loserUserId], references: [id], onDelete: Cascade)
+  winnerBefore  Int
+  winnerAfter   Int
+  loserBefore   Int
+  loserAfter    Int
+  winnerDelta   Int
+  loserDelta    Int
+  createdAt     DateTime    @default(now())
 }
