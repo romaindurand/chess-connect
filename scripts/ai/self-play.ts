@@ -23,14 +23,16 @@ function formatEta(seconds: number): string {
 
 const games = readNumberArg('games', 32);
 const maxPlies = readNumberArg('max-plies', 64);
+const concurrency = readNumberArg('concurrency', 5);
 const outFile = resolve('artifacts/ai/self-play.json');
 
-console.log(`Génération de ${games} parties (max ${maxPlies} coups)…`);
+console.log(`Génération de ${games} parties (max ${maxPlies} coups, concurrency=${concurrency})…`);
 const startTime = Date.now();
 
 const report = await runSelfPlayBatch({
 	games,
 	maxPlies,
+	concurrency,
 	onGameComplete: (done, total) => {
 		const elapsed = Date.now() - startTime;
 		const etaSec = Math.round(((elapsed / done) * (total - done)) / 1000);

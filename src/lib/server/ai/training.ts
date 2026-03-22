@@ -1,3 +1,5 @@
+import pMap from 'p-map';
+
 import { applyPlayerMove, createInitialBoard } from '$lib/server/game-engine';
 import {
 	coordKey,
@@ -97,7 +99,7 @@ function createSelfPlayState(): GameState {
 }
 
 /** Reduced simulation budget used during self-play to keep generation fast. */
-const SELF_PLAY_SIMULATIONS = 20;
+const SELF_PLAY_SIMULATIONS = 24;
 
 interface PendingSample {
 	encoded: number[];
@@ -157,15 +159,24 @@ function finalizeSamples(pending: PendingSample[], winner: Color | null): Traini
 export async function runSelfPlayBatch(options?: {
 	games?: number;
 	maxPlies?: number;
+	concurrency?: number;
 	onGameComplete?: (completed: number, total: number) => void;
 }): Promise<SelfPlayBatchReport> {
 	const totalGames = options?.games ?? 8;
 	const maxPlies = options?.maxPlies ?? 64;
-	const results: Awaited<ReturnType<typeof playSelfPlayGame>>[] = [];
-	for (let i = 0; i < totalGames; i++) {
-		results.push(await playSelfPlayGame(maxPlies));
-		options?.onGameComplete?.(i + 1, totalGames);
-	}
+	const concurrency = Math.max(1, options?.concurrency ?? 5);
+	let completed = 0;
+
+	const results = await pMap(
+		Array.from({ length: totalGames }, (_, index) => index),
+		async () => {
+			const result = await playSelfPlayGame(maxPlies);
+			completed += 1;
+			options?.onGameComplete?.(completed, totalGames);
+			return result;
+		},
+		{ concurrency }
+	);
 	const games = results.map((r) => r.result);
 	const samples = results.flatMap((r) => r.samples);
 	const whiteWins = games.filter((game) => game.winner === 'white').length;

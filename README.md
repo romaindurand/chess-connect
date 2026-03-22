@@ -81,7 +81,10 @@ pnpm ai:reanalyse-games -- \
   --simulations=32
 
 # Entraîner le réseau conv-résiduel → checkpoints/model/model.json
-pnpm ai:train-network -- --dataset=artifacts/ai/training-data.json --output=checkpoints/model --epochs=1000 --batch=64
+pnpm ai:train-network -- \
+  --dataset=artifacts/ai/training-data.json \
+	--output=checkpoints/model \
+	--epochs=100 --batch=64
 
 # Envoi du model entraîné au serveur de prod (ex: via scp)
 scp checkpoints/model/* user@server:/path_to_chess_connect/checkpoints/model/

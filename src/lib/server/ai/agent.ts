@@ -3,7 +3,7 @@ import { type Color, type GameState, type PlayerMove } from '$lib/types/game';
 import { runMcts, type MctsOptions } from './mcts';
 
 /** Number of MCTS simulations per turn for in-game play. */
-const DEFAULT_SIMULATIONS = 100;
+const DEFAULT_SIMULATIONS = 150;
 
 export async function chooseAiMove(
 	state: GameState,

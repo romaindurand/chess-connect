@@ -569,7 +569,7 @@ async function applyAiTurns(record: GameRecord): Promise<void> {
 			record.state.timeRemainingMs[aiColor] = remaining;
 		}
 
-		const thinkDelayMs = process.env.VITEST ? 0 : 2000;
+		const thinkDelayMs = process.env.VITEST ? 0 : process.env.NODE_ENV === 'production' ? 50 : 500;
 		await new Promise((resolve) => setTimeout(resolve, thinkDelayMs));
 
 		const adapter = ModelManager.getAdapter() ?? undefined;
