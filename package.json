@@ -19,6 +19,7 @@
 		"ai:auto-train": "tsx scripts/ai/auto-train.ts",
 		"ai:reanalyse-games": "tsx scripts/ai/reanalyse-games.ts",
 		"ai:train-network": "tsx scripts/ai/train-network.ts",
+		"ai:loss-dashboard": "tsx scripts/ai/loss-dashboard.ts",
 		"test:unit": "vitest",
 		"test": "npm run test:unit -- --run",
 		"prisma:generate": "prisma generate",

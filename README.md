@@ -49,6 +49,25 @@ pnpm prisma:migrate:dev -- --name init-auth
 - [ ] son pour partie trouvée
 - [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
 - [ ] drag&drop des pieces
+- [ ] système d'achievements
+
+Idées d'achievements:
+- "Initiative" : gagner une partie en jouant le premier coup
+- "Pas si vite" : bloquer avec une de ses pièces un aligment adverse de 3 pièces
+- "Inarrêtable" : gagner une partie sans que l'adversaire puisse aligner plus de 2 pièces
+- "Maître des lignes" : avoir gagné au moins une partie sur chacune des lignes (1, 2, 3, 4)
+- "Maître des colonnes" : avoir gagné au moins une partie sur chacune des colonnes (A, B, C, D)
+- "Maître des diagonales" : avoir gagné au moins une partie sur chacune des diagonales (A1-D4, A4-D1)
+- "IA bully" : gagner 10 parties contre l'ordinateur
+- "IA destroyer" : gagner 100 parties contre l'ordinateur
+- "IA annihilator" : gagner 1000 parties contre l'ordinateur
+- "Marathonien" : jouer 100 parties (peu importe le résultat)
+- "Marathonien ultime" : jouer 1000 parties (peu importe le résultat)
+- "Revanche !" : gagner une partie contre le même adversaire après avoir perdu contre lui
+- "Belle !" : gagner la belle après avoir perdu un match, gagné la revanche, puis gagné la belle (BO3)
+- "Collectionneur" : débloquer tous les achievements précédents
+- "Contributeur" : jouer plus de 10 parties avec l'option d'enregistrement pour l'entraînement de l'IA activée (contribution au dataset d'entraînement)
+- "Philanthrope" : jouer plus de 100 parties avec l'option d'enregistrement pour l'entraînement de l'IA activée (contribution au dataset d'entraînement)
 
 ## IA
 
@@ -92,6 +111,21 @@ scp checkpoints/model/* user@server:/path_to_chess_connect/checkpoints/model/
 
 Les deux scripts affichent une progression en temps réel avec estimation du temps restant.
 `ai:train-network` affiche aussi l'avancement intra-époque (batch par batch) pour éviter les longues périodes sans sortie.
+
+Pendant l'entraînement, le script écrit aussi la loss dans `checkpoints/model/training-loss.json`.
+Pour visualiser la courbe en direct (et après entraînement), lancer:
+
+```bash
+pnpm ai:loss-dashboard -- --metrics=checkpoints/model/training-loss.json --port=4780
+```
+
+Puis ouvrir `http://localhost:4780`.
+
+Le dashboard affiche:
+
+- la loss batch (échantillonnée)
+- la loss de fin d'époque
+- un diagnostic automatique des tendances (plateau, divergence, variance)
 
 Pour `ai:train-network`, le backend est en mode `auto` par défaut :
 

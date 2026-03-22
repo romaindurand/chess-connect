@@ -112,6 +112,37 @@ interface Sample {
 	outcome: number;
 }
 
+interface BatchLossPoint {
+	globalBatch: number;
+	epoch: number;
+	batchInEpoch: number;
+	loss: number;
+	elapsedMs: number;
+}
+
+interface EpochLossPoint {
+	epoch: number;
+	loss: number;
+	elapsedMs: number;
+}
+
+interface LossMetricsReport {
+	status: 'running' | 'completed' | 'failed';
+	startedAt: string;
+	updatedAt: string;
+	datasetPath: string;
+	outputPath: string;
+	backend: string;
+	epochs: number;
+	batchSize: number;
+	totalSamples: number;
+	batchesPerEpoch: number;
+	currentEpoch: number;
+	batchLossSamples: BatchLossPoint[];
+	epochLosses: EpochLossPoint[];
+	errorMessage?: string;
+}
+
 console.log(`Chargement du dataset depuis ${datasetPath}…`);
 const raw = JSON.parse(fs.readFileSync(datasetPath, 'utf8')) as { samples?: Sample[] };
 const samples: Sample[] = raw.samples ?? [];
@@ -220,56 +251,129 @@ function formatEta(seconds: number): string {
 }
 
 console.log(`Entraînement : ${epochs} époques, batch ${batchSize}…`);
+fs.mkdirSync(outputPath, { recursive: true });
+
 const trainStart = Date.now();
 const batchesPerEpoch = Math.ceil(n / batchSize);
 const totalBatches = Math.max(1, batchesPerEpoch * epochs);
+const metricsPath = path.join(outputPath, 'training-loss.json');
+const batchLossSamples: BatchLossPoint[] = [];
+const epochLosses: EpochLossPoint[] = [];
+const sampledBatchInterval = Math.max(1, Math.floor(batchesPerEpoch / 50));
+const maxBatchSamples = 10_000;
+
 let currentEpoch = 1;
-let lastPrint = 0;
-await model.fit([xSpatial, xGlobal], [yPolicy, yValue], {
-	epochs,
-	batchSize,
-	shuffle: true,
-	verbose: 0,
-	callbacks: {
-		onEpochBegin: (epoch: number) => {
-			currentEpoch = epoch + 1;
-		},
-		onBatchEnd: (batch: number, logs?) => {
-			const now = Date.now();
-			if (now - lastPrint < 250) {
-				return;
-			}
-			lastPrint = now;
-			const doneBatches = (currentEpoch - 1) * batchesPerEpoch + (batch + 1);
-			const clampedDone = Math.min(totalBatches, Math.max(1, doneBatches));
-			const elapsed = now - trainStart;
-			const etaSec = Math.round(((elapsed / clampedDone) * (totalBatches - clampedDone)) / 1000);
-			const pct = Math.round((clampedDone / totalBatches) * 100);
-			const lossRaw = logs?.loss;
-			const loss = (typeof lossRaw === 'number' ? lossRaw : 0).toFixed(4);
-			process.stdout.write(
-				`\r  Entraînement ${pct}% — époque ${currentEpoch}/${epochs}, batch ${batch + 1}/${batchesPerEpoch} — loss: ${loss} — ETA : ${formatEta(etaSec)}   `
-			);
-		},
-		onEpochEnd: (epoch: number, logs?) => {
-			const done = epoch + 1;
-			const elapsed = Date.now() - trainStart;
-			const etaSec = Math.round(((elapsed / done) * (epochs - done)) / 1000);
-			const lossRaw = logs?.loss;
-			const loss = (typeof lossRaw === 'number' ? lossRaw : 0).toFixed(4);
-			process.stdout.write(
-				`\r  Époque ${done}/${epochs} terminée — loss: ${loss} — ETA global : ${formatEta(etaSec)}   `
-			);
-		}
+let lastMetricsWrite = 0;
+let currentStatus: LossMetricsReport['status'] = 'running';
+
+function writeMetrics(force = false, errorMessage?: string): void {
+	const now = Date.now();
+	if (!force && now - lastMetricsWrite < 1_000) {
+		return;
 	}
-});
+	lastMetricsWrite = now;
+
+	const report: LossMetricsReport = {
+		status: currentStatus,
+		startedAt: new Date(trainStart).toISOString(),
+		updatedAt: new Date(now).toISOString(),
+		datasetPath,
+		outputPath,
+		backend: tf.getBackend(),
+		epochs,
+		batchSize,
+		totalSamples: n,
+		batchesPerEpoch,
+		currentEpoch,
+		batchLossSamples,
+		epochLosses,
+		errorMessage
+	};
+
+	fs.writeFileSync(metricsPath, JSON.stringify(report, null, 2));
+}
+
+writeMetrics(true);
+
+let lastPrint = 0;
+try {
+	await model.fit([xSpatial, xGlobal], [yPolicy, yValue], {
+		epochs,
+		batchSize,
+		shuffle: true,
+		verbose: 0,
+		callbacks: {
+			onEpochBegin: (epoch: number) => {
+				currentEpoch = epoch + 1;
+			},
+			onBatchEnd: (batch: number, logs?) => {
+				const now = Date.now();
+				const doneBatches = (currentEpoch - 1) * batchesPerEpoch + (batch + 1);
+				const clampedDone = Math.min(totalBatches, Math.max(1, doneBatches));
+				const elapsed = now - trainStart;
+				const etaSec = Math.round(((elapsed / clampedDone) * (totalBatches - clampedDone)) / 1000);
+				const pct = Math.round((clampedDone / totalBatches) * 100);
+				const lossRaw = logs?.loss;
+				const lossValue = typeof lossRaw === 'number' ? lossRaw : 0;
+				const loss = lossValue.toFixed(4);
+
+				const batchInEpoch = batch + 1;
+				if (batchInEpoch % sampledBatchInterval === 0 || batchInEpoch === batchesPerEpoch) {
+					batchLossSamples.push({
+						globalBatch: clampedDone,
+						epoch: currentEpoch,
+						batchInEpoch,
+						loss: lossValue,
+						elapsedMs: elapsed
+					});
+					if (batchLossSamples.length > maxBatchSamples) {
+						batchLossSamples.splice(0, batchLossSamples.length - maxBatchSamples);
+					}
+				}
+
+				if (now - lastPrint >= 250) {
+					lastPrint = now;
+					process.stdout.write(
+						`\r  Entraînement ${pct}% — époque ${currentEpoch}/${epochs}, batch ${batchInEpoch}/${batchesPerEpoch} — loss: ${loss} — ETA : ${formatEta(etaSec)}   `
+					);
+				}
+
+				writeMetrics(false);
+			},
+			onEpochEnd: (epoch: number, logs?) => {
+				const done = epoch + 1;
+				const elapsed = Date.now() - trainStart;
+				const etaSec = Math.round(((elapsed / done) * (epochs - done)) / 1000);
+				const lossRaw = logs?.loss;
+				const lossValue = typeof lossRaw === 'number' ? lossRaw : 0;
+				epochLosses.push({
+					epoch: done,
+					loss: lossValue,
+					elapsedMs: elapsed
+				});
+				const loss = lossValue.toFixed(4);
+				process.stdout.write(
+					`\r  Époque ${done}/${epochs} terminée — loss: ${loss} — ETA global : ${formatEta(etaSec)}   `
+				);
+				writeMetrics(true);
+			}
+		}
+	});
+	currentStatus = 'completed';
+	writeMetrics(true);
+} catch (error) {
+	currentStatus = 'failed';
+	writeMetrics(true, error instanceof Error ? error.message : String(error));
+	throw error;
+}
 process.stdout.write('\n');
 
 // ─── Save checkpoint ─────────────────────────────────────────────────────────
 
-fs.mkdirSync(outputPath, { recursive: true });
 await model.save(`file://${outputPath}`);
 console.log(`✓ Checkpoint sauvegardé dans ${outputPath}`);
+console.log(`✓ Courbe de loss exportée dans ${metricsPath}`);
+console.log(`ℹ Lancez le dashboard avec: pnpm ai:loss-dashboard -- --metrics=${metricsPath}`);
 
 // Cleanup
 xSpatial.dispose();
