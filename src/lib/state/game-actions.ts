@@ -33,6 +33,10 @@ interface GameActionsFactoryInput {
 	setSelectedBoardFrom: (coord: Coord | null) => void;
 	getSelectedReservePiece: () => PieceType | null;
 	setSelectedReservePiece: (piece: PieceType | null) => void;
+	getDragBoardFrom: () => Coord | null;
+	setDragBoardFrom: (coord: Coord | null) => void;
+	getDragReservePiece: () => PieceType | null;
+	setDragReservePiece: (piece: PieceType | null) => void;
 	setHoveredBoardFrom: (coord: Coord | null) => void;
 	setHoveredReservePiece: (piece: PieceType | null) => void;
 	getCopying: () => boolean;
@@ -58,9 +62,17 @@ interface GameActionsFactoryInput {
 }
 
 export function createGameActions(input: GameActionsFactoryInput) {
+	let isDragging = false;
+
+	function clearDragState(): void {
+		input.setDragBoardFrom(null);
+		input.setDragReservePiece(null);
+	}
+
 	function resetSelection(): void {
 		input.setSelectedBoardFrom(null);
 		input.setSelectedReservePiece(null);
+		clearDragState();
 	}
 
 	function clearHistoryPreview(): void {
@@ -312,6 +324,8 @@ export function createGameActions(input: GameActionsFactoryInput) {
 	}
 
 	async function onCellClick(coord: Coord): Promise<void> {
+		if (isDragging) return;
+		clearDragState();
 		const game = input.getGame();
 		if (isHistoryPreviewMode()) {
 			return;
@@ -394,6 +408,8 @@ export function createGameActions(input: GameActionsFactoryInput) {
 	}
 
 	function onReserveClick(reserveColor: 'white' | 'black', piece: PieceType): void {
+		if (isDragging) return;
+		clearDragState();
 		const game = input.getGame();
 		if (isHistoryPreviewMode()) {
 			return;
@@ -408,6 +424,129 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		input.setErrorMessage('');
 		input.setSelectedBoardFrom(null);
 		input.setSelectedReservePiece(input.getSelectedReservePiece() === piece ? null : piece);
+	}
+
+	function onBoardDragStart(coord: Coord): void {
+		const game = input.getGame();
+		if (isHistoryPreviewMode() || !game || !input.getIsMyTurn()) {
+			clearDragState();
+			return;
+		}
+
+		const cell = game.state.board[coord.y]?.[coord.x] ?? null;
+		if (!isMyPiece(cell)) {
+			clearDragState();
+			return;
+		}
+
+		isDragging = true;
+		input.setErrorMessage('');
+		input.setSelectedReservePiece(null);
+		input.setSelectedBoardFrom(coord);
+		input.setDragReservePiece(null);
+		input.setDragBoardFrom(coord);
+	}
+
+	function onReserveDragStart(reserveColor: 'white' | 'black', piece: PieceType): void {
+		const game = input.getGame();
+		if (isHistoryPreviewMode()) {
+			clearDragState();
+			return;
+		}
+		if (!game || !input.getIsMyTurn() || !game.viewerColor || reserveColor !== game.viewerColor) {
+			clearDragState();
+			return;
+		}
+		if (!game.state.reserves[game.viewerColor][piece]) {
+			clearDragState();
+			return;
+		}
+
+		isDragging = true;
+		input.setErrorMessage('');
+		input.setSelectedBoardFrom(null);
+		input.setSelectedReservePiece(piece);
+		input.setDragBoardFrom(null);
+		input.setDragReservePiece(piece);
+	}
+
+	async function onCellDrop(coord: Coord): Promise<void> {
+		isDragging = false;
+		const game = input.getGame();
+		if (isHistoryPreviewMode() || !game || !input.getIsMyTurn()) {
+			clearDragState();
+			return;
+		}
+
+		const draggedReservePiece = input.getDragReservePiece();
+		if (draggedReservePiece) {
+			if (!input.getTargetHints().has(coordKey(coord))) {
+				clearDragState();
+				return;
+			}
+
+			const viewerColor = game.viewerColor;
+			if (!viewerColor) {
+				clearDragState();
+				return;
+			}
+
+			try {
+				await playMoveWithPieceTransition(
+					{
+						type: 'play',
+						move: { kind: 'place', piece: draggedReservePiece, to: coord }
+					},
+					{
+						toBoard: coord,
+						fromReserve: {
+							owner: viewerColor,
+							piece: draggedReservePiece
+						}
+					}
+				);
+				resetSelection();
+				input.setErrorMessage('');
+			} catch (error) {
+				input.setErrorMessage(
+					error instanceof Error ? error.message : translate('errors.invalidMove')
+				);
+			}
+			return;
+		}
+
+		const draggedBoardFrom = input.getDragBoardFrom();
+		if (!draggedBoardFrom) {
+			return;
+		}
+		if (!input.getTargetHints().has(coordKey(coord))) {
+			clearDragState();
+			return;
+		}
+
+		try {
+			await playMoveWithPieceTransition(
+				{
+					type: 'play',
+					move: { kind: 'move', from: draggedBoardFrom, to: coord }
+				},
+				{
+					fromBoard: draggedBoardFrom,
+					toBoard: coord
+				}
+			);
+			resetSelection();
+			input.setErrorMessage('');
+		} catch (error) {
+			input.setErrorMessage(
+				error instanceof Error ? error.message : translate('errors.invalidMove')
+			);
+		}
+	}
+
+	function cancelDrag(): void {
+		isDragging = false;
+		clearDragState();
 	}
 
 	function setShowRulesModal(open: boolean): void {
@@ -467,6 +606,10 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		clearReserveHover,
 		onCellClick,
 		onReserveClick,
+		onBoardDragStart,
+		onReserveDragStart,
+		onCellDrop,
+		cancelDrag,
 		setShowRulesModal,
 		setShowRepetitionDrawModal,
 		toggleHistoryPanel,

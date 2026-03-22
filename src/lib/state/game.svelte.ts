@@ -15,6 +15,8 @@ export function createGameState(getGameId: () => string) {
 	let errorMessage = $state('');
 	let selectedBoardFrom = $state<Coord | null>(null);
 	let selectedReservePiece = $state<PieceType | null>(null);
+	let dragBoardFrom = $state<Coord | null>(null);
+	let dragReservePiece = $state<PieceType | null>(null);
 	let hoveredBoardFrom = $state<Coord | null>(null);
 	let hoveredReservePiece = $state<PieceType | null>(null);
 	let copying = $state(false);
@@ -133,6 +135,14 @@ export function createGameState(getGameId: () => string) {
 		getSelectedReservePiece: () => selectedReservePiece,
 		setSelectedReservePiece: (piece) => {
 			selectedReservePiece = piece;
+		},
+		getDragBoardFrom: () => dragBoardFrom,
+		setDragBoardFrom: (coord) => {
+			dragBoardFrom = coord;
+		},
+		getDragReservePiece: () => dragReservePiece,
+		setDragReservePiece: (piece) => {
+			dragReservePiece = piece;
 		},
 		setHoveredBoardFrom: (coord) => {
 			hoveredBoardFrom = coord;

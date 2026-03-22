@@ -178,6 +178,8 @@
 					isMyTurn={state.view.isMyTurn}
 					selectedPiece={state.view.selectedReservePiece}
 					onClick={state.actions.onReserveClick}
+					onDragStart={state.actions.onReserveDragStart}
+					onDragCancel={state.actions.cancelDrag}
 					onEnter={state.actions.onReserveHover}
 					onLeave={state.actions.clearReserveHover}
 					pieceTransitionName={state.view.reservePieceTransitionName}
@@ -189,10 +191,15 @@
 					board={state.view.displayBoard}
 					targetHints={state.view.targetHints}
 					targetHintTone={state.view.targetHintTone}
+					isMyTurn={state.view.isMyTurn}
+					viewerColor={state.view.game?.viewerColor ?? null}
 					selectedBoardFrom={state.view.selectedBoardFrom}
 					onCellEnter={state.actions.onBoardHover}
 					onCellLeave={state.actions.clearBoardHover}
 					onCellClick={state.actions.onCellClick}
+					onBoardDragStart={state.actions.onBoardDragStart}
+					onCellDrop={state.actions.onCellDrop}
+					onDragCancel={state.actions.cancelDrag}
 					pieceTransitionName={state.view.boardPieceTransitionName}
 				/>
 			</div>
@@ -210,6 +217,8 @@
 					isMyTurn={state.view.isMyTurn}
 					selectedPiece={state.view.selectedReservePiece}
 					onClick={state.actions.onReserveClick}
+					onDragStart={state.actions.onReserveDragStart}
+					onDragCancel={state.actions.cancelDrag}
 					onEnter={state.actions.onReserveHover}
 					onLeave={state.actions.clearReserveHover}
 					pieceTransitionName={state.view.reservePieceTransitionName}

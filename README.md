@@ -6,24 +6,13 @@ This is a SvelteKit application that serves as the frontend and backend for the 
 
 This project is mostly a playground for me to experiment with SvelteKit and local-llms.
 
-## Base de donnees (SQLite)
-
-La persistance des comptes d'authentification utilise Prisma avec SQLite.
-
-- En dev: `DATABASE_URL="file:./dev.db"` (fichier cree dans le dossier `prisma/`)
-- En prod: definir `DATABASE_URL` vers un fichier persistant, par exemple `file:/var/lib/chess-connect/prod.db`
-
-Appliquer les migrations:
-
-```bash
-pnpm prisma:migrate:deploy
-```
-
-En local, creer/appliquer une migration de dev:
-
-```bash
-pnpm prisma:migrate:dev -- --name init-auth
-```
+## Installation
+1. Clone the repository
+2. Install dependencies: `pnpm install`
+3. Create a `.env` file based on `.env.example`
+4. Run `pnpm prisma:generate` to generate the Prisma client
+5. Apply database migrations: `pnpm prisma:migrate:deploy`
+6. Start the development server: `pnpm dev`
 
 ## TODO
 
@@ -48,7 +37,7 @@ pnpm prisma:migrate:dev -- --name init-auth
 - [ ] animation scroll de victoire
 - [ ] son pour partie trouvée
 - [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
-- [ ] drag&drop des pieces
+- [x] drag&drop des pieces
 - [ ] système d'achievements
 
 Idées d'achievements:
@@ -69,6 +58,26 @@ Idées d'achievements:
 - "Collectionneur" : débloquer tous les achievements précédents
 - "Contributeur" : jouer plus de 10 parties avec l'option d'enregistrement pour l'entraînement de l'IA activée (contribution au dataset d'entraînement)
 - "Philanthrope" : jouer plus de 100 parties avec l'option d'enregistrement pour l'entraînement de l'IA activée (contribution au dataset d'entraînement)
+
+
+## Base de donnees (SQLite)
+
+La persistance des comptes d'authentification utilise Prisma avec SQLite.
+
+- En dev: `DATABASE_URL="file:./dev.db"` (fichier cree dans le dossier `prisma/`)
+- En prod: definir `DATABASE_URL` vers un fichier persistant, par exemple `file:/var/lib/chess-connect/prod.db`
+
+Appliquer les migrations:
+
+```bash
+pnpm prisma:migrate:deploy
+```
+
+En local, creer/appliquer une migration de dev:
+
+```bash
+pnpm prisma:migrate:dev -- --name init-auth
+```
 
 ## IA
 

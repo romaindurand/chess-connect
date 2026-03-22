@@ -15,6 +15,8 @@
 		isMyTurn: boolean;
 		selectedPiece: PieceType | null;
 		onClick: (reserveColor: 'white' | 'black', piece: PieceType) => void;
+		onDragStart: (reserveColor: 'white' | 'black', piece: PieceType) => void;
+		onDragCancel: () => void;
 		onEnter: (reserveColor: 'white' | 'black', piece: PieceType) => void;
 		onLeave: () => void;
 		pieceTransitionName: (owner: 'white' | 'black', piece: PieceType) => string | null;
@@ -32,6 +34,8 @@
 		isMyTurn,
 		selectedPiece,
 		onClick,
+		onDragStart,
+		onDragCancel,
 		onEnter,
 		onLeave,
 		pieceTransitionName
@@ -55,6 +59,22 @@
 			? 'border border-black bg-white text-black'
 			: 'border border-black bg-black text-white dark:border-gray-200';
 	}
+
+	function onPiecePointerDown(event: PointerEvent, piece: PieceType): void {
+		if (event.pointerType === 'mouse' || !isMine || !isMyTurn) {
+			return;
+		}
+		onDragStart(reserveColor, piece);
+	}
+
+	function onReserveDragStartEvent(event: DragEvent, piece: PieceType): void {
+		const target = event.currentTarget as HTMLButtonElement;
+		const span = target.querySelector('span');
+		if (span && event.dataTransfer) {
+			event.dataTransfer.setDragImage(span, span.offsetWidth / 2, span.offsetHeight / 2);
+		}
+		onDragStart(reserveColor, piece);
+	}
 </script>
 
 <div
@@ -75,10 +95,14 @@
 			{@const Icon = pieceIcon(piece)}
 			<button
 				type="button"
-				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black dark:ring-gray-400' : ''} ${!isMine ? 'opacity-50' : ''}`}
+				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black dark:ring-gray-400' : ''} ${!isMine ? 'opacity-50' : ''} ${isMine && isMyTurn ? 'cursor-grab active:cursor-grabbing' : ''}`}
 				onclick={() => onClick(reserveColor, piece)}
+				ondragstart={(event) => onReserveDragStartEvent(event, piece)}
+				ondragend={onDragCancel}
+				onpointerdown={(event) => onPiecePointerDown(event, piece)}
 				onmouseenter={() => onEnter(reserveColor, piece)}
 				onmouseleave={onLeave}
+				draggable={isMine && isMyTurn}
 				disabled={!isMine || !isMyTurn}
 				title={$_(`piece.${piece}`)}
 			>
