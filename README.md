@@ -48,6 +48,7 @@ pnpm prisma:migrate:dev -- --name init-auth
 - [ ] animation scroll de victoire
 - [ ] son pour partie trouvée
 - [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
+- [ ] drag&drop des pieces
 
 ## IA
 

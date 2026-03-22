@@ -1,7 +1,18 @@
 import { describe, expect, it } from 'vitest';
 
-import { applyPlayerMove, createInitialBoard } from '$lib/server/game-engine';
-import { makeEmptyReserve, type Color, type GameState } from '$lib/types/game';
+import {
+	applyPlayerMove,
+	createInitialBoard,
+	getLegalOptionsForColor
+} from '$lib/server/game-engine';
+import {
+	makeEmptyReserve,
+	type Color,
+	type Coord,
+	type GameState,
+	type PieceType,
+	type PlayerMove
+} from '$lib/types/game';
 
 import { chooseAiMove } from './agent';
 import { encodeState } from './encoder';
@@ -44,6 +55,55 @@ function makeActiveState(turn: Color = 'white'): GameState {
 		lastActivityAt: now,
 		version: 0
 	};
+}
+
+function decodeCoordKey(key: string): Coord {
+	const [x, y] = key.split(',').map((value) => Number.parseInt(value, 10));
+	return { x, y };
+}
+
+function legalMovesForTest(state: GameState, color: Color): PlayerMove[] {
+	const legal = getLegalOptionsForColor(state, color);
+	const moves: PlayerMove[] = [];
+
+	for (const piece of ['pawn', 'rook', 'knight', 'bishop'] as PieceType[]) {
+		for (const target of legal.byReservePiece[piece]) {
+			moves.push({ kind: 'place', piece, to: target });
+		}
+	}
+
+	if (state.pliesPlayed >= 6) {
+		for (const [fromKey, targets] of Object.entries(legal.byBoardFrom)) {
+			const from = decodeCoordKey(fromKey);
+			for (const to of targets) {
+				moves.push({ kind: 'move', from, to });
+			}
+		}
+	}
+
+	return moves;
+}
+
+function hasImmediateWinningMove(state: GameState, color: Color): boolean {
+	for (const move of legalMovesForTest(state, color)) {
+		try {
+			if (applyPlayerMove(state, color, move).winner === color) {
+				return true;
+			}
+		} catch {
+			// Ignore illegal move candidates reconstructed from legal options.
+		}
+	}
+
+	return false;
+}
+
+function playMoves(state: GameState, moves: Array<{ color: Color; move: PlayerMove }>): GameState {
+	let current = state;
+	for (const step of moves) {
+		current = applyPlayerMove(current, step.color, step.move);
+	}
+	return current;
 }
 
 describe('encoder', () => {
@@ -109,6 +169,31 @@ describe('mcts', () => {
 		const result = await runMcts(state, 'white', { simulations: 10, modelAdapter: mockAdapter });
 		expect(result.move).not.toBeNull();
 	});
+
+	it('can disable tactical hard-guard for data generation', async () => {
+		const state = makeActiveState('black');
+		state.pliesPlayed = 8;
+		state.board[0][0] = { type: 'rook', owner: 'white', pawnDirection: -1 };
+		state.board[0][1] = { type: 'rook', owner: 'white', pawnDirection: -1 };
+		state.board[0][2] = { type: 'rook', owner: 'white', pawnDirection: -1 };
+		state.board[3][3] = { type: 'rook', owner: 'black', pawnDirection: 1 };
+
+		expect(hasImmediateWinningMove({ ...state, turn: 'white' }, 'white')).toBe(true);
+
+		const withGuard = await runMcts(state, 'black', { simulations: 12, tacticalSafety: 'enabled' });
+		const withoutGuard = await runMcts(state, 'black', {
+			simulations: 12,
+			tacticalSafety: 'disabled'
+		});
+
+		const guardSupport = withGuard.distribution.reduce((sum, v) => sum + (v > 0 ? 1 : 0), 0);
+		const noGuardSupport = withoutGuard.distribution.reduce((sum, v) => sum + (v > 0 ? 1 : 0), 0);
+
+		// Guard enabled takes the forced-defense shortcut (singleton dist).
+		expect(guardSupport).toBe(1);
+		// Guard disabled keeps full search behavior (multiple explored actions).
+		expect(noGuardSupport).toBeGreaterThan(1);
+	});
 });
 
 describe('chooseAiMove', () => {
@@ -128,5 +213,36 @@ describe('chooseAiMove', () => {
 
 		const move = await chooseAiMove(state, 'black');
 		expect(move).not.toBeNull();
+	});
+
+	it('avoids a move that gives the opponent an immediate win when a safe defense exists', async () => {
+		const beforeBlackTurn = playMoves(makeActiveState('white'), [
+			{ color: 'white', move: { kind: 'place', piece: 'rook', to: { x: 1, y: 2 } } },
+			{ color: 'black', move: { kind: 'place', piece: 'bishop', to: { x: 0, y: 0 } } },
+			{ color: 'white', move: { kind: 'place', piece: 'bishop', to: { x: 0, y: 3 } } },
+			{ color: 'black', move: { kind: 'place', piece: 'knight', to: { x: 3, y: 0 } } },
+			{ color: 'white', move: { kind: 'place', piece: 'knight', to: { x: 1, y: 1 } } },
+			{ color: 'black', move: { kind: 'place', piece: 'pawn', to: { x: 3, y: 3 } } },
+			{ color: 'white', move: { kind: 'place', piece: 'pawn', to: { x: 2, y: 3 } } },
+			{ color: 'black', move: { kind: 'move', from: { x: 0, y: 0 }, to: { x: 1, y: 1 } } },
+			{ color: 'white', move: { kind: 'place', piece: 'knight', to: { x: 0, y: 1 } } }
+		]);
+
+		const safeReplies = legalMovesForTest(beforeBlackTurn, 'black').filter((candidate) => {
+			try {
+				const after = applyPlayerMove(beforeBlackTurn, 'black', candidate);
+				return !hasImmediateWinningMove(after, 'white');
+			} catch {
+				return false;
+			}
+		});
+
+		expect(safeReplies.length).toBeGreaterThan(0);
+
+		const move = await chooseAiMove(beforeBlackTurn, 'black');
+		expect(move).not.toBeNull();
+
+		const afterAiMove = applyPlayerMove(beforeBlackTurn, 'black', move!);
+		expect(hasImmediateWinningMove(afterAiMove, 'white')).toBe(false);
 	});
 });

@@ -72,7 +72,7 @@ export async function replayGameWithMctsTargets(
 
 		const actor = step.color;
 		const encoded = Array.from(encodeState(state, actor));
-		const mcts = await runMcts(state, actor, { simulations });
+		const mcts = await runMcts(state, actor, { simulations, tacticalSafety: 'disabled' });
 
 		samples.push({
 			encoded,

@@ -33,4 +33,4 @@ vite.config.ts.timestamp-*
 /artifacts/ai/
 
 # AI checkpoints (modèles entraînés, potentiellement volumineux)
-checkpoints/model/
+checkpoints/

@@ -115,7 +115,10 @@ async function playSelfPlayGame(
 	while (state.status === 'active' && state.pliesPlayed < maxPlies) {
 		const actor = state.turn;
 		const encoded = Array.from(encodeState(state, actor));
-		const mctsResult = await runMcts(state, actor, { simulations: SELF_PLAY_SIMULATIONS });
+		const mctsResult = await runMcts(state, actor, {
+			simulations: SELF_PLAY_SIMULATIONS,
+			tacticalSafety: 'disabled'
+		});
 		const move = mctsResult.move;
 		if (!move) {
 			const result = {
