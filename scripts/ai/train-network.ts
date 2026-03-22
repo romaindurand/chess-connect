@@ -15,6 +15,8 @@ import path from 'node:path';
 
 import type * as TfjsNode from '@tensorflow/tfjs-node';
 
+import { readDatasetHeader, streamSampleLines } from './dataset-io';
+
 const BOARD_SIZE = 4;
 const SPATIAL_CHANNELS = 10;
 const SPATIAL_SIZE = BOARD_SIZE * BOARD_SIZE * SPATIAL_CHANNELS; // 160
@@ -106,12 +108,6 @@ console.log(`[AI] Backend actif: ${tf.getBackend()}`);
 
 // ─── Load dataset ─────────────────────────────────────────────────────────────
 
-interface Sample {
-	encoded: number[];
-	mctsDistribution: number[];
-	outcome: number;
-}
-
 interface BatchLossPoint {
 	globalBatch: number;
 	epoch: number;
@@ -143,26 +139,27 @@ interface LossMetricsReport {
 	errorMessage?: string;
 }
 
-console.log(`Chargement du dataset depuis ${datasetPath}…`);
-const raw = JSON.parse(fs.readFileSync(datasetPath, 'utf8')) as { samples?: Sample[] };
-const samples: Sample[] = raw.samples ?? [];
+// ─── Load dataset (streaming NDJSON) ─────────────────────────────────────────
 
-if (samples.length === 0) {
+console.log(`Chargement du dataset depuis ${datasetPath}…`);
+
+const datasetHeader = await readDatasetHeader(datasetPath);
+const n = typeof datasetHeader.totalSamples === 'number' ? datasetHeader.totalSamples : 0;
+
+if (n === 0) {
 	console.error("Aucun sample trouvé dans le dataset. Lancez d'abord pnpm ai:self-play.");
 	process.exit(1);
 }
-console.log(`${samples.length} samples chargés.`);
+console.log(`${n} samples détectés (chargement en streaming)…`);
 
 // ─── Build tensors ────────────────────────────────────────────────────────────
 
-const n = samples.length;
 const spatialBuf = new Float32Array(n * SPATIAL_SIZE);
 const globalBuf = new Float32Array(n * GLOBAL_SIZE);
 const policyBuf = new Float32Array(n * MOVE_SPACE_SIZE);
 const valueBuf = new Float32Array(n);
 
-for (let i = 0; i < n; i++) {
-	const s = samples[i];
+const actualCount = await streamSampleLines(datasetPath, (s, i) => {
 	spatialBuf.set(s.encoded.slice(0, SPATIAL_SIZE), i * SPATIAL_SIZE);
 	globalBuf.set(s.encoded.slice(SPATIAL_SIZE), i * GLOBAL_SIZE);
 	policyBuf.set(s.mctsDistribution, i * MOVE_SPACE_SIZE);
@@ -171,8 +168,13 @@ for (let i = 0; i < n; i++) {
 		const pct = Math.round(((i + 1) / n) * 100);
 		process.stdout.write(`\rPréparation des tenseurs: ${i + 1}/${n} (${pct}%)   `);
 	}
-}
+});
 process.stdout.write('\n');
+
+if (actualCount === 0) {
+	console.error('Aucun sample chargé. Vérifiez le format du dataset.');
+	process.exit(1);
+}
 
 const xSpatial = tf.tensor4d(spatialBuf, [n, BOARD_SIZE, BOARD_SIZE, SPATIAL_CHANNELS]);
 const xGlobal = tf.tensor2d(globalBuf, [n, GLOBAL_SIZE]);

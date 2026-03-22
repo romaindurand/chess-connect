@@ -1,11 +1,13 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
 import {
 	buildTrainingArtifact,
 	runSelfPlayBatch,
-	type SelfPlayBatchReport
+	type SelfPlayBatchReport,
+	type SelfPlayGameResult
 } from '../../src/lib/server/ai/training';
+import { readDatasetHeader, writeSamplesNdjson } from './dataset-io';
 
 function readStringArg(name: string, fallback: string): string {
 	const raw = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -33,10 +35,22 @@ function formatEta(seconds: number): string {
 const inputFile = resolve(readStringArg('input', 'artifacts/ai/self-play.json'));
 const outputFile = resolve(readStringArg('output', 'artifacts/ai/baseline-frequency.json'));
 
-let report: SelfPlayBatchReport;
+let report: SelfPlayBatchReport | null = null;
 try {
-	report = JSON.parse(readFileSync(inputFile, 'utf8')) as SelfPlayBatchReport;
+	const hdr = await readDatasetHeader(inputFile);
+	if (hdr.games) {
+		report = {
+			games: hdr.games as SelfPlayGameResult[],
+			samples: [],
+			summary: (hdr.summary ?? {}) as SelfPlayBatchReport['summary']
+		};
+	} else {
+		report = null;
+	}
 } catch {
+	report = null;
+}
+if (!report) {
 	const games = readNumberArg('games', 32);
 	const maxPlies = readNumberArg('max-plies', 64);
 	console.log(`Dataset introuvable. Génération de ${games} parties…`);
@@ -51,6 +65,11 @@ try {
 		}
 	});
 	process.stdout.write('\n');
+	await writeSamplesNdjson(
+		inputFile,
+		{ summary: report.summary, games: report.games },
+		report.samples
+	);
 }
 
 const artifact = buildTrainingArtifact(report.games);

@@ -1,10 +1,11 @@
-import { createReadStream, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
-import { dirname, resolve } from 'node:path';
+import { createReadStream, existsSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { createInterface } from 'node:readline';
 
 import type { RecordedGame } from '../../src/lib/server/ai/game-recorder';
 import { replayGameWithMctsTargets } from '../../src/lib/server/ai/reanalysis';
 import type { TrainingSample } from '../../src/lib/server/ai/training';
+import { readSamplesNdjson, writeSamplesNdjson } from './dataset-io';
 
 function readArg(name: string, fallback: string): string {
 	const raw = process.argv.find((arg) => arg.startsWith(`--${name}=`));
@@ -84,8 +85,8 @@ const recordedGames = [...dedup.values()].slice(0, maxGames);
 
 let baseSamples: TrainingSample[] = [];
 try {
-	const parsed = JSON.parse(readFileSync(baseDataset, 'utf8')) as { samples?: TrainingSample[] };
-	baseSamples = parsed.samples ?? [];
+	const { samples } = await readSamplesNdjson(baseDataset);
+	baseSamples = samples;
 } catch {
 	baseSamples = [];
 }
@@ -112,20 +113,17 @@ for (let i = 0; i < recordedGames.length; i++) {
 }
 process.stdout.write('\n');
 
-const dataset = {
-	samples: [...baseSamples, ...reanalyzedSamples],
-	summary: {
-		baseSamples: baseSamples.length,
-		reanalyzedSamples: reanalyzedSamples.length,
-		totalSamples: baseSamples.length + reanalyzedSamples.length,
-		recordedGames: recordedGames.length,
-		simulations,
-		maxSamplesPerGame
-	}
+const allSamples = [...baseSamples, ...reanalyzedSamples];
+const summary = {
+	baseSamples: baseSamples.length,
+	reanalyzedSamples: reanalyzedSamples.length,
+	totalSamples: allSamples.length,
+	recordedGames: recordedGames.length,
+	simulations,
+	maxSamplesPerGame
 };
 
-mkdirSync(dirname(outputFile), { recursive: true });
-writeFileSync(outputFile, JSON.stringify(dataset));
+await writeSamplesNdjson(outputFile, { summary }, allSamples);
 
-console.table(dataset.summary);
-console.log(`Dataset écrit dans ${outputFile}`);
+console.table(summary);
+console.log(`Dataset écrit dans ${outputFile} (${allSamples.length} samples, format NDJSON)`);

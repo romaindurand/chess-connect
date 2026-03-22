@@ -1,6 +1,7 @@
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
+import { writeSamplesNdjson } from './dataset-io';
 import { runSelfPlayBatch } from '../../src/lib/server/ai/training';
 
 function readNumberArg(name: string, fallback: number): number {
@@ -42,7 +43,7 @@ const report = await runSelfPlayBatch({
 process.stdout.write('\n');
 
 mkdirSync(dirname(outFile), { recursive: true });
-writeFileSync(outFile, JSON.stringify(report, null, 2));
+await writeSamplesNdjson(outFile, { summary: report.summary, games: report.games }, report.samples);
 
 console.table(report.summary);
-console.log(`Dataset écrit dans ${outFile}`);
+console.log(`Dataset écrit dans ${outFile} (${report.samples.length} samples, format NDJSON)`);

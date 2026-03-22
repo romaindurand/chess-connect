@@ -44,7 +44,7 @@ pnpm prisma:migrate:dev -- --name init-auth
 - [x] en temps limité, ajouter une option qui ajoute des secondes à chaque coup joué (ex: 30s + 10s par coup)
 - [x] pour le temps limité, permettre de préciser les secondes (pour le moment on ne gère que les minites)
 - [x] matchmaking
-- [ ] dark mode
+- [x] dark mode
 - [ ] animation scroll de victoire
 - [ ] son pour partie trouvée
 - [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
