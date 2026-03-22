@@ -40,7 +40,7 @@
 	function pieceChipClasses(owner: 'white' | 'black'): string {
 		return owner === 'white'
 			? 'border border-black bg-white text-black'
-			: 'border border-black bg-black text-white';
+			: 'border border-black bg-black text-white dark:border-gray-200';
 	}
 
 	const rowLabels = ['4', '3', '2', '1'] as const;
@@ -64,7 +64,7 @@
 					{@const key = coordKey(coord)}
 					<button
 						type="button"
-						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100') : 'border-gray-300 bg-stone-100'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''}`}
+						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100') : 'border-gray-300 dark:bg-gray-800'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''}`}
 						onmouseenter={() => onCellEnter(coord, cell)}
 						onmouseleave={onCellLeave}
 						onclick={() => onCellClick(coord)}

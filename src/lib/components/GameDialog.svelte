@@ -43,21 +43,26 @@
 		open
 		oncancel={onCancel}
 		onclick={onDialogClick}
-		class="fixed inset-0 z-50 m-0 flex h-screen w-screen max-w-none items-center justify-center bg-black/50 p-4"
+		class="fixed inset-0 z-50 m-0 flex h-screen w-screen max-w-none items-center justify-center bg-black/50 p-4 dark:bg-black/70"
 	>
-		<div class="w-full max-w-md rounded-lg border border-gray-300 bg-white p-6 text-left shadow-xl">
+		<div
+			class="w-full max-w-md rounded-lg border border-gray-300 bg-white p-6 text-left shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+		>
 			<div class="flex items-start justify-between gap-3">
 				{#if title}
 					<h2 class="text-xl font-semibold">{title}</h2>
 				{/if}
 				{#if closable}
-					<button type="button" onclick={requestClose} class="rounded border px-2 py-1 text-sm"
+					<button
+						type="button"
+						onclick={requestClose}
+						class="rounded border border-gray-300 px-2 py-1 text-sm dark:border-gray-700 dark:text-gray-200"
 						>{$_('common.close')}</button
 					>
 				{/if}
 			</div>
 
-			<div class="mt-2 text-sm text-gray-700">
+			<div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
 				{@render children?.()}
 			</div>
 		</div>

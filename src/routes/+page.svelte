@@ -26,6 +26,7 @@
 		type AuthState
 	} from '$lib/client/auth-api';
 	import { slide } from 'svelte/transition';
+	import DarkModeToggle from '$lib/components/DarkModeToggle.svelte';
 
 	const pageTitle = $derived($_('home.pageTitle'));
 	const pageDescription = $derived($_('home.pageDescription'));
@@ -402,9 +403,12 @@
 </svelte:head>
 
 <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-8">
-	<h1 class="mb-4 text-3xl font-semibold">Chess Connect</h1>
+	<div class="mb-4 flex items-center justify-between">
+		<h1 class="text-3xl font-semibold dark:text-gray-100">Chess Connect</h1>
+		<DarkModeToggle />
+	</div>
 	{#if authState.authenticated && authState.username}
-		<div class="mb-6">
+		<div class="mb-6" transition:slide>
 			<AccountPanel
 				username={authState.username}
 				onLogout={handleAuthLogout}
@@ -412,11 +416,14 @@
 			/>
 		</div>
 	{:else}
-		<div class="mb-6 space-y-3 rounded-md border border-gray-200 p-4">
+		<div
+			class="mb-6 space-y-3 rounded-md border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-900"
+			transition:slide
+		>
 			<div class="flex gap-2 text-sm">
 				<button
 					type="button"
-					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+					class="rounded bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
 					onclick={handleRegister}
 					disabled={isAuthSubmitting}
 				>
@@ -424,7 +431,7 @@
 				</button>
 				<button
 					type="button"
-					class="rounded border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+					class="rounded border border-gray-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
 					onclick={revealLoginForm}
 					disabled={isAuthSubmitting}
 				>
@@ -434,18 +441,18 @@
 
 			{#if showLoginForm}
 				<label class="block space-y-1">
-					<span class="text-sm font-medium">{$_('auth.recoveryKeyLabel')}</span>
+					<span class="text-sm font-medium dark:text-gray-300">{$_('auth.recoveryKeyLabel')}</span>
 					<div class="flex gap-2">
 						<input
 							bind:this={recoveryKeyField}
-							class="w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm"
+							class="w-full rounded border border-gray-300 px-3 py-2 font-mono text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
 							type="text"
 							bind:value={recoveryKeyInput}
 							placeholder={$_('auth.recoveryKeyPlaceholder')}
 						/>
 						<button
 							type="button"
-							class="rounded border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+							class="rounded border border-gray-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
 							onclick={handleLoginToken}
 							disabled={isAuthSubmitting}
 						>
@@ -456,18 +463,18 @@
 			{/if}
 
 			{#if authError}
-				<p class="text-sm text-red-600">{authError}</p>
+				<p class="text-sm text-red-600 dark:text-red-400">{authError}</p>
 			{/if}
 		</div>
 	{/if}
 
 	<form class="space-y-4" onsubmit={onCreateGame}>
 		{#if !authState.authenticated}
-			<label class="block space-y-2">
-				<span class="text-sm font-medium">{$_('home.nameLabel')}</span>
+			<label class="block space-y-2" transition:slide>
+				<span class="text-sm font-medium dark:text-gray-300">{$_('home.nameLabel')}</span>
 				<input
 					bind:this={nameInput}
-					class="w-full rounded-md border border-gray-300 px-3 py-2"
+					class="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
 					type="text"
 					name="name"
 					bind:value={name}
@@ -479,12 +486,14 @@
 		{/if}
 
 		<fieldset class="rounded-md border border-gray-200 p-3">
-			<legend class="px-1 text-sm font-medium">{$_('home.gameType')}</legend>
+			<!-- style="border-color: var(--border-gray-200); background-color: transparent;"
+			class="dark:border-gray-700 dark:bg-gray-900" -->
+			<legend class="px-1 text-sm font-medium dark:text-gray-300">{$_('home.gameType')}</legend>
 			<div
 				class={`mt-3 grid gap-2 ${authState.authenticated ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
 			>
 				<label
-					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'human' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'human' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
 				>
 					<input
 						class="sr-only"
@@ -496,7 +505,7 @@
 					<span>{$_('home.versusHuman')}</span>
 				</label>
 				<label
-					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'ai' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'ai' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
 				>
 					<input
 						class="sr-only"
@@ -509,7 +518,7 @@
 				</label>
 				{#if authState.authenticated}
 					<label
-						class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'ranked' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+						class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'ranked' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
 					>
 						<input
 							class="sr-only"
@@ -522,7 +531,7 @@
 					</label>
 				{/if}
 			</div>
-			<p class="mt-3 text-sm text-gray-600">
+			<p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
 				{#if selectedMode === 'human'}
 					{$_('home.modeDescriptionHuman')}
 				{:else if selectedMode === 'ai'}
@@ -536,11 +545,11 @@
 		{#if selectedMode !== 'ranked'}
 			<details
 				transition:slide
-				class="rounded-md border border-gray-200 p-3"
+				class="rounded-md border border-gray-200 p-3 dark:border-gray-700 dark:bg-gray-900"
 				open={advancedOptionsMounted}
 			>
 				<summary
-					class="cursor-pointer text-sm font-medium"
+					class="cursor-pointer text-sm font-medium dark:text-gray-300"
 					onclick={toggleAdvancedOptions}
 					aria-expanded={advancedOptionsOpen}
 				>
@@ -556,10 +565,10 @@
 					<div class="overflow-hidden">
 						<div class="space-y-3 pb-1">
 							<div class="space-y-2">
-								<span class="text-sm font-medium">{$_('home.yourColor')}</span>
+								<span class="text-sm font-medium dark:text-gray-300">{$_('home.yourColor')}</span>
 								<div class="grid gap-2 sm:grid-cols-3">
 									<label
-										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'white' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
 									>
 										<input
 											class="sr-only"
@@ -571,7 +580,7 @@
 										<span>{$_('home.colorWhite')}</span>
 									</label>
 									<label
-										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'black' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
 									>
 										<input
 											class="sr-only"
@@ -583,7 +592,7 @@
 										<span>{$_('home.colorBlack')}</span>
 									</label>
 									<label
-										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white' : 'border-gray-300'}`}
+										class={`rounded-md border px-3 py-2 text-sm ${hostColor === 'random' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
 									>
 										<input
 											class="sr-only"
@@ -598,72 +607,82 @@
 							</div>
 
 							<label class="flex items-center gap-2 text-sm">
-								<input type="checkbox" bind:checked={timeControlEnabled} />
-								<span>{$_('home.enableTimeControl')}</span>
+								<input type="checkbox" bind:checked={timeControlEnabled} class="dark:bg-gray-800" />
+								<span class="dark:text-gray-300">{$_('home.enableTimeControl')}</span>
 							</label>
 
 							{#if timeControlEnabled}
 								<div class="space-y-2">
-									<span class="text-sm">{$_('home.timePerPlayer')}</span>
+									<span class="text-sm dark:text-gray-300">{$_('home.timePerPlayer')}</span>
 									<div class="grid grid-cols-2 gap-2">
 										<label class="block space-y-1">
-											<span class="text-xs text-gray-600">{$_('home.minutes')}</span>
+											<span class="text-xs text-gray-600 dark:text-gray-400"
+												>{$_('home.minutes')}</span
+											>
 											<input
 												type="number"
 												min="0"
 												max="30"
 												step="1"
 												bind:value={timeLimitMinutesInput}
-												class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+												class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
 											/>
 										</label>
 										<label class="block space-y-1">
-											<span class="text-xs text-gray-600">{$_('home.seconds')}</span>
+											<span class="text-xs text-gray-600 dark:text-gray-400"
+												>{$_('home.seconds')}</span
+											>
 											<input
 												type="number"
 												min="0"
 												max="59"
 												step="1"
 												bind:value={timeLimitSecondsInput}
-												class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+												class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
 											/>
 										</label>
 									</div>
 									<label class="block space-y-1">
-										<span class="text-xs text-gray-600">{$_('home.incrementPerMove')}</span>
+										<span class="text-xs text-gray-600 dark:text-gray-400"
+											>{$_('home.incrementPerMove')}</span
+										>
 										<input
 											type="number"
 											min="0"
 											max="60"
 											step="1"
 											bind:value={incrementPerMoveSecondsInput}
-											class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm"
+											class="w-full rounded-md border border-gray-300 px-3 py-2 text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
 										/>
 									</label>
 								</div>
 							{/if}
 
 							<label class="flex items-center gap-2 text-sm">
-								<input type="checkbox" bind:checked={roundLimitEnabled} />
-								<span>{$_('home.enableRoundLimit')}</span>
+								<input type="checkbox" bind:checked={roundLimitEnabled} class="dark:bg-gray-800" />
+								<span class="dark:text-gray-300">{$_('home.enableRoundLimit')}</span>
 							</label>
 
 							{#if roundLimitEnabled}
 								<label class="block space-y-2">
-									<span class="text-sm">{$_('home.roundLimit')}</span>
+									<span class="text-sm dark:text-gray-300">{$_('home.roundLimit')}</span>
 									<input
 										type="number"
 										min="1"
 										step="2"
 										bind:value={roundLimit}
-										class="w-full rounded-md border border-gray-300 px-3 py-2"
+										class="w-full rounded-md border border-gray-300 px-3 py-2 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
 									/>
 								</label>
 							{/if}
 
 							<label class="flex items-center gap-2 text-sm">
-								<input type="checkbox" bind:checked={allowAiTrainingData} />
-								<span>{$_('home.allowAiTrainingData')}</span>
+								<input
+									type="checkbox"
+									bind:checked={allowAiTrainingData}
+									class="dark:bg-gray-800"
+								/>
+								<span class="dark:text-gray-300">{$_('home.allowAiTrainingData')}</span>
 							</label>
 						</div>
 					</div>
@@ -672,15 +691,16 @@
 		{/if}
 
 		{#if authState.authenticated}
-			<p class="text-sm text-gray-600">
-				<a class="underline" href={resolve('/ladder')}>{$_('home.openLadder')}</a>
+			<p class="text-sm text-gray-600 dark:text-gray-400">
+				<a class="underline dark:text-blue-400" href={resolve('/ladder')}>{$_('home.openLadder')}</a
+				>
 			</p>
 		{/if}
 
 		<button
 			type="submit"
 			disabled={isSubmitting || rankedBusy}
-			class="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50"
+			class="rounded-md bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
 		>
 			{#if isSubmitting || rankedBusy}
 				{$_('home.creating')}
@@ -694,29 +714,33 @@
 		</button>
 
 		{#if errorMessage}
-			<p class="text-sm text-red-600">{errorMessage}</p>
+			<p class="text-sm text-red-600 dark:text-red-400">{errorMessage}</p>
 		{/if}
 		{#if rankedError}
-			<p class="text-sm text-red-600">{rankedError}</p>
+			<p class="text-sm text-red-600 dark:text-red-400">{rankedError}</p>
 		{/if}
 	</form>
 
 	{#if rankedModalOpen}
-		<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-			<div class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl">
-				<h2 class="text-lg font-semibold">{$_('home.rankedSearchingTitle')}</h2>
-				<p class="mt-2 text-sm text-gray-700">
+		<div
+			class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 dark:bg-black/75"
+		>
+			<div class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-gray-900">
+				<h2 class="text-lg font-semibold dark:text-gray-100">{$_('home.rankedSearchingTitle')}</h2>
+				<p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
 					{$_('home.rankedSearchingTimer', { values: { seconds: queueStatus?.waitSeconds ?? 0 } })}
 				</p>
-				<p class="mt-1 text-sm text-gray-700">
+				<p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
 					{$_('home.rankedSearchRange', { values: { range: queueStatus?.searchRange ?? 0 } })}
 				</p>
 
 				{#if queueStatus?.proposal && !queueStatus.proposal.gameId}
-					<div class="mt-4 rounded-md border border-gray-200 p-3">
-						<p class="text-sm font-medium">{$_('home.matchFound')}</p>
+					<div
+						class="mt-4 rounded-md border border-gray-200 p-3 dark:border-gray-700 dark:bg-gray-800"
+					>
+						<p class="text-sm font-medium dark:text-gray-100">{$_('home.matchFound')}</p>
 						{#each queueStatus.proposal.participants as participant (participant.userId)}
-							<p class="mt-1 text-sm text-gray-700">
+							<p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
 								{participant.username} ({participant.rating})
 							</p>
 						{/each}
@@ -724,7 +748,7 @@
 							<div class="mt-3 flex gap-2">
 								<button
 									type="button"
-									class="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
+									class="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
 									onclick={() => decideRankedProposal(true)}
 									disabled={rankedBusy}
 								>
@@ -732,7 +756,7 @@
 								</button>
 								<button
 									type="button"
-									class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+									class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
 									onclick={() => decideRankedProposal(false)}
 									disabled={rankedBusy}
 								>
@@ -746,7 +770,7 @@
 				<div class="mt-5 flex justify-end">
 					<button
 						type="button"
-						class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50"
+						class="rounded-md border border-gray-300 px-3 py-2 text-sm disabled:opacity-50 dark:border-gray-700 dark:text-gray-300"
 						onclick={leaveRankedSearch}
 						disabled={rankedBusy}
 					>

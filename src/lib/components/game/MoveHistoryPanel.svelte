@@ -56,42 +56,48 @@
 	}
 </script>
 
-<aside class="rounded border border-gray-300 p-2">
-	<p class="mb-2 text-xs font-medium text-gray-700">{$_('game.history.title')}</p>
-	<div class="h-full overflow-y-auto rounded border border-gray-200 bg-white lg:h-130">
+<aside class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:bg-gray-900">
+	<p class="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300">
+		{$_('game.history.title')}
+	</p>
+	<div
+		class="h-full overflow-y-auto rounded border border-gray-200 bg-white lg:h-130 dark:border-gray-700 dark:bg-gray-950"
+	>
 		{#if entries.length === 0}
-			<p class="p-3 text-xs text-gray-500">{$_('game.history.empty')}</p>
+			<p class="p-3 text-xs text-gray-500 dark:text-gray-400">{$_('game.history.empty')}</p>
 		{:else}
 			{#each groupedRows as row (row.turn)}
 				{@const whiteMove = row.white}
 				{@const blackMove = row.black}
 				<div
-					class="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)] border-b border-gray-100 last:border-b-0"
+					class="grid grid-cols-[2.5rem_minmax(0,1fr)_minmax(0,1fr)] border-b border-gray-100 last:border-b-0 dark:border-gray-800"
 				>
-					<div class="px-2 py-2 text-[11px] font-medium text-gray-500">{row.turn}.</div>
+					<div class="px-2 py-2 text-[11px] font-medium text-gray-500 dark:text-gray-400">
+						{row.turn}.
+					</div>
 
 					{#if whiteMove}
 						<button
 							type="button"
-							class={`px-2 py-2 text-left text-xs ${selectedMoveIndex === whiteMove.index ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+							class={`px-2 py-2 text-left text-xs ${selectedMoveIndex === whiteMove.index ? 'bg-black text-white dark:bg-gray-700 dark:text-gray-100' : 'hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800'}`}
 							onclick={() => onSelectMove(whiteMove.index)}
 						>
 							{stripPrefix(whiteMove.notation)}
 						</button>
 					{:else}
-						<div class="px-2 py-2 text-xs text-gray-300">-</div>
+						<div class="px-2 py-2 text-xs text-gray-300 dark:text-gray-600">-</div>
 					{/if}
 
 					{#if blackMove}
 						<button
 							type="button"
-							class={`px-2 py-2 text-left text-xs ${selectedMoveIndex === blackMove.index ? 'bg-black text-white' : 'hover:bg-gray-100'}`}
+							class={`px-2 py-2 text-left text-xs ${selectedMoveIndex === blackMove.index ? 'bg-black text-white dark:bg-gray-700 dark:text-gray-100' : 'hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800'}`}
 							onclick={() => onSelectMove(blackMove.index)}
 						>
 							{stripPrefix(blackMove.notation)}
 						</button>
 					{:else}
-						<div class="px-2 py-2 text-xs text-gray-300">-</div>
+						<div class="px-2 py-2 text-xs text-gray-300 dark:text-gray-600">-</div>
 					{/if}
 				</div>
 			{/each}
@@ -100,7 +106,7 @@
 	<div class="mt-2 grid grid-cols-4 gap-2">
 		<button
 			type="button"
-			class="rounded border p-2"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
 			onclick={onJumpFirst}
 			aria-label={$_('game.history.firstMove')}
 		>
@@ -108,7 +114,7 @@
 		</button>
 		<button
 			type="button"
-			class="rounded border p-2"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
 			onclick={onJumpPrevious}
 			aria-label={$_('game.history.previousMove')}
 		>
@@ -116,7 +122,7 @@
 		</button>
 		<button
 			type="button"
-			class="rounded border p-2"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
 			onclick={onJumpNext}
 			aria-label={$_('game.history.nextMove')}
 		>
@@ -124,7 +130,7 @@
 		</button>
 		<button
 			type="button"
-			class="rounded border p-2"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
 			onclick={onJumpLast}
 			aria-label={$_('game.history.lastMove')}
 		>

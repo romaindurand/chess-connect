@@ -52,6 +52,7 @@ pnpm prisma:migrate:dev -- --name init-auth
 - [ ] système d'achievements
 
 Idées d'achievements:
+
 - "Initiative" : gagner une partie en jouant le premier coup
 - "Pas si vite" : bloquer avec une de ses pièces un aligment adverse de 3 pièces
 - "Inarrêtable" : gagner une partie sans que l'adversaire puisse aligner plus de 2 pièces

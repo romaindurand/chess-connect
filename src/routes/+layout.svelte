@@ -6,6 +6,7 @@
 	import favicon from '$lib/assets/favicon.png';
 	import { initI18n, resolveInitialLanguage, setLanguage } from '$lib/i18n';
 	import { buildPageTitle, SITE_NAME, toAbsoluteUrl } from '$lib/seo';
+	import { getDarkModePreference } from '$lib/client/dark-mode-storage';
 
 	let { children } = $props();
 	initI18n();
@@ -15,6 +16,13 @@
 
 	onMount(() => {
 		setLanguage(resolveInitialLanguage());
+		// Initialiser le mode dark lors du montage
+		const isDarkMode = getDarkModePreference();
+		if (isDarkMode) {
+			document.documentElement.classList.add('dark');
+		} else {
+			document.documentElement.classList.remove('dark');
+		}
 	});
 
 	$effect(() => {

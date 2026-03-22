@@ -89,9 +89,11 @@
 	/>
 
 	{#if state.view.loading}
-		<p>{$_('common.loading')}</p>
+		<p class="dark:text-gray-300">{$_('common.loading')}</p>
 	{:else if !state.view.game}
-		<p class="text-red-600">{state.view.errorMessage || $_('common.gameNotFound')}</p>
+		<p class="text-red-600 dark:text-red-400">
+			{state.view.errorMessage || $_('common.gameNotFound')}
+		</p>
 	{:else}
 		{#if state.view.game.viewerRole === 'guest' && state.view.game.joinAllowed && !state.view.game.viewerIsInviter}
 			<InvitationJoinCard
@@ -102,14 +104,20 @@
 		{/if}
 
 		{#if state.view.isGameFinished}
-			<section class="mb-3 rounded border border-black bg-white p-4 shadow-sm">
-				<p class="text-lg font-semibold">{state.view.winnerModalTitle}</p>
+			<section
+				class="mb-3 rounded border border-black bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+			>
+				<p class="text-lg font-semibold dark:text-gray-100">{state.view.winnerModalTitle}</p>
 				{#if state.view.winnerDetailsLine}
-					<p class="mt-1 text-sm text-gray-700">{state.view.winnerDetailsLine}</p>
+					<p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+						{state.view.winnerDetailsLine}
+					</p>
 				{/if}
-				<p class="mt-2 text-sm text-gray-700">{state.view.winnerModalSubtitle}</p>
+				<p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+					{state.view.winnerModalSubtitle}
+				</p>
 				{#if rankedDeltaText}
-					<p class="mt-1 text-sm font-semibold text-gray-900">
+					<p class="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
 						{$_('game.winner.rankedDelta', { values: { delta: rankedDeltaText } })}
 					</p>
 				{/if}
@@ -120,7 +128,7 @@
 							type="button"
 							onclick={state.actions.onRequestRematch}
 							disabled={state.view.isSubmittingRematch}
-							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
 						>
 							{state.view.isSubmittingRematch
 								? $_('game.rematch.sending')
@@ -131,22 +139,22 @@
 							type="button"
 							onclick={state.actions.onAcceptRematch}
 							disabled={state.view.isSubmittingRematch}
-							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50"
+							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
 						>
 							{state.view.isSubmittingRematch
 								? $_('game.rematch.starting')
 								: $_('game.rematch.accept')}
 						</button>
 					{:else if state.view.game?.state.rematchRequestedBy}
-						<p class="text-sm text-gray-700">{$_('game.rematch.pending')}</p>
+						<p class="text-sm text-gray-700 dark:text-gray-300">{$_('game.rematch.pending')}</p>
 					{:else if state.view.game?.state.bestOfWinner}
-						<p class="text-sm text-gray-700">{$_('game.rematch.finished')}</p>
+						<p class="text-sm text-gray-700 dark:text-gray-300">{$_('game.rematch.finished')}</p>
 					{/if}
 
 					<button
 						type="button"
 						onclick={() => goto(resolve('/'))}
-						class="rounded border px-4 py-2 text-sm font-medium"
+						class="rounded border border-gray-300 px-4 py-2 text-sm font-medium dark:border-gray-700 dark:text-gray-300"
 					>
 						{$_('game.rematch.newGame')}
 					</button>
@@ -247,7 +255,7 @@
 		onClose={() => state.actions.setShowRulesModal(false)}
 	>
 		<div
-			class="text-gray-700 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+			class="text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
 		>
 			<RulesContent />
 		</div>
@@ -259,8 +267,8 @@
 		title={state.view.repetitionDrawModalTitle}
 		onClose={() => state.actions.setShowRepetitionDrawModal(false)}
 	>
-		<p class="mt-2">{state.view.repetitionDrawModalSubtitle}</p>
-		<p class="mt-2">{$_('game.repetition.details')}</p>
+		<p class="mt-2 text-gray-700 dark:text-gray-300">{state.view.repetitionDrawModalSubtitle}</p>
+		<p class="mt-2 text-gray-700 dark:text-gray-300">{$_('game.repetition.details')}</p>
 	</GameDialog>
 
 	{#if state.view.errorMessage}

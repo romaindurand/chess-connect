@@ -53,16 +53,18 @@
 	function pieceChipClasses(owner: 'white' | 'black'): string {
 		return owner === 'white'
 			? 'border border-black bg-white text-black'
-			: 'border border-black bg-black text-white';
+			: 'border border-black bg-black text-white dark:border-gray-200';
 	}
 </script>
 
-<div class={`rounded border p-2 ${isActiveTurn ? 'border-black' : 'border-gray-300'}`}>
-	<div class="mb-1 flex items-center justify-between gap-3 text-gray-700">
+<div
+	class={`rounded border p-2 ${isActiveTurn ? 'border-black dark:border-gray-200' : 'border-gray-300 dark:border-gray-600'}`}
+>
+	<div class="mb-1 flex items-center justify-between gap-3 text-gray-700 dark:text-gray-300">
 		<p class="min-w-0 truncate">{playerName} - {playerScore}</p>
 		{#if clockText}
 			<span
-				class={`shrink-0 rounded px-2 py-0.5 font-mono text-sm ${clockUrgent ? 'bg-red-600 text-white' : isActiveTurn ? 'bg-black text-white' : 'bg-gray-100 text-gray-700'}`}
+				class={`shrink-0 rounded px-2 py-0.5 font-mono text-sm ${clockUrgent ? 'bg-red-600 text-white dark:bg-red-600' : isActiveTurn ? 'bg-black text-white dark:bg-gray-800 dark:text-gray-100' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
 			>
 				{clockText}
 			</span>
@@ -73,7 +75,7 @@
 			{@const Icon = pieceIcon(piece)}
 			<button
 				type="button"
-				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black' : ''} ${!isMine ? 'opacity-50' : ''}`}
+				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black dark:ring-gray-400' : ''} ${!isMine ? 'opacity-50' : ''}`}
 				onclick={() => onClick(reserveColor, piece)}
 				onmouseenter={() => onEnter(reserveColor, piece)}
 				onmouseleave={onLeave}
