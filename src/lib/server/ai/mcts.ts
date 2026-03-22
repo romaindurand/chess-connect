@@ -196,6 +196,86 @@ function blockedOppAlignmentAtTarget(
 	return best;
 }
 
+/**
+ * Detect which opponent pieces directly threaten a position on the board.
+ * Threat means: the opponent piece can legally capture at that position.
+ */
+function threatenedBy(board: GameState['board'], target: Coord, color: Color): Coord[] {
+	const opp = oppositeColor(color);
+	const threats: Coord[] = [];
+
+	for (let y = 0; y < BOARD_SIZE; y++) {
+		for (let x = 0; x < BOARD_SIZE; x++) {
+			const piece = board[y][x];
+			if (piece?.owner !== opp) continue;
+
+			const dx = Math.abs(target.x - x);
+			const dy = Math.abs(target.y - y);
+
+			// Pawn threats: attackers 1 square away diagonally
+			if (piece.type === 'pawn' && dx === 1 && dy === 1) {
+				threats.push({ x, y });
+			}
+			// Rook threats: same row or column
+			else if (piece.type === 'rook' && (target.x === x || target.y === y)) {
+				threats.push({ x, y });
+			}
+			// Bishop threats: same diagonal
+			else if (piece.type === 'bishop') {
+				const diag = Math.max(dx, dy);
+				if (diag === dx && dx === dy) {
+					threats.push({ x, y });
+				}
+			}
+			// Knight threats: L-shape
+			else if (piece.type === 'knight') {
+				if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
+					threats.push({ x, y });
+				}
+			}
+		}
+	}
+	return threats;
+}
+
+/**
+ * Check if a placed piece can be defended against all immediate threats.
+ * Returns true if no threats exist, or if at least one threat can be recaptured.
+ */
+function isPlacementDefended(board: GameState['board'], target: Coord, color: Color): boolean {
+	const threats = threatenedBy(board, target, color);
+	if (threats.length === 0) return true; // No threats = safe
+
+	// Check if we can recapture any threatener
+	for (const threat of threats) {
+		for (let y = 0; y < BOARD_SIZE; y++) {
+			for (let x = 0; x < BOARD_SIZE; x++) {
+				const piece = board[y][x];
+				if (piece?.owner !== color) continue;
+
+				const dx = Math.abs(threat.x - x);
+				const dy = Math.abs(threat.y - y);
+
+				// Check if this piece can capture the threat
+				if (piece.type === 'pawn' && dx === 1 && dy === 1) {
+					return true;
+				} else if (piece.type === 'rook' && (threat.x === x || threat.y === y)) {
+					return true;
+				} else if (piece.type === 'bishop') {
+					const diag = Math.max(dx, dy);
+					if (diag === dx && dx === dy) {
+						return true;
+					}
+				} else if (piece.type === 'knight') {
+					if ((dx === 1 && dy === 2) || (dx === 2 && dy === 1)) {
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false; // All threats remain unrecapturable
+}
 function heuristicScore(state: GameState, move: PlayerMove, color: Color): number {
 	const after = applyPlayerMove(state, color, move);
 	const target = move.to;
@@ -212,6 +292,28 @@ function heuristicScore(state: GameState, move: PlayerMove, color: Color): numbe
 	const dist = Math.abs(target.x - center) + Math.abs(target.y - center);
 	let score = myAlign * 100 + blockBonus * 80 - oppThreat * 40 + (3 - dist);
 	if (move.kind === 'move' && state.board[move.to.y][move.to.x]) score += 10;
+	return score;
+
+	// Penalize undefended placements in lines controlled by opponent
+	if (move.kind === 'place') {
+		// Check if placement is in a line with opponent pieces
+		let oppPresenceInLines = 0;
+		for (const line of linesThrough(target)) {
+			const oppOnLine = line.filter(
+				(c) => after.board[c.y][c.x]?.owner === oppositeColor(color)
+			).length;
+			oppPresenceInLines = Math.max(oppPresenceInLines, oppOnLine);
+		}
+
+		if (oppPresenceInLines > 0) {
+			// Piece lands in a contested line—check if it's defended
+			if (!isPlacementDefended(after.board, target, color)) {
+				// Undefended in a threatened line: severe penalty
+				score -= 60;
+			}
+		}
+	}
+
 	return score;
 }
 
@@ -296,6 +398,45 @@ export async function runMcts(
 	if (threatSquares.size > 0) {
 		const block = candidates.find((m) => threatSquares.has(coordKey(m.to)));
 		if (block) return { move: block, distribution: buildSingletonDist(block) };
+
+		// Try to eliminate threats by capturing opponent pieces instead of just blocking
+		if (threatSquares.size > 0) {
+			// Look for moves that capture pieces contributing to the threat
+			for (const candidate of candidates) {
+				if (candidate.kind !== 'move') continue; // Only moves can capture
+
+				const capturedPiece = state.board[candidate.to.y]?.[candidate.to.x];
+				if (!capturedPiece || capturedPiece.owner !== opponent) continue;
+
+				// Check if capturing this piece removes any threats
+				const afterCapture = applyPlayerMove(state, color, candidate);
+				const newThreats = new Set<string>();
+				for (const oMove of legalMoves({ ...afterCapture, turn: opponent }, opponent)) {
+					try {
+						const oAfter = applyPlayerMove({ ...afterCapture, turn: opponent }, opponent, oMove);
+						if (oAfter.winner === opponent) newThreats.add(coordKey(oMove.to));
+					} catch {
+						//
+					}
+				}
+
+				if (newThreats.size < threatSquares.size) {
+					// Capturing this piece reduces threats—prefer it over mere blocking
+					return { move: candidate, distribution: buildSingletonDist(candidate) };
+				}
+			}
+
+			// If no capture available, try blocking—but only with defended placements
+			const block = candidates.find((m) => threatSquares.has(coordKey(m.to)));
+			if (block) {
+				const afterBlock = applyPlayerMove(state, color, block);
+				const isDefended = isPlacementDefended(afterBlock.board, block.to, color);
+				if (isDefended) {
+					return { move: block, distribution: buildSingletonDist(block) };
+				}
+				// If block is undefended AND no capture is available, don't force a bad move
+			}
+		}
 	}
 
 	// Build root — prime priors from adapter if available

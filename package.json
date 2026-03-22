@@ -6,6 +6,7 @@
 	"scripts": {
 		"dev": "vite dev",
 		"build": "vite build",
+		"update-prod": "pnpm i && pnpm prisma:migrate:deploy && pnpm prisma:generate && pnpm build",
 		"prod": "AI_RUNTIME_BACKEND=cpu PORT=4400 node build/",
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",

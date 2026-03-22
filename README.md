@@ -38,12 +38,16 @@ pnpm prisma:migrate:dev -- --name init-auth
 - [x] n'importe quel joueur doit pouvoir proposer une revanche
 - [x] internationalisation
 - [x] ne pas limiter à un BO3, rendre le nombre de parties configurable
-- [ ] création de compte avec token d'auth (pas de login/password, juste un token généré aléatoirement à la création du compte)
+- [x] création de compte avec token d'auth (pas de login/password, juste un token généré aléatoirement à la création du compte)
 - [x] permettre de refuser l'utilisation de sa partie pour l'entraînement de l'ordinateur
 - [x] permettre le choix de la couleur en joueur contre joueur (pas juste en joueur contre ordinateur)
 - [x] en temps limité, ajouter une option qui ajoute des secondes à chaque coup joué (ex: 30s + 10s par coup)
 - [x] pour le temps limité, permettre de préciser les secondes (pour le moment on ne gère que les minites)
-- [ ] matchmaking
+- [x] matchmaking
+- [ ] dark mode
+- [ ] animation scroll de victoire
+- [ ] son pour partie trouvée
+- [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
 
 ## IA
 
@@ -61,14 +65,25 @@ Le serveur nécessite un checkpoint `checkpoints/model/model.json` au démarrage
 **Pipeline requis pour jouer contre l'ordinateur :**
 
 ```bash
-# 1. Générer des parties d'auto-jeu → artifacts/ai/self-play.json
-pnpm ai:self-play [-- --games=100 --max-plies=128]
+# Récupérer les parties enregistrées depuis le serveur de prod
+scp user@server:/path_to_chess_connect/artifacts/ai/recorded-games.jsonl ./artifacts/ai/recorded-games-prod.jsonl
 
-# 2. Entraîner le réseau conv-résiduel → checkpoints/model/model.json
-pnpm ai:train-network [-- --dataset=artifacts/ai/self-play.json --output=checkpoints/model --epochs=20 --batch=64]
+# Générer des parties d'auto-jeu → artifacts/ai/self-play.json
+pnpm ai:self-play -- --games=1000 --max-plies=128
 
-# Optionnel : choisir le backend explicitement (auto par défaut)
-pnpm ai:train-network [-- --dataset=artifacts/ai/self-play.json --backend=auto]
+# Reanalyser les parties enregistrées avec MCTS + fusion avec self-play pour enrichir le dataset d'entraînement
+pnpm ai:reanalyse-games -- \
+  --games=artifacts/ai/recorded-games.jsonl \
+  --games=artifacts/ai/recorded-games-prod.jsonl \
+  --base=artifacts/ai/self-play.json \
+  --output=artifacts/ai/training-data.json	\
+  --simulations=32
+
+# Entraîner le réseau conv-résiduel → checkpoints/model/model.json
+pnpm ai:train-network -- --dataset=artifacts/ai/training-data.json --output=checkpoints/model --epochs=1000 --batch=64
+
+# Envoi du model entraîné au serveur de prod (ex: via scp)
+scp checkpoints/model/* user@server:/path_to_chess_connect/checkpoints/model/
 ```
 
 Les deux scripts affichent une progression en temps réel avec estimation du temps restant.
