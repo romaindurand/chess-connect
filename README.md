@@ -106,6 +106,9 @@ pnpm ai:train-network -- \
 	--output=checkpoints/model \
 	--epochs=100 --batch=64
 
+# Entrainer le réseau conv-résiduel sur le dataset de self-play uniquement (sans les parties humaines enregistrées)
+pnpm ai:train-network -- --dataset=artifacts/ai/self-play.json --output=checkpoints/model --epochs=100
+
 # Envoi du model entraîné au serveur de prod (ex: via scp)
 scp checkpoints/model/* user@server:/path_to_chess_connect/checkpoints/model/
 ```
