@@ -13,11 +13,16 @@
 		leaveRankedQueueRemote,
 		openRankedQueueEventStream
 	} from '$lib/client/game-api';
-	import { hasAcceptedCurrentProposal } from '$lib/client/ranked-queue';
+	import {
+		createMatchFoundSoundGate,
+		getMatchFoundProposalId,
+		hasAcceptedCurrentProposal
+	} from '$lib/client/ranked-queue';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
 	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import type { HostColorPreference, OpponentType, RankedQueueStatus } from '$lib/types/game';
 	import favicon from '$lib/assets/favicon.png';
+	import foundSoundUrl from '$lib/assets/found.mp3';
 	import AccountPanel from '$lib/components/AccountPanel.svelte';
 	import {
 		getAuthStateRemote,
@@ -62,8 +67,10 @@
 	let rankedError = $state('');
 	let locallyAcceptedProposalId = $state<string | null>(null);
 	let rankedSource: EventSource | null = null;
+	let foundAudio: HTMLAudioElement | null = null;
 	let nameInput: HTMLInputElement | null = $state(null);
 	let recoveryKeyField: HTMLInputElement | null = $state(null);
+	const matchFoundSoundGate = createMatchFoundSoundGate();
 	const hasAcceptedProposal = $derived(
 		hasAcceptedCurrentProposal({
 			status: queueStatus,
@@ -71,6 +78,18 @@
 			locallyAcceptedProposalId
 		})
 	);
+
+	function playMatchFoundSound(proposalId: string): void {
+		if (typeof Audio === 'undefined' || !matchFoundSoundGate.shouldPlay(proposalId)) {
+			return;
+		}
+
+		const audio = (foundAudio ??= new Audio(foundSoundUrl));
+		audio.currentTime = 0;
+		void audio.play().catch(() => {
+			// Ignore autoplay/policy errors.
+		});
+	}
 
 	onMount(() => {
 		name = loadPlayerName();
@@ -176,6 +195,10 @@
 				return;
 			}
 			queueStatus = event.status;
+			const foundProposalId = getMatchFoundProposalId(event.status);
+			if (foundProposalId) {
+				playMatchFoundSound(foundProposalId);
+			}
 			if (!event.status.proposal || event.status.proposal.id !== locallyAcceptedProposalId) {
 				locallyAcceptedProposalId = null;
 			}
@@ -208,6 +231,10 @@
 			const status = await joinRankedQueueRemote();
 			savePlayerName(trimmedName);
 			queueStatus = status;
+			const foundProposalId = getMatchFoundProposalId(status);
+			if (foundProposalId) {
+				playMatchFoundSound(foundProposalId);
+			}
 			rankedModalOpen = true;
 			connectRankedQueueEvents();
 		} catch (error) {
