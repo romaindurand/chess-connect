@@ -34,11 +34,18 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] pour le temps limité, permettre de préciser les secondes (pour le moment on ne gère que les minites)
 - [x] matchmaking
 - [x] dark mode
-- [ ] animation scroll de victoire
-- [ ] son pour partie trouvée
-- [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
 - [x] drag&drop des pieces
+- [ ] animation scroll de victoire
+- [ ] son pour partie ranked trouvée
+- [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
 - [ ] système d'achievements
+- [ ] déplacer les messages d'erreur à un endroit plus adapté
+- [ ] rendre le bouton d'historique plus visible + status activé/désactivé
+- [ ] ajouter une confirmation visuelle quand on copie le lien de la partie
+- [ ] ajouter des crédits pour la vidéo (https://www.instagram.com/reels/DS8w4FaiMN6/)
+- [ ] réécrire les règles du jeu en s'inspirant plus de cette vidéo
+- [ ] ajouter des paramètres (son du jeu, langue, règles, à propos, etc.)
+- [ ] repenser l'ergonomie des différents menus
 
 Idées d'achievements:
 

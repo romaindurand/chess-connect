@@ -478,8 +478,8 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			return;
 		}
 
-		const draggedReservePiece = input.getDragReservePiece();
-		if (draggedReservePiece) {
+		const activeReservePiece = input.getDragReservePiece() ?? input.getSelectedReservePiece();
+		if (activeReservePiece) {
 			if (!input.getTargetHints().has(coordKey(coord))) {
 				clearDragState();
 				return;
@@ -495,13 +495,13 @@ export function createGameActions(input: GameActionsFactoryInput) {
 				await playMoveWithPieceTransition(
 					{
 						type: 'play',
-						move: { kind: 'place', piece: draggedReservePiece, to: coord }
+						move: { kind: 'place', piece: activeReservePiece, to: coord }
 					},
 					{
 						toBoard: coord,
 						fromReserve: {
 							owner: viewerColor,
-							piece: draggedReservePiece
+							piece: activeReservePiece
 						}
 					}
 				);
@@ -515,8 +515,8 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			return;
 		}
 
-		const draggedBoardFrom = input.getDragBoardFrom();
-		if (!draggedBoardFrom) {
+		const activeBoardFrom = input.getDragBoardFrom() ?? input.getSelectedBoardFrom();
+		if (!activeBoardFrom) {
 			return;
 		}
 		if (!input.getTargetHints().has(coordKey(coord))) {
@@ -528,10 +528,10 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			await playMoveWithPieceTransition(
 				{
 					type: 'play',
-					move: { kind: 'move', from: draggedBoardFrom, to: coord }
+					move: { kind: 'move', from: activeBoardFrom, to: coord }
 				},
 				{
-					fromBoard: draggedBoardFrom,
+					fromBoard: activeBoardFrom,
 					toBoard: coord
 				}
 			);

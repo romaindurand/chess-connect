@@ -231,6 +231,66 @@ describe('game actions drag and drop', () => {
 		expect(dragBoardFrom).toBeNull();
 	});
 
+	it('moves a board piece on drop even if drag state was cleared before drop', async () => {
+		const game = makeGame();
+		const updated = makeGame();
+		let selectedBoardFrom: Coord | null = null;
+		let dragBoardFrom: Coord | null = null;
+
+		vi.mocked(playMoveRemote).mockResolvedValue(updated);
+
+		const actions = createGameActions({
+			getGameId: () => 'g-dnd',
+			getGame: () => game,
+			setGame: vi.fn(),
+			getErrorMessage: () => '',
+			setErrorMessage: vi.fn(),
+			getSelectedBoardFrom: () => selectedBoardFrom,
+			setSelectedBoardFrom: (coord) => {
+				selectedBoardFrom = coord;
+			},
+			getSelectedReservePiece: () => null,
+			setSelectedReservePiece: vi.fn(),
+			getDragBoardFrom: () => dragBoardFrom,
+			setDragBoardFrom: (coord) => {
+				dragBoardFrom = coord;
+			},
+			getDragReservePiece: () => null,
+			setDragReservePiece: vi.fn(),
+			setHoveredBoardFrom: vi.fn(),
+			setHoveredReservePiece: vi.fn(),
+			getCopying: () => false,
+			setCopying: vi.fn(),
+			getIsSubmittingRematch: () => false,
+			setIsSubmittingRematch: vi.fn(),
+			setShowRulesModal: vi.fn(),
+			setActivePieceTransitionName: vi.fn(),
+			setTransitionFromBoardKey: vi.fn(),
+			setTransitionToBoardKey: vi.fn(),
+			setTransitionReserveKey: vi.fn(),
+			setTransitionMovingOwner: vi.fn(),
+			getShowHistoryPanel: () => false,
+			setShowHistoryPanel: vi.fn(),
+			getHistoryStep: () => null,
+			setHistoryStep: vi.fn(),
+			getHistorySnapshot: () => null,
+			setHistorySnapshot: vi.fn(),
+			setShowRepetitionDrawModal: vi.fn(),
+			getIsMyTurn: () => true,
+			getTargetHints: () => new Set([coordKey({ x: 1, y: 0 })]),
+			reconnectEventStream: vi.fn()
+		});
+
+		actions.onBoardDragStart({ x: 0, y: 0 });
+		actions.cancelDrag();
+		await actions.onCellDrop({ x: 1, y: 0 });
+
+		expect(playMoveRemote).toHaveBeenCalledWith('g-dnd', {
+			type: 'play',
+			move: { kind: 'move', from: { x: 0, y: 0 }, to: { x: 1, y: 0 } }
+		});
+	});
+
 	it('ignores drop when no drag is active', async () => {
 		const game = makeGame();
 
