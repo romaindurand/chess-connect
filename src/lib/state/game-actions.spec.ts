@@ -336,3 +336,123 @@ describe('game actions drag and drop', () => {
 		expect(playMoveRemote).not.toHaveBeenCalled();
 	});
 });
+
+describe('game actions reserve preselection', () => {
+	beforeEach(() => {
+		vi.mocked(playMoveRemote).mockReset();
+	});
+
+	it('allows selecting a reserve piece even when it is not my turn', () => {
+		const game = makeGame();
+		let selectedBoardFrom: Coord | null = { x: 0, y: 0 };
+		let selectedReservePiece: PieceType | null = null;
+
+		const actions = createGameActions({
+			getGameId: () => 'g-dnd',
+			getGame: () => game,
+			setGame: vi.fn(),
+			getErrorMessage: () => '',
+			setErrorMessage: vi.fn(),
+			getSelectedBoardFrom: () => selectedBoardFrom,
+			setSelectedBoardFrom: (coord) => {
+				selectedBoardFrom = coord;
+			},
+			getSelectedReservePiece: () => selectedReservePiece,
+			setSelectedReservePiece: (piece) => {
+				selectedReservePiece = piece;
+			},
+			getDragBoardFrom: () => null,
+			setDragBoardFrom: vi.fn(),
+			getDragReservePiece: () => null,
+			setDragReservePiece: vi.fn(),
+			setHoveredBoardFrom: vi.fn(),
+			setHoveredReservePiece: vi.fn(),
+			getCopying: () => false,
+			setCopying: vi.fn(),
+			getIsSubmittingRematch: () => false,
+			setIsSubmittingRematch: vi.fn(),
+			setShowRulesModal: vi.fn(),
+			setActivePieceTransitionName: vi.fn(),
+			setTransitionFromBoardKey: vi.fn(),
+			setTransitionToBoardKey: vi.fn(),
+			setTransitionReserveKey: vi.fn(),
+			setTransitionMovingOwner: vi.fn(),
+			getShowHistoryPanel: () => false,
+			setShowHistoryPanel: vi.fn(),
+			getHistoryStep: () => null,
+			setHistoryStep: vi.fn(),
+			getHistorySnapshot: () => null,
+			setHistorySnapshot: vi.fn(),
+			setShowRepetitionDrawModal: vi.fn(),
+			getIsMyTurn: () => false,
+			getTargetHints: () => new Set<string>(),
+			reconnectEventStream: vi.fn()
+		});
+
+		actions.onReserveClick('white', 'pawn');
+
+		expect(selectedReservePiece).toBe('pawn');
+		expect(selectedBoardFrom).toBeNull();
+	});
+
+	it('allows starting reserve drag even when it is not my turn', () => {
+		const game = makeGame();
+		let selectedBoardFrom: Coord | null = { x: 0, y: 0 };
+		let selectedReservePiece: PieceType | null = null;
+		let dragBoardFrom: Coord | null = { x: 0, y: 0 };
+		let dragReservePiece: PieceType | null = null;
+
+		const actions = createGameActions({
+			getGameId: () => 'g-dnd',
+			getGame: () => game,
+			setGame: vi.fn(),
+			getErrorMessage: () => '',
+			setErrorMessage: vi.fn(),
+			getSelectedBoardFrom: () => selectedBoardFrom,
+			setSelectedBoardFrom: (coord) => {
+				selectedBoardFrom = coord;
+			},
+			getSelectedReservePiece: () => selectedReservePiece,
+			setSelectedReservePiece: (piece) => {
+				selectedReservePiece = piece;
+			},
+			getDragBoardFrom: () => dragBoardFrom,
+			setDragBoardFrom: (coord) => {
+				dragBoardFrom = coord;
+			},
+			getDragReservePiece: () => dragReservePiece,
+			setDragReservePiece: (piece) => {
+				dragReservePiece = piece;
+			},
+			setHoveredBoardFrom: vi.fn(),
+			setHoveredReservePiece: vi.fn(),
+			getCopying: () => false,
+			setCopying: vi.fn(),
+			getIsSubmittingRematch: () => false,
+			setIsSubmittingRematch: vi.fn(),
+			setShowRulesModal: vi.fn(),
+			setActivePieceTransitionName: vi.fn(),
+			setTransitionFromBoardKey: vi.fn(),
+			setTransitionToBoardKey: vi.fn(),
+			setTransitionReserveKey: vi.fn(),
+			setTransitionMovingOwner: vi.fn(),
+			getShowHistoryPanel: () => false,
+			setShowHistoryPanel: vi.fn(),
+			getHistoryStep: () => null,
+			setHistoryStep: vi.fn(),
+			getHistorySnapshot: () => null,
+			setHistorySnapshot: vi.fn(),
+			setShowRepetitionDrawModal: vi.fn(),
+			getIsMyTurn: () => false,
+			getTargetHints: () => new Set<string>(),
+			reconnectEventStream: vi.fn()
+		});
+
+		actions.onReserveDragStart('white', 'pawn');
+
+		expect(selectedBoardFrom).toBeNull();
+		expect(selectedReservePiece).toBe('pawn');
+		expect(dragBoardFrom).toBeNull();
+		expect(dragReservePiece).toBe('pawn');
+	});
+});

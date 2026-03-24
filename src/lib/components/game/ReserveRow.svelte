@@ -12,7 +12,6 @@
 		reserveColor: 'white' | 'black';
 		pieces: PieceType[];
 		isMine: boolean;
-		isMyTurn: boolean;
 		selectedPiece: PieceType | null;
 		onClick: (reserveColor: 'white' | 'black', piece: PieceType) => void;
 		onDragStart: (reserveColor: 'white' | 'black', piece: PieceType) => void;
@@ -31,7 +30,6 @@
 		reserveColor,
 		pieces,
 		isMine,
-		isMyTurn,
 		selectedPiece,
 		onClick,
 		onDragStart,
@@ -61,7 +59,7 @@
 	}
 
 	function onPiecePointerDown(event: PointerEvent, piece: PieceType): void {
-		if (event.pointerType === 'mouse' || !isMine || !isMyTurn) {
+		if (event.pointerType === 'mouse' || !isMine) {
 			return;
 		}
 		onDragStart(reserveColor, piece);
@@ -95,15 +93,15 @@
 			{@const Icon = pieceIcon(piece)}
 			<button
 				type="button"
-				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black dark:ring-gray-400' : ''} ${!isMine ? 'opacity-50' : ''} ${isMine && isMyTurn ? 'cursor-grab active:cursor-grabbing' : ''}`}
+				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black dark:ring-gray-400' : ''} ${!isMine ? 'opacity-50' : ''} ${isMine ? 'cursor-grab active:cursor-grabbing' : ''}`}
 				onclick={() => onClick(reserveColor, piece)}
 				ondragstart={(event) => onReserveDragStartEvent(event, piece)}
 				ondragend={onDragCancel}
 				onpointerdown={(event) => onPiecePointerDown(event, piece)}
 				onmouseenter={() => onEnter(reserveColor, piece)}
 				onmouseleave={onLeave}
-				draggable={isMine && isMyTurn}
-				disabled={!isMine || !isMyTurn}
+				draggable={isMine}
+				disabled={!isMine}
 				title={$_(`piece.${piece}`)}
 			>
 				<span

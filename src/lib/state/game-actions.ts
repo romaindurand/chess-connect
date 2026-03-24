@@ -414,7 +414,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		if (isHistoryPreviewMode()) {
 			return;
 		}
-		if (!game || !input.getIsMyTurn() || !game.viewerColor || reserveColor !== game.viewerColor) {
+		if (!game || !game.viewerColor || reserveColor !== game.viewerColor) {
 			return;
 		}
 		if (!game.state.reserves[game.viewerColor][piece]) {
@@ -453,7 +453,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 			clearDragState();
 			return;
 		}
-		if (!game || !input.getIsMyTurn() || !game.viewerColor || reserveColor !== game.viewerColor) {
+		if (!game || !game.viewerColor || reserveColor !== game.viewerColor) {
 			clearDragState();
 			return;
 		}

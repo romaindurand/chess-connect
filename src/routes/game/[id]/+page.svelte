@@ -177,7 +177,6 @@
 					reserveColor={state.view.topReserveColor}
 					pieces={state.view.topReservePieces}
 					isMine={state.view.topReserveIsMine}
-					isMyTurn={state.view.isMyTurn}
 					selectedPiece={state.view.selectedReservePiece}
 					onClick={state.actions.onReserveClick}
 					onDragStart={state.actions.onReserveDragStart}
@@ -216,7 +215,6 @@
 					reserveColor={state.view.bottomReserveColor}
 					pieces={state.view.bottomReservePieces}
 					isMine={state.view.bottomReserveIsMine}
-					isMyTurn={state.view.isMyTurn}
 					selectedPiece={state.view.selectedReservePiece}
 					onClick={state.actions.onReserveClick}
 					onDragStart={state.actions.onReserveDragStart}

@@ -37,7 +37,7 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] drag&drop des pieces
 - [x] animation scroll de victoire
 - [x] son pour partie ranked trouvée
-- [ ] permettre la sélection d'une piece, même quand ce n'est pas son tour
+- [x] permettre la sélection d'une piece, même quand ce n'est pas son tour
 - [ ] système d'achievements
 - [ ] déplacer les messages d'erreur à un endroit plus adapté
 - [ ] rendre le bouton d'historique plus visible + status activé/désactivé
