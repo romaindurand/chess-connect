@@ -75,6 +75,14 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		input.setTransitionMovingOwner(null);
 	}
 
+	function scrollToTopSmooth(): void {
+		if (typeof window === 'undefined' || typeof window.scrollTo !== 'function') {
+			return;
+		}
+
+		window.scrollTo({ top: 0, behavior: 'smooth' });
+	}
+
 	function samePiece(a: PieceOnBoard | null, b: PieceOnBoard | null): boolean {
 		if (!a && !b) {
 			return true;
@@ -232,6 +240,7 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 			input.setShowHistoryPanel(true);
 			input.setHistoryStep(snapshot.state.moveHistory.length);
 			input.setHistorySnapshot(null);
+			scrollToTopSmooth();
 		}
 
 		if (resumeLiveHistory) {

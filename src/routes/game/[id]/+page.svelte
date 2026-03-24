@@ -17,6 +17,7 @@
 	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import { createGameState } from '$lib/state/game.svelte';
 	import favicon from '$lib/assets/favicon.png';
+	import { slide } from 'svelte/transition';
 
 	const props = $props<{ data: { gameId: string } }>();
 	const state = createGameState(() => props.data.gameId);
@@ -105,6 +106,7 @@
 
 		{#if state.view.isGameFinished}
 			<section
+				transition:slide
 				class="mb-3 rounded border border-black bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
 			>
 				<p class="text-lg font-semibold dark:text-gray-100">{state.view.winnerModalTitle}</p>
