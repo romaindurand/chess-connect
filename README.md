@@ -46,7 +46,7 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] ajouter des paramètres (son du jeu, langue, règles, à propos, etc.)
 - [x] repenser l'ergonomie des différents menus
 - [ ] système d'achievements
-- [ ] déplacer les messages d'erreur à un endroit plus adapté
+- [x] déplacer les messages d'erreur à un endroit plus adapté
 
 Idées d'achievements:
 

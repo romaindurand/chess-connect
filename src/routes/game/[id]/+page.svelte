@@ -171,7 +171,9 @@
 					pieceTransitionName={state.view.reservePieceTransitionName}
 				/>
 			</div>
-
+			{#if state.view.errorMessage}
+				<p transition:slide class="my-2 text-sm text-red-600">{state.view.errorMessage}</p>
+			{/if}
 			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-2' : ''}>
 				<BoardGrid
 					board={state.view.displayBoard}
@@ -251,8 +253,4 @@
 		<p class="mt-2 text-gray-700 dark:text-gray-300">{state.view.repetitionDrawModalSubtitle}</p>
 		<p class="mt-2 text-gray-700 dark:text-gray-300">{$_('game.repetition.details')}</p>
 	</GameDialog>
-
-	{#if state.view.errorMessage}
-		<p class="mt-3 text-sm text-red-600">{state.view.errorMessage}</p>
-	{/if}
 </main>
