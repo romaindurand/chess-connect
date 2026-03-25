@@ -1,6 +1,9 @@
 - La partie se joue sur un plateau 4x4.
-- Les 6 premiers demi-coups servent uniquement à poser les pièces depuis la réserve.
-- Ensuite, les pièces se déplacent comme aux échecs, avec capture autorisée.
+- Chaque joueur commence avec 4 pièces dans sa réserve : un pion, un cavalier, un fou et une tour.
+- Les 3 premiers tous de chaque joueur servent uniquement à poser des pièces sur le plateau.
+- Après le 3e tour, chaque joueur peut poser une pièce sur le plateau, en déplacer une ou capturer une pièce adverse, selon les règles de déplacement des pièces d'échecs. 
+- Une pièce capturée retourne dans la réserve de son propriétaire. Elle pourra être reposée sur le plateau au tour suivant, ou plus tard.
 - Un pion qui atteint un bord repart dans l'autre sens au coup suivant.
-- Une pièce capturée retourne dans la réserve de son propriétaire.
-- Vous gagnez en alignant 4 de vos pièces (ligne, colonne ou diagonale)
+- On ne peut pas placer une pièce sur une case déjà occupée
+- On ne peut pas placer une pièce et capturer dans le même tour
+- La partie se termine quand un joueur réussit à aligner 4 de ses pièces (ligne, colonne ou diagonale)

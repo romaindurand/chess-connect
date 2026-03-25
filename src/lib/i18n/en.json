@@ -60,8 +60,6 @@
 		"header": {
 			"history": "History",
 			"hideHistory": "Hide history",
-			"language": "Language",
-			"rules": "Rules",
 			"copiedLink": "Link copied",
 			"copyLink": "Copy link"
 		},
@@ -78,9 +76,6 @@
 			"previousMove": "Previous move",
 			"nextMove": "Next move",
 			"lastMove": "Last move"
-		},
-		"rules": {
-			"title": "Rules"
 		},
 		"rematch": {
 			"sending": "Sending...",
@@ -205,7 +200,6 @@
 	},
 	"auth": {
 		"createAccount": "Create an account",
-		"loginWithKey": "Sign in with a key",
 		"recoveryKeyLabel": "Recovery key",
 		"recoveryKeyPlaceholder": "ccrec_...",
 		"recoveryKeyHint": "Copy this key and keep it safe - it can be used to login on another device.",
@@ -218,9 +212,19 @@
 		"logout": "Log out",
 		"loggedInAs": "Signed in as {username}",
 		"loginSubmit": "Sign in",
-		"validateLogin": "Submit",
-		"registerSubmit": "Create my account",
-		"backToLogin": "Already have an account?"
+		"validateLogin": "Submit"
+	},
+	"menu": {
+		"open": "Open menu",
+		"close": "Close menu",
+		"theme": "Theme",
+		"sound": "Sound",
+		"soundOn": "Sound on",
+		"soundOff": "Sound off",
+		"language": "Language",
+		"rules": "Rules",
+		"about": "About",
+		"changelog": "What's new"
 	},
 	"ladder": {
 		"pageTitle": "Ladder",

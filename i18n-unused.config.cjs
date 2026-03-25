@@ -7,7 +7,7 @@ module.exports = {
 	ignorePaths: ['src/lib/server/ai', 'build', 'node_modules'],
 	// Match any quoted i18n key literal used in source files.
 	translationKeyMatcher:
-		/['"](?:meta|common|language|home|game|options|piece|errors|auth)\.[^'"]+['"]/g,
+		/['"](?:meta|common|language|home|game|options|piece|errors|auth|menu|ladder)\.[^'"]+['"]/g,
 	missedTranslationParser: (value) => {
 		const match = value.match(/['"`]([^'"`]+)['"`]/);
 		return match ? match[1] : value;

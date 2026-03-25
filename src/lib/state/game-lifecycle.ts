@@ -2,6 +2,7 @@ import { getGameViewRemote, openGameEventStream } from '$lib/client/game-api';
 import { tick } from 'svelte';
 import moveSoundUrl from '$lib/assets/move.mp3';
 import captureSoundUrl from '$lib/assets/capture.mp3';
+import { getSoundPreference } from '$lib/client/sound-storage';
 import { isAutomaticDrawRoundReset, shouldFollowLiveEdge } from '$lib/state/history-live';
 import {
 	BOARD_SIZE,
@@ -53,6 +54,9 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 
 	function playSoundEffect(kind: 'move' | 'capture'): void {
 		if (typeof Audio === 'undefined') {
+			return;
+		}
+		if (!getSoundPreference()) {
 			return;
 		}
 

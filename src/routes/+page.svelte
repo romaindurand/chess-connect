@@ -31,7 +31,8 @@
 		type AuthState
 	} from '$lib/client/auth-api';
 	import { slide } from 'svelte/transition';
-	import DarkModeToggle from '$lib/components/DarkModeToggle.svelte';
+	import AppMenu from '$lib/components/AppMenu.svelte';
+	import { getSoundPreference } from '$lib/client/sound-storage';
 
 	const pageTitle = $derived($_('home.pageTitle'));
 	const pageDescription = $derived($_('home.pageDescription'));
@@ -80,7 +81,11 @@
 	);
 
 	function playMatchFoundSound(proposalId: string): void {
-		if (typeof Audio === 'undefined' || !matchFoundSoundGate.shouldPlay(proposalId)) {
+		if (
+			typeof Audio === 'undefined' ||
+			!matchFoundSoundGate.shouldPlay(proposalId) ||
+			!getSoundPreference()
+		) {
 			return;
 		}
 
@@ -431,8 +436,21 @@
 
 <main class="mx-auto flex min-h-screen max-w-xl flex-col justify-center px-6 py-8">
 	<div class="mb-4 flex items-center justify-between">
-		<h1 class="text-3xl font-semibold dark:text-gray-100">Chess Connect</h1>
-		<DarkModeToggle />
+		<div class="flex items-center gap-2">
+			<img
+				src={favicon}
+				alt="Chess Connect"
+				width="36"
+				height="36"
+				style="view-transition-name: app-logo"
+			/>
+			<h1 class="text-3xl font-semibold dark:text-gray-100" style="view-transition-name: app-title">
+				Chess Connect
+			</h1>
+		</div>
+		<div class="flex items-center gap-1">
+			<AppMenu />
+		</div>
 	</div>
 	{#if authState.authenticated && authState.username}
 		<div class="mb-6" transition:slide>
@@ -590,7 +608,7 @@
 					}`}
 				>
 					<div class="overflow-hidden">
-						<div class="space-y-3 pb-1">
+						<div class="space-y-3 p-2">
 							<div class="space-y-2">
 								<span class="text-sm font-medium dark:text-gray-300">{$_('home.yourColor')}</span>
 								<div class="grid gap-2 sm:grid-cols-3">
@@ -775,7 +793,7 @@
 							<div class="mt-3 flex gap-2">
 								<button
 									type="button"
-									class="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
+									class="rounded-md bg-black px-3 py-2 text-sm text-white transition-colors disabled:opacity-50 dark:border dark:border-emerald-300 dark:bg-emerald-500 dark:text-gray-950 dark:hover:bg-emerald-400 dark:focus-visible:outline dark:focus-visible:outline-2 dark:focus-visible:outline-offset-2 dark:focus-visible:outline-emerald-300"
 									onclick={() => decideRankedProposal(true)}
 									disabled={rankedBusy}
 								>

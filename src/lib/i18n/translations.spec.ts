@@ -24,11 +24,11 @@ describe('translation dictionaries', () => {
 
 	it('contain critical game header labels', () => {
 		expect(en.game.header.history).toBeTypeOf('string');
-		expect(en.game.header.rules).toBeTypeOf('string');
-		expect(en.game.header.language).toBeTypeOf('string');
 		expect(fr.game.header.history).toBeTypeOf('string');
-		expect(fr.game.header.rules).toBeTypeOf('string');
-		expect(fr.game.header.language).toBeTypeOf('string');
+		expect(en.menu.rules).toBeTypeOf('string');
+		expect(en.menu.language).toBeTypeOf('string');
+		expect(fr.menu.rules).toBeTypeOf('string');
+		expect(fr.menu.language).toBeTypeOf('string');
 	});
 
 	it('localizes server error keys directly', () => {

@@ -886,7 +886,6 @@ Dans `fr.json`, ajouter une section `"auth"` (et dans `"errors"` les erreurs ser
 // Dans "auth":
 "auth": {
   "createAccount": "Créer un compte",
-  "loginWithKey": "Se connecter avec une clé",
   "recoveryKeyLabel": "Clé de récupération",
   "recoveryKeyPlaceholder": "ccrec_...",
   "recoveryKeyHint": "Copiez cette clé et conservez-la précieusement. Elle ne sera plus affichée.",

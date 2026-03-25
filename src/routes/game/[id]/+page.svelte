@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onDestroy, onMount } from 'svelte';
-	import { _, locale } from 'svelte-i18n';
+	import { _ } from 'svelte-i18n';
 	import { goto } from '$app/navigation';
 	import { resolve } from '$app/paths';
 	import { Confetti } from 'svelte-confetti';
@@ -11,9 +11,6 @@
 	import MoveHistoryPanel from '$lib/components/game/MoveHistoryPanel.svelte';
 	import ReserveRow from '$lib/components/game/ReserveRow.svelte';
 	import GameDialog from '$lib/components/GameDialog.svelte';
-	import RulesEn from '$lib/i18n/en/rules.md';
-	import RulesFr from '$lib/i18n/fr/rules.md';
-	import { isSupportedLanguage, setLanguage, type SupportedLanguage } from '$lib/i18n';
 	import { buildPageTitle, toAbsoluteUrl } from '$lib/seo';
 	import { createGameState } from '$lib/state/game.svelte';
 	import favicon from '$lib/assets/favicon.png';
@@ -25,8 +22,6 @@
 	const pageDescription = $derived($_('game.pageDescription'));
 	const canonicalUrl = $derived(page.url.href);
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
-	const currentLanguage = $derived(($locale === 'fr' ? 'fr' : 'en') as SupportedLanguage);
-	const RulesContent = $derived($locale === 'fr' ? RulesFr : RulesEn);
 	const rankedDeltaText = $derived.by(() => {
 		const game = state.view.game;
 		if (!game || game.state.options.isRanked !== true || !game.viewerColor) {
@@ -42,13 +37,6 @@
 		const sign = raw >= 0 ? '+' : '';
 		return `${sign}${raw} Elo`;
 	});
-
-	function onChangeLanguage(language: SupportedLanguage): void {
-		if (!isSupportedLanguage(language)) {
-			return;
-		}
-		setLanguage(language);
-	}
 
 	onMount(async () => {
 		await state.lifecycle.init();
@@ -83,9 +71,6 @@
 		copying={state.view.copying}
 		historyOpen={state.view.showHistoryPanel}
 		onToggleHistory={state.actions.toggleHistoryPanel}
-		{currentLanguage}
-		{onChangeLanguage}
-		onShowRules={() => state.actions.setShowRulesModal(true)}
 		onCopyInvite={() => state.actions.copyInviteLink(window.location.href)}
 	/>
 
@@ -256,19 +241,6 @@
 			/>
 		</div>
 	{/if}
-
-	<GameDialog
-		open={state.view.showRulesModal}
-		closable={true}
-		title={$_('game.rules.title')}
-		onClose={() => state.actions.setShowRulesModal(false)}
-	>
-		<div
-			class="text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
-		>
-			<RulesContent />
-		</div>
-	</GameDialog>
 
 	<GameDialog
 		open={state.view.showRepetitionDrawModal}

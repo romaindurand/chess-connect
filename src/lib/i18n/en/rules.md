@@ -1,6 +1,9 @@
 - The game is played on a 4x4 board.
-- The first 6 half-moves are reserve placements only.
-- After that, pieces move like chess pieces, with captures allowed.
-- A pawn that reaches an edge reverses direction on its next move.
-- A captured piece returns to its owner's reserve.
-- You win by aligning 4 of your pieces (row, column, or diagonal)
+- Each player starts with 4 pieces in their reserve: a pawn, a knight, a bishop, and a rook.
+- The first 3 turns of each player are used solely to place pieces on the board.
+- After the 3rd turn, each player may place a piece on the board, move one, or capture an opponent's piece, following standard chess movement rules.
+- A captured piece returns to its owner's reserve. It can be placed back on the board on the following turn or later.
+- A pawn that reaches an edge reverses direction on the next move.
+- A piece cannot be placed on an already occupied square.
+- A piece cannot be placed and a capture made in the same turn.
+- The game ends when a player manages to align 4 of their pieces (row, column, or diagonal).

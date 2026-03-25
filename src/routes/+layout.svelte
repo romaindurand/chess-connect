@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { page } from '$app/state';
 	import { onMount } from 'svelte';
+	import { onNavigate } from '$app/navigation';
 	import { _, locale } from 'svelte-i18n';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.png';
@@ -23,6 +24,18 @@
 		} else {
 			document.documentElement.classList.remove('dark');
 		}
+	});
+
+	onNavigate((navigation) => {
+		if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
+			return;
+		}
+		return new Promise((resolve) => {
+			document.startViewTransition(async () => {
+				resolve();
+				await navigation.complete;
+			});
+		});
 	});
 
 	$effect(() => {

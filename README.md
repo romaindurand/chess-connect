@@ -7,6 +7,7 @@ This is a SvelteKit application that serves as the frontend and backend for the 
 This project is mostly a playground for me to experiment with SvelteKit and local-llms.
 
 ## Installation
+
 1. Clone the repository
 2. Install dependencies: `pnpm install`
 3. Create a `.env` file based on `.env.example`
@@ -38,14 +39,14 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] animation scroll de victoire
 - [x] son pour partie ranked trouvée
 - [x] permettre la sélection d'une piece, même quand ce n'est pas son tour
+- [x] rendre le bouton d'historique plus visible + status activé/désactivé
+- [x] ajouter une confirmation visuelle quand on copie le lien de la partie
+- [x] ajouter des crédits pour la vidéo (https://www.instagram.com/reels/DS8w4FaiMN6/)
+- [x] réécrire les règles du jeu en s'inspirant plus de cette vidéo
+- [x] ajouter des paramètres (son du jeu, langue, règles, à propos, etc.)
+- [x] repenser l'ergonomie des différents menus
 - [ ] système d'achievements
 - [ ] déplacer les messages d'erreur à un endroit plus adapté
-- [ ] rendre le bouton d'historique plus visible + status activé/désactivé
-- [ ] ajouter une confirmation visuelle quand on copie le lien de la partie
-- [ ] ajouter des crédits pour la vidéo (https://www.instagram.com/reels/DS8w4FaiMN6/)
-- [ ] réécrire les règles du jeu en s'inspirant plus de cette vidéo
-- [ ] ajouter des paramètres (son du jeu, langue, règles, à propos, etc.)
-- [ ] repenser l'ergonomie des différents menus
 
 Idées d'achievements:
 
@@ -65,7 +66,6 @@ Idées d'achievements:
 - "Collectionneur" : débloquer tous les achievements précédents
 - "Contributeur" : jouer plus de 10 parties avec l'option d'enregistrement pour l'entraînement de l'IA activée (contribution au dataset d'entraînement)
 - "Philanthrope" : jouer plus de 100 parties avec l'option d'enregistrement pour l'entraînement de l'IA activée (contribution au dataset d'entraînement)
-
 
 ## Base de donnees (SQLite)
 
@@ -123,7 +123,10 @@ pnpm ai:train-network -- \
 	--epochs=100 --batch=64
 
 # Entrainer le réseau conv-résiduel sur le dataset de self-play uniquement (sans les parties humaines enregistrées)
-pnpm ai:train-network -- --dataset=artifacts/ai/self-play.json --output=checkpoints/model --epochs=100
+pnpm ai:train-network -- \
+	--dataset=artifacts/ai/self-play.json \
+	--output=checkpoints/model \
+	--epochs=100
 
 # Envoi du model entraîné au serveur de prod (ex: via scp)
 scp checkpoints/model/* user@server:/path_to_chess_connect/checkpoints/model/

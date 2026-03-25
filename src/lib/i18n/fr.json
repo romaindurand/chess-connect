@@ -60,8 +60,6 @@
 		"header": {
 			"history": "Historique",
 			"hideHistory": "Masquer historique",
-			"language": "Langue",
-			"rules": "Règles",
 			"copiedLink": "Lien copié",
 			"copyLink": "Copier le lien"
 		},
@@ -78,9 +76,6 @@
 			"previousMove": "Coup précédent",
 			"nextMove": "Coup suivant",
 			"lastMove": "Dernier coup"
-		},
-		"rules": {
-			"title": "Règles"
 		},
 		"rematch": {
 			"sending": "Envoi...",
@@ -205,7 +200,6 @@
 	},
 	"auth": {
 		"createAccount": "Créer un compte",
-		"loginWithKey": "Se connecter avec une clé",
 		"recoveryKeyLabel": "Clé de récupération",
 		"recoveryKeyPlaceholder": "ccrec_...",
 		"recoveryKeyHint": "Copiez cette clé et conservez-la si vous souhaitez vous connecter à ce compte depuis un autre appareil.",
@@ -218,9 +212,19 @@
 		"logout": "Se déconnecter",
 		"loggedInAs": "Connecté en tant que {username}",
 		"loginSubmit": "Se connecter",
-		"validateLogin": "Valider",
-		"registerSubmit": "Créer mon compte",
-		"backToLogin": "Déjà un compte ?"
+		"validateLogin": "Valider"
+	},
+	"menu": {
+		"open": "Ouvrir le menu",
+		"close": "Fermer le menu",
+		"theme": "Thème",
+		"sound": "Son",
+		"soundOn": "Son activé",
+		"soundOff": "Son coupé",
+		"language": "Langue",
+		"rules": "Règles",
+		"about": "À propos",
+		"changelog": "Nouveautés"
 	},
 	"ladder": {
 		"pageTitle": "Classement",
