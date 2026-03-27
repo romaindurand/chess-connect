@@ -17,6 +17,8 @@ export function createGameState(getGameId: () => string) {
 	let selectedReservePiece = $state<PieceType | null>(null);
 	let dragBoardFrom = $state<Coord | null>(null);
 	let dragReservePiece = $state<PieceType | null>(null);
+	let dragGhostPosition = $state<{ x: number; y: number } | null>(null);
+	let dragGhostPieceInfo = $state<{ type: PieceType; color: Color } | null>(null);
 	let hoveredBoardFrom = $state<Coord | null>(null);
 	let hoveredReservePiece = $state<PieceType | null>(null);
 	let copying = $state(false);
@@ -200,6 +202,8 @@ export function createGameState(getGameId: () => string) {
 		view,
 		actions,
 		lifecycle,
-		isDragging: () => Boolean(dragBoardFrom || dragReservePiece)
+		isDragging: () => Boolean(dragBoardFrom || dragReservePiece),
+		dragGhostPosition,
+		dragGhostPieceInfo
 	};
 }
