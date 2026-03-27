@@ -43,6 +43,7 @@
 	onMount(async () => {
 		await state.lifecycle.init();
 		if (typeof document !== 'undefined') {
+			console.log('[drag-ghost] registering document event listeners');
 			document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
 			document.addEventListener('pointerup', onDocumentPointerUp);
 			document.addEventListener('pointercancel', onDocumentPointerCancel);
@@ -58,6 +59,15 @@
 		state.lifecycle.destroy();
 	});
 
+	// Debug: log ghost state changes
+	$effect(() => {
+		console.log('[drag-ghost] state updated:', {
+			dragGhostPieceInfo: state.dragGhostPieceInfo,
+			dragGhostPosition: state.dragGhostPosition,
+			shouldRender: !!(state.dragGhostPieceInfo && state.dragGhostPosition)
+		});
+	});
+
 	function onDocumentTouchMove(event: TouchEvent): void {
 		if (!state.isDragging()) {
 			return;
@@ -68,6 +78,12 @@
 		// Update drag ghost position to follow finger
 		if (event.touches.length > 0) {
 			const touch = event.touches[0];
+			console.log('[drag-ghost] touchmove:', {
+				clientX: touch.clientX,
+				clientY: touch.clientY,
+				isDragging: state.isDragging(),
+				hasPieceInfo: !!state.dragGhostPieceInfo
+			});
 			state.dragGhostPosition = {
 				x: touch.clientX,
 				y: touch.clientY
@@ -77,51 +93,72 @@
 
 	function onDocumentPointerUp(event: PointerEvent): void {
 		if (event.pointerType === 'mouse' || !state.isDragging()) return;
+		console.log('[drag-ghost] pointerup triggered:', {
+			pointerType: event.pointerType,
+			clientX: event.clientX,
+			clientY: event.clientY,
+			isDragging: state.isDragging()
+		});
 		const el = document.elementFromPoint(event.clientX, event.clientY);
 		const button = el?.closest('[data-cell-x]') as HTMLElement | null;
 		if (button?.dataset.cellX !== undefined && button?.dataset.cellY !== undefined) {
 			const x = parseInt(button.dataset.cellX, 10);
 			const y = parseInt(button.dataset.cellY, 10);
+			console.log('[drag-ghost] dropping on cell:', { x, y });
 			state.actions.onCellDrop({ x, y });
 		} else {
+			console.log('[drag-ghost] drop cancelled (no valid cell found)');
 			state.actions.cancelDrag();
 		}
 		// Clear ghost visual
+		console.log('[drag-ghost] clearing ghost on pointerup');
 		state.dragGhostPosition = null;
 		state.dragGhostPieceInfo = null;
 	}
 
 	function onDocumentPointerCancel(event: PointerEvent): void {
 		if (event.pointerType === 'mouse' || !state.isDragging()) return;
+		console.log('[drag-ghost] pointercancel triggered:', { pointerType: event.pointerType });
 		state.actions.cancelDrag();
 		// Clear ghost visual
+		console.log('[drag-ghost] clearing ghost on pointercancel');
 		state.dragGhostPosition = null;
 		state.dragGhostPieceInfo = null;
 	}
 
 	function onBoardDragStartWithGhost(coord: Coord): void {
+		console.log('[drag-ghost] board drag start:', coord);
 		state.actions.onBoardDragStart(coord);
 		// Initialize ghost piece info if drag was successful
 		const game = state.view.game;
 		if (game && state.isDragging()) {
 			const piece = game.state.board[coord.y]?.[coord.x];
 			if (piece) {
+				console.log('[drag-ghost] initializing board piece:', {
+					type: piece.type,
+					color: piece.owner,
+					position: coord
+				});
 				state.dragGhostPieceInfo = {
 					type: piece.type,
 					color: piece.owner
 				};
+				console.log('[drag-ghost] dragGhostPieceInfo now:', state.dragGhostPieceInfo);
 			}
 		}
 	}
 
 	function onReserveDragStartWithGhost(color: 'white' | 'black', piece: PieceType): void {
+		console.log('[drag-ghost] reserve drag start:', { color, piece });
 		state.actions.onReserveDragStart(color, piece);
 		// Initialize ghost piece info if drag was successful
 		if (state.isDragging()) {
+			console.log('[drag-ghost] initializing reserve piece:', { type: piece, color });
 			state.dragGhostPieceInfo = {
 				type: piece,
 				color
 			};
+			console.log('[drag-ghost] dragGhostPieceInfo now:', state.dragGhostPieceInfo);
 		}
 	}
 </script>
