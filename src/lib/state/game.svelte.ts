@@ -199,6 +199,7 @@ export function createGameState(getGameId: () => string) {
 	return {
 		view,
 		actions,
-		lifecycle
+		lifecycle,
+		isDragging: () => Boolean(dragBoardFrom || dragReservePiece)
 	};
 }

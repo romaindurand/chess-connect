@@ -116,7 +116,7 @@
 					{@const key = coordKey(coord)}
 					<button
 						type="button"
-						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100') : 'border-gray-300 dark:bg-gray-800'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''} ${canDragCell(cell) ? 'cursor-grab active:cursor-grabbing' : ''}`}
+						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100') : 'border-gray-300 dark:bg-gray-800'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''} ${canDragCell(cell) ? 'touch-none cursor-grab active:cursor-grabbing' : ''}`}
 						onmouseenter={() => onCellEnter(coord, cell)}
 						onmouseleave={onCellLeave}
 						onclick={() => onCellClick(coord)}

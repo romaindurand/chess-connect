@@ -40,11 +40,24 @@
 
 	onMount(async () => {
 		await state.lifecycle.init();
+		// Register touchmove listener with passive: false to allow preventDefault() during drag
+		if (typeof document !== 'undefined') {
+			document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
+		}
 	});
 
 	onDestroy(() => {
+		if (typeof document !== 'undefined') {
+			document.removeEventListener('touchmove', onDocumentTouchMove);
+		}
 		state.lifecycle.destroy();
 	});
+
+	function onDocumentTouchMove(event: TouchEvent): void {
+		if (state.isDragging()) {
+			event.preventDefault();
+		}
+	}
 </script>
 
 <svelte:head>
