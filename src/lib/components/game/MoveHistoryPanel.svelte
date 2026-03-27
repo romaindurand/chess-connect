@@ -56,12 +56,46 @@
 	}
 </script>
 
-<aside class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:bg-gray-900">
+<aside class="flex flex-col rounded border border-gray-300 p-2 dark:border-gray-700 dark:bg-gray-900">
 	<p class="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300">
 		{$_('game.history.title')}
 	</p>
+	<div class="order-2 mb-2 grid grid-cols-4 gap-2 lg:order-3 lg:mb-0 lg:mt-2">
+		<button
+			type="button"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
+			onclick={onJumpFirst}
+			aria-label={$_('game.history.firstMove')}
+		>
+			<ChevronsLeft class="mx-auto h-4 w-4" />
+		</button>
+		<button
+			type="button"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
+			onclick={onJumpPrevious}
+			aria-label={$_('game.history.previousMove')}
+		>
+			<ChevronLeft class="mx-auto h-4 w-4" />
+		</button>
+		<button
+			type="button"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
+			onclick={onJumpNext}
+			aria-label={$_('game.history.nextMove')}
+		>
+			<ChevronRight class="mx-auto h-4 w-4" />
+		</button>
+		<button
+			type="button"
+			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
+			onclick={onJumpLast}
+			aria-label={$_('game.history.lastMove')}
+		>
+			<ChevronsRight class="mx-auto h-4 w-4" />
+		</button>
+	</div>
 	<div
-		class="h-full overflow-y-auto rounded border border-gray-200 bg-white lg:h-130 dark:border-gray-700 dark:bg-gray-950"
+		class="order-3 h-full overflow-y-auto rounded border border-gray-200 bg-white lg:order-2 lg:h-130 dark:border-gray-700 dark:bg-gray-950"
 	>
 		{#if entries.length === 0}
 			<p class="p-3 text-xs text-gray-500 dark:text-gray-400">{$_('game.history.empty')}</p>
@@ -102,39 +136,5 @@
 				</div>
 			{/each}
 		{/if}
-	</div>
-	<div class="mt-2 grid grid-cols-4 gap-2">
-		<button
-			type="button"
-			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
-			onclick={onJumpFirst}
-			aria-label={$_('game.history.firstMove')}
-		>
-			<ChevronsLeft class="mx-auto h-4 w-4" />
-		</button>
-		<button
-			type="button"
-			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
-			onclick={onJumpPrevious}
-			aria-label={$_('game.history.previousMove')}
-		>
-			<ChevronLeft class="mx-auto h-4 w-4" />
-		</button>
-		<button
-			type="button"
-			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
-			onclick={onJumpNext}
-			aria-label={$_('game.history.nextMove')}
-		>
-			<ChevronRight class="mx-auto h-4 w-4" />
-		</button>
-		<button
-			type="button"
-			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"
-			onclick={onJumpLast}
-			aria-label={$_('game.history.lastMove')}
-		>
-			<ChevronsRight class="mx-auto h-4 w-4" />
-		</button>
 	</div>
 </aside>
