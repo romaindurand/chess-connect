@@ -228,7 +228,7 @@
 	onClose={() => (activeModal = null)}
 >
 	<div
-		class="text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+		class="prose dark:prose-invert text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
 	>
 		<RulesContent />
 	</div>
@@ -241,7 +241,7 @@
 	onClose={() => (activeModal = null)}
 >
 	<div
-		class="text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+		class="prose dark:prose-invert text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
 	>
 		<AboutContent />
 	</div>
@@ -254,7 +254,7 @@
 	onClose={() => (activeModal = null)}
 >
 	<div
-		class="text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+		class="prose dark:prose-invert text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
 	>
 		<ChangelogContent />
 	</div>

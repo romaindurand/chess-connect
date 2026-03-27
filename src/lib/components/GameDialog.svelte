@@ -46,7 +46,7 @@
 		class="fixed inset-0 z-50 m-0 flex h-screen w-screen max-w-none items-center justify-center bg-black/50 p-4 dark:bg-black/70"
 	>
 		<div
-			class="w-full max-w-md rounded-lg border border-gray-300 bg-white p-6 text-left shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
+			class="flex max-h-[calc(100dvh-2rem)] w-full max-w-md flex-col overflow-hidden rounded-lg border border-gray-300 bg-white p-6 text-left shadow-xl dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100"
 		>
 			<div class="flex items-start justify-between gap-3">
 				{#if title}
@@ -62,7 +62,7 @@
 				{/if}
 			</div>
 
-			<div class="mt-2 text-sm text-gray-700 dark:text-gray-300">
+			<div class="mt-2 min-h-0 overflow-y-auto text-sm text-gray-700 dark:text-gray-300">
 				{@render children?.()}
 			</div>
 		</div>

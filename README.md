@@ -45,8 +45,12 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [x] réécrire les règles du jeu en s'inspirant plus de cette vidéo
 - [x] ajouter des paramètres (son du jeu, langue, règles, à propos, etc.)
 - [x] repenser l'ergonomie des différents menus
-- [ ] système d'achievements
 - [x] déplacer les messages d'erreur à un endroit plus adapté
+- [ ] sauvegarde des parties en db (système séparé de l'enregistrement pour l'entraînement de l'IA, qui est déjà implémenté)
+- [ ] page profil joueur (historique des parties, stats, achievements)
+- [ ] système d'achievements
+- [ ] fix drag&drop sur mobile (actuellement on peut juste toucher pour faire un coup, pas de drag&drop)
+- [ ] fix UX du jeu en mobile : la latence réseau ne permet pas au joueur d'avoir un feedback immédiat après avoir joué un coup, puisqu'on attend la réponse du serveur pour mettre à jour le plateau.
 
 Idées d'achievements:
 
