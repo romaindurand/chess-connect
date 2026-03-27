@@ -12,10 +12,6 @@
 		"gameNotFound": "Partie introuvable",
 		"waiting": "En attente"
 	},
-	"language": {
-		"french": "Français",
-		"english": "Anglais"
-	},
 	"home": {
 		"pageTitle": "Jouez en ligne",
 		"pageDescription": "Créez une partie Chess Connect, invitez un ami ou affrontez l'ordinateur dans ce mélange tactique d'échecs et de puissance 4.",

@@ -12,10 +12,6 @@
 		"gameNotFound": "Game not found",
 		"waiting": "Waiting"
 	},
-	"language": {
-		"french": "French",
-		"english": "English"
-	},
 	"home": {
 		"pageTitle": "Play online",
 		"pageDescription": "Create a Chess Connect game, invite a friend, or challenge the computer in this tactical hybrid of chess and connect four.",

@@ -7,8 +7,8 @@ La principale fonctionnalité qui m'a poussé à faire ce projet était de pouvo
 Les problématiques comme :
 
 - l'énergie consommée pour l'entrainement
-- l'énergie consommée pour pour l'inférence
-- des données d'entrainement
+- l'énergie consommée pour l'inférence
+- l'origine des données d'entrainement
 
 sont assez éloignées de la réalité de ce projet :
 

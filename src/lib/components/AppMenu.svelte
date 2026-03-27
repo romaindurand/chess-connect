@@ -12,6 +12,7 @@
 	import AboutFr from '$lib/i18n/fr/about.md';
 	import ChangelogEn from '$lib/i18n/en/changelog.md';
 	import ChangelogFr from '$lib/i18n/fr/changelog.md';
+	import { fade, fly } from 'svelte/transition';
 
 	type ActiveModal = 'rules' | 'about' | 'changelog' | null;
 
@@ -19,6 +20,15 @@
 	let activeModal = $state<ActiveModal>(null);
 	let soundEnabled = $state(true);
 	let isDarkMode = $state(false);
+	let isDesktop = $state(false);
+	const languageLabels: Record<SupportedLanguage, string> = {
+		fr: 'Français',
+		en: 'English'
+	};
+	const menuTransition = $derived(isDesktop ? fade : fly);
+	const menuTransitionParams = $derived(
+		isDesktop ? { duration: 180 } : { x: 200, duration: 200 }
+	);
 
 	const currentLanguage = $derived(($locale === 'fr' ? 'fr' : 'en') as SupportedLanguage);
 	const RulesContent = $derived($locale === 'fr' ? RulesFr : RulesEn);
@@ -28,6 +38,18 @@
 	onMount(() => {
 		soundEnabled = getSoundPreference();
 		isDarkMode = getDarkModePreference();
+
+		const mediaQuery = window.matchMedia('(min-width: 640px)');
+		const updateViewportMode = () => {
+			isDesktop = mediaQuery.matches;
+		};
+
+		updateViewportMode();
+		mediaQuery.addEventListener('change', updateViewportMode);
+
+		return () => {
+			mediaQuery.removeEventListener('change', updateViewportMode);
+		};
 	});
 
 	function toggleMenu() {
@@ -102,6 +124,7 @@
 		<!-- Menu panel -->
 		<div
 			class="fixed inset-y-0 right-0 z-50 flex w-72 flex-col bg-white shadow-xl sm:absolute sm:inset-auto sm:top-full sm:right-0 sm:mt-2 sm:w-56 sm:rounded-lg sm:border sm:border-gray-200 sm:shadow-lg dark:bg-gray-900 sm:dark:border-gray-700"
+			transition:menuTransition={menuTransitionParams}
 		>
 			<!-- Mobile header (close button) -->
 			<div
@@ -147,9 +170,7 @@
 					>
 						<span>{$_('menu.language')}</span>
 						<span class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-							<span
-								>{currentLanguage === 'fr' ? $_('language.french') : $_('language.english')}</span
-							>
+							<span>{languageLabels[currentLanguage]}</span>
 							<ChevronDown class="h-3.5 w-3.5" aria-hidden="true" />
 						</span>
 					</div>
@@ -159,8 +180,8 @@
 						onchange={handleLanguageChange}
 						aria-label={$_('menu.language')}
 					>
-						<option value="fr">{$_('language.french')}</option>
-						<option value="en">{$_('language.english')}</option>
+						<option value="fr">Français</option>
+						<option value="en">English</option>
 					</select>
 				</li>
 
