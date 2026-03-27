@@ -23,6 +23,7 @@
 	let ghostY = $state(0);
 	let ghostPieceType: PieceType | null = $state(null);
 	let ghostPieceColor: Color | null = $state(null);
+	let ghostVisible = $state(false);
 
 	const props = $props<{ data: { gameId: string } }>();
 	const gameState = createGameState(() => props.data.gameId);
@@ -99,6 +100,7 @@
 			});
 			ghostX = touch.clientX;
 			ghostY = touch.clientY;
+			ghostVisible = true;
 		}
 	}
 
@@ -125,6 +127,7 @@
 		console.log('[drag-ghost] clearing ghost on pointerup');
 		ghostPieceType = null;
 		ghostPieceColor = null;
+		ghostVisible = false;
 	}
 
 	function onDocumentPointerCancel(event: PointerEvent): void {
@@ -135,6 +138,7 @@
 		console.log('[drag-ghost] clearing ghost on pointercancel');
 		ghostPieceType = null;
 		ghostPieceColor = null;
+		ghostVisible = false;
 	}
 
 	function onBoardDragStartWithGhost(coord: Coord): void {
@@ -381,7 +385,7 @@
 		<p class="mt-2 text-gray-700 dark:text-gray-300">{$_('game.repetition.details')}</p>
 	</GameDialog>
 
-	{#if ghostPieceType && ghostPieceColor}
+	{#if ghostPieceType && ghostPieceColor && ghostVisible}
 		<DragGhost
 			pieceType={ghostPieceType}
 			pieceColor={ghostPieceColor}
