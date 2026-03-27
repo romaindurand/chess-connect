@@ -40,15 +40,18 @@
 
 	onMount(async () => {
 		await state.lifecycle.init();
-		// Register touchmove listener with passive: false to allow preventDefault() during drag
 		if (typeof document !== 'undefined') {
 			document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
+			document.addEventListener('pointerup', onDocumentPointerUp);
+			document.addEventListener('pointercancel', onDocumentPointerCancel);
 		}
 	});
 
 	onDestroy(() => {
 		if (typeof document !== 'undefined') {
 			document.removeEventListener('touchmove', onDocumentTouchMove);
+			document.removeEventListener('pointerup', onDocumentPointerUp);
+			document.removeEventListener('pointercancel', onDocumentPointerCancel);
 		}
 		state.lifecycle.destroy();
 	});
@@ -57,6 +60,24 @@
 		if (state.isDragging()) {
 			event.preventDefault();
 		}
+	}
+
+	function onDocumentPointerUp(event: PointerEvent): void {
+		if (event.pointerType === 'mouse' || !state.isDragging()) return;
+		const el = document.elementFromPoint(event.clientX, event.clientY);
+		const button = el?.closest('[data-cell-x]') as HTMLElement | null;
+		if (button?.dataset.cellX !== undefined && button?.dataset.cellY !== undefined) {
+			const x = parseInt(button.dataset.cellX, 10);
+			const y = parseInt(button.dataset.cellY, 10);
+			state.actions.onCellDrop({ x, y });
+		} else {
+			state.actions.cancelDrag();
+		}
+	}
+
+	function onDocumentPointerCancel(event: PointerEvent): void {
+		if (event.pointerType === 'mouse' || !state.isDragging()) return;
+		state.actions.cancelDrag();
 	}
 </script>
 

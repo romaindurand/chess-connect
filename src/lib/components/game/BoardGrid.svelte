@@ -70,13 +70,6 @@
 		onBoardDragStart(coord);
 	}
 
-	function onCellPointerUp(event: PointerEvent, coord: Coord): void {
-		if (event.pointerType === 'mouse') {
-			return;
-		}
-		onCellDrop(coord);
-	}
-
 	function onBoardDragStartEvent(event: DragEvent, coord: Coord): void {
 		const target = event.currentTarget as HTMLButtonElement;
 		const span = target.querySelector('span');
@@ -116,6 +109,8 @@
 					{@const key = coordKey(coord)}
 					<button
 						type="button"
+						data-cell-x={coord.x}
+						data-cell-y={coord.y}
 						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100') : 'border-gray-300 dark:bg-gray-800'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''} ${canDragCell(cell) ? 'touch-none cursor-grab active:cursor-grabbing' : ''}`}
 						onmouseenter={() => onCellEnter(coord, cell)}
 						onmouseleave={onCellLeave}
@@ -126,8 +121,6 @@
 						ondragstart={(event) => onBoardDragStartEvent(event, coord)}
 						ondragend={onDragCancel}
 						onpointerdown={(event) => onPiecePointerDown(event, coord, cell)}
-						onpointerup={(event) => onCellPointerUp(event, coord)}
-						onpointercancel={onDragCancel}
 					>
 						{#if cell}
 							{@const Icon = pieceIcon(cell.type)}
