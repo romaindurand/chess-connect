@@ -50,6 +50,7 @@ This project is mostly a playground for me to experiment with SvelteKit and loca
 - [ ] page profil joueur (historique des parties, stats, achievements)
 - [ ] système d'achievements
 - [x] fix drag&drop sur mobile (actuellement on peut juste toucher pour faire un coup, pas de drag&drop)
+- [x] visual feedback lors du drag&drop sur mobile (piece ghost visible sous le doigt, opacity 70%, smooth motion)
 - [ ] fix UX du jeu en mobile : la latence réseau ne permet pas au joueur d'avoir un feedback immédiat après avoir joué un coup, puisqu'on attend la réponse du serveur pour mettre à jour le plateau.
 
 Idées d'achievements:
