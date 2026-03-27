@@ -53,6 +53,7 @@
 			document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
 			document.addEventListener('pointerup', onDocumentPointerUp);
 			document.addEventListener('pointercancel', onDocumentPointerCancel);
+			document.addEventListener('pointerdown', onFirstPointerDown, { once: true });
 		}
 	});
 
@@ -61,9 +62,14 @@
 			document.removeEventListener('touchmove', onDocumentTouchMove);
 			document.removeEventListener('pointerup', onDocumentPointerUp);
 			document.removeEventListener('pointercancel', onDocumentPointerCancel);
+			document.removeEventListener('pointerdown', onFirstPointerDown);
 		}
 		gameState.lifecycle.destroy();
 	});
+
+	function onFirstPointerDown(): void {
+		gameState.lifecycle.unlockAudio();
+	}
 
 	// Debug: log ghost state changes
 	$effect(() => {

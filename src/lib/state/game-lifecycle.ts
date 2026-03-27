@@ -381,9 +381,26 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		deferredSnapshotSound = null;
 	}
 
+	function unlockAudio(): void {
+		if (typeof Audio === 'undefined') return;
+		moveAudio ??= new Audio(moveSoundUrl);
+		captureAudio ??= new Audio(captureSoundUrl);
+		const tryUnlock = (a: HTMLAudioElement) =>
+			void a
+				.play()
+				.then(() => {
+					a.pause();
+					a.currentTime = 0;
+				})
+				.catch(() => {});
+		tryUnlock(moveAudio);
+		tryUnlock(captureAudio);
+	}
+
 	return {
 		init,
 		destroy,
-		reconnectEventStream: connectEventStream
+		reconnectEventStream: connectEventStream,
+		unlockAudio
 	};
 }
