@@ -16,16 +16,22 @@
 	import { createGameState } from '$lib/state/game.svelte';
 	import favicon from '$lib/assets/favicon.png';
 	import { slide } from 'svelte/transition';
-	import type { Coord, PieceType } from '$lib/types/game';
+	import type { Color, Coord, PieceType } from '$lib/types/game';
+
+	// Local drag ghost state — separate from game state
+	let ghostX = $state(0);
+	let ghostY = $state(0);
+	let ghostPieceType: PieceType | null = $state(null);
+	let ghostPieceColor: Color | null = $state(null);
 
 	const props = $props<{ data: { gameId: string } }>();
-	const state = createGameState(() => props.data.gameId);
+	const gameState = createGameState(() => props.data.gameId);
 	const pageTitle = $derived($_('game.pageTitle', { values: { id: props.data.gameId } }));
 	const pageDescription = $derived($_('game.pageDescription'));
 	const canonicalUrl = $derived(page.url.href);
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
 	const rankedDeltaText = $derived.by(() => {
-		const game = state.view.game;
+		const game = gameState.view.game;
 		if (!game || game.state.options.isRanked !== true || !game.viewerColor) {
 			return null;
 		}
@@ -41,7 +47,7 @@
 	});
 
 	onMount(async () => {
-		await state.lifecycle.init();
+		await gameState.lifecycle.init();
 		if (typeof document !== 'undefined') {
 			console.log('[drag-ghost] registering document event listeners');
 			document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
@@ -56,20 +62,21 @@
 			document.removeEventListener('pointerup', onDocumentPointerUp);
 			document.removeEventListener('pointercancel', onDocumentPointerCancel);
 		}
-		state.lifecycle.destroy();
+		gameState.lifecycle.destroy();
 	});
 
 	// Debug: log ghost state changes
 	$effect(() => {
 		console.log('[drag-ghost] state updated:', {
-			dragGhostPieceInfo: state.dragGhostPieceInfo,
-			dragGhostPosition: state.dragGhostPosition,
-			shouldRender: !!(state.dragGhostPieceInfo && state.dragGhostPosition)
+			ghostPieceType,
+			ghostPieceColor,
+			ghostPosition: ghostPieceType ? { x: ghostX, y: ghostY } : null,
+			shouldRender: !!(ghostPieceType && ghostPieceColor)
 		});
 	});
 
 	function onDocumentTouchMove(event: TouchEvent): void {
-		if (!state.isDragging()) {
+		if (!gameState.isDragging()) {
 			return;
 		}
 
@@ -81,23 +88,21 @@
 			console.log('[drag-ghost] touchmove:', {
 				clientX: touch.clientX,
 				clientY: touch.clientY,
-				isDragging: state.isDragging(),
-				hasPieceInfo: !!state.dragGhostPieceInfo
+				isDragging: gameState.isDragging(),
+				hasPieceInfo: !!ghostPieceType
 			});
-			state.dragGhostPosition = {
-				x: touch.clientX,
-				y: touch.clientY
-			};
+			ghostX = touch.clientX;
+			ghostY = touch.clientY;
 		}
 	}
 
 	function onDocumentPointerUp(event: PointerEvent): void {
-		if (event.pointerType === 'mouse' || !state.isDragging()) return;
+		if (event.pointerType === 'mouse' || !gameState.isDragging()) return;
 		console.log('[drag-ghost] pointerup triggered:', {
 			pointerType: event.pointerType,
 			clientX: event.clientX,
 			clientY: event.clientY,
-			isDragging: state.isDragging()
+			isDragging: gameState.isDragging()
 		});
 		const el = document.elementFromPoint(event.clientX, event.clientY);
 		const button = el?.closest('[data-cell-x]') as HTMLElement | null;
@@ -105,33 +110,33 @@
 			const x = parseInt(button.dataset.cellX, 10);
 			const y = parseInt(button.dataset.cellY, 10);
 			console.log('[drag-ghost] dropping on cell:', { x, y });
-			state.actions.onCellDrop({ x, y });
+			gameState.actions.onCellDrop({ x, y });
 		} else {
 			console.log('[drag-ghost] drop cancelled (no valid cell found)');
-			state.actions.cancelDrag();
+			gameState.actions.cancelDrag();
 		}
 		// Clear ghost visual
 		console.log('[drag-ghost] clearing ghost on pointerup');
-		state.dragGhostPosition = null;
-		state.dragGhostPieceInfo = null;
+		ghostPieceType = null;
+		ghostPieceColor = null;
 	}
 
 	function onDocumentPointerCancel(event: PointerEvent): void {
-		if (event.pointerType === 'mouse' || !state.isDragging()) return;
+		if (event.pointerType === 'mouse' || !gameState.isDragging()) return;
 		console.log('[drag-ghost] pointercancel triggered:', { pointerType: event.pointerType });
-		state.actions.cancelDrag();
+		gameState.actions.cancelDrag();
 		// Clear ghost visual
 		console.log('[drag-ghost] clearing ghost on pointercancel');
-		state.dragGhostPosition = null;
-		state.dragGhostPieceInfo = null;
+		ghostPieceType = null;
+		ghostPieceColor = null;
 	}
 
 	function onBoardDragStartWithGhost(coord: Coord): void {
 		console.log('[drag-ghost] board drag start:', coord);
-		state.actions.onBoardDragStart(coord);
+		gameState.actions.onBoardDragStart(coord);
 		// Initialize ghost piece info if drag was successful
-		const game = state.view.game;
-		if (game && state.isDragging()) {
+		const game = gameState.view.game;
+		if (game && gameState.isDragging()) {
 			const piece = game.state.board[coord.y]?.[coord.x];
 			if (piece) {
 				console.log('[drag-ghost] initializing board piece:', {
@@ -139,26 +144,26 @@
 					color: piece.owner,
 					position: coord
 				});
-				state.dragGhostPieceInfo = {
-					type: piece.type,
-					color: piece.owner
-				};
-				console.log('[drag-ghost] dragGhostPieceInfo now:', state.dragGhostPieceInfo);
+				ghostPieceType = piece.type;
+				ghostPieceColor = piece.owner;
+				ghostX = 0;
+				ghostY = 0;
+				console.log('[drag-ghost] ghost initialized:', { type: ghostPieceType, color: ghostPieceColor });
 			}
 		}
 	}
 
 	function onReserveDragStartWithGhost(color: 'white' | 'black', piece: PieceType): void {
 		console.log('[drag-ghost] reserve drag start:', { color, piece });
-		state.actions.onReserveDragStart(color, piece);
+		gameState.actions.onReserveDragStart(color, piece);
 		// Initialize ghost piece info if drag was successful
-		if (state.isDragging()) {
+		if (gameState.isDragging()) {
 			console.log('[drag-ghost] initializing reserve piece:', { type: piece, color });
-			state.dragGhostPieceInfo = {
-				type: piece,
-				color
-			};
-			console.log('[drag-ghost] dragGhostPieceInfo now:', state.dragGhostPieceInfo);
+			ghostPieceType = piece;
+			ghostPieceColor = color;
+			ghostX = 0;
+			ghostY = 0;
+			console.log('[drag-ghost] ghost initialized:', { type: ghostPieceType, color: ghostPieceColor });
 		}
 	}
 </script>
@@ -181,43 +186,43 @@
 
 <main class="mx-auto max-w-3xl px-4 py-6">
 	<GameHeader
-		gameId={state.view.gameId}
-		turnLineText={state.view.turnLineText}
-		isViewerTurnNow={state.view.isViewerTurnNow}
-		copying={state.view.copying}
-		historyOpen={state.view.showHistoryPanel}
-		onToggleHistory={state.actions.toggleHistoryPanel}
-		onCopyInvite={() => state.actions.copyInviteLink(window.location.href)}
+		gameId={gameState.view.gameId}
+		turnLineText={gameState.view.turnLineText}
+		isViewerTurnNow={gameState.view.isViewerTurnNow}
+		copying={gameState.view.copying}
+		historyOpen={gameState.view.showHistoryPanel}
+		onToggleHistory={gameState.actions.toggleHistoryPanel}
+		onCopyInvite={() => gameState.actions.copyInviteLink(window.location.href)}
 	/>
 
-	{#if state.view.loading}
+	{#if gameState.view.loading}
 		<p class="dark:text-gray-300">{$_('common.loading')}</p>
-	{:else if !state.view.game}
+	{:else if !gameState.view.game}
 		<p class="text-red-600 dark:text-red-400">
-			{state.view.errorMessage || $_('common.gameNotFound')}
+			{gameState.view.errorMessage || $_('common.gameNotFound')}
 		</p>
 	{:else}
-		{#if state.view.game.viewerRole === 'guest' && state.view.game.joinAllowed && !state.view.game.viewerIsInviter}
+		{#if gameState.view.game.viewerRole === 'guest' && gameState.view.game.joinAllowed && !gameState.view.game.viewerIsInviter}
 			<InvitationJoinCard
-				inviterName={state.view.game.state.inviter.name}
-				options={state.view.invitationOptions}
-				onJoin={state.actions.onJoin}
+				inviterName={gameState.view.game.state.inviter.name}
+				options={gameState.view.invitationOptions}
+				onJoin={gameState.actions.onJoin}
 			/>
 		{/if}
 
-		{#if state.view.isGameFinished}
+		{#if gameState.view.isGameFinished}
 			<section
 				transition:slide
 				class="mb-3 rounded border border-black bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900"
 			>
-				<p class="text-lg font-semibold dark:text-gray-100">{state.view.winnerModalTitle}</p>
-				{#if state.view.winnerDetailsLine}
+				<p class="text-lg font-semibold dark:text-gray-100">{gameState.view.winnerModalTitle}</p>
+				{#if gameState.view.winnerDetailsLine}
 					<p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-						{state.view.winnerDetailsLine}
+						{gameState.view.winnerDetailsLine}
 					</p>
 				{/if}
 				<p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
-					{state.view.winnerModalSubtitle}
+					{gameState.view.winnerModalSubtitle}
 				</p>
 				{#if rankedDeltaText}
 					<p class="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
@@ -226,31 +231,31 @@
 				{/if}
 
 				<div class="mt-4 flex flex-wrap items-center gap-2">
-					{#if state.view.canRequestRematch}
+					{#if gameState.view.canRequestRematch}
 						<button
 							type="button"
-							onclick={state.actions.onRequestRematch}
-							disabled={state.view.isSubmittingRematch}
+							onclick={gameState.actions.onRequestRematch}
+							disabled={gameState.view.isSubmittingRematch}
 							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
 						>
-							{state.view.isSubmittingRematch
+							{gameState.view.isSubmittingRematch
 								? $_('game.rematch.sending')
 								: $_('game.rematch.request')}
 						</button>
-					{:else if state.view.canAcceptRematch}
+					{:else if gameState.view.canAcceptRematch}
 						<button
 							type="button"
-							onclick={state.actions.onAcceptRematch}
-							disabled={state.view.isSubmittingRematch}
+							onclick={gameState.actions.onAcceptRematch}
+							disabled={gameState.view.isSubmittingRematch}
 							class="rounded bg-black px-4 py-2 text-white disabled:opacity-50 dark:bg-gray-800 dark:text-gray-100"
 						>
-							{state.view.isSubmittingRematch
+							{gameState.view.isSubmittingRematch
 								? $_('game.rematch.starting')
 								: $_('game.rematch.accept')}
 						</button>
-					{:else if state.view.game?.state.rematchRequestedBy}
+					{:else if gameState.view.game?.state.rematchRequestedBy}
 						<p class="text-sm text-gray-700 dark:text-gray-300">{$_('game.rematch.pending')}</p>
-					{:else if state.view.game?.state.bestOfWinner}
+					{:else if gameState.view.game?.state.bestOfWinner}
 						<p class="text-sm text-gray-700 dark:text-gray-300">{$_('game.rematch.finished')}</p>
 					{/if}
 
@@ -266,85 +271,85 @@
 		{/if}
 
 		<div
-			class={`grid gap-3 ${state.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:items-start' : 'grid-cols-1'}`}
+			class={`grid gap-3 ${gameState.view.showHistoryPanel ? 'lg:grid-cols-[minmax(0,1fr)_18rem] lg:grid-rows-[auto_minmax(0,1fr)_auto] lg:items-start' : 'grid-cols-1'}`}
 		>
-			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-1' : ''}>
+			<div class={gameState.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-1' : ''}>
 				<ReserveRow
-					playerName={state.view.game.state.players.black?.name ?? $_('common.waiting')}
-					playerScore={state.view.topPlayerScore}
-					clockText={state.view.topClockText}
-					clockUrgent={state.view.topClockUrgent}
-					isActiveTurn={state.view.displayTurn === 'black'}
-					reserveColor={state.view.topReserveColor}
-					pieces={state.view.topReservePieces}
-					isMine={state.view.topReserveIsMine}
-					selectedPiece={state.view.selectedReservePiece}
-					onClick={state.actions.onReserveClick}
+					playerName={gameState.view.game.state.players.black?.name ?? $_('common.waiting')}
+					playerScore={gameState.view.topPlayerScore}
+					clockText={gameState.view.topClockText}
+					clockUrgent={gameState.view.topClockUrgent}
+					isActiveTurn={gameState.view.displayTurn === 'black'}
+					reserveColor={gameState.view.topReserveColor}
+					pieces={gameState.view.topReservePieces}
+					isMine={gameState.view.topReserveIsMine}
+					selectedPiece={gameState.view.selectedReservePiece}
+					onClick={gameState.actions.onReserveClick}
 					onDragStart={onReserveDragStartWithGhost}
-					onDragCancel={state.actions.cancelDrag}
-					onEnter={state.actions.onReserveHover}
-					onLeave={state.actions.clearReserveHover}
-					pieceTransitionName={state.view.reservePieceTransitionName}
+					onDragCancel={gameState.actions.cancelDrag}
+					onEnter={gameState.actions.onReserveHover}
+					onLeave={gameState.actions.clearReserveHover}
+					pieceTransitionName={gameState.view.reservePieceTransitionName}
 				/>
 			</div>
-			{#if state.view.errorMessage}
-				<p transition:slide class="my-2 text-sm text-red-600">{state.view.errorMessage}</p>
+			{#if gameState.view.errorMessage}
+				<p transition:slide class="my-2 text-sm text-red-600">{gameState.view.errorMessage}</p>
 			{/if}
-			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-2' : ''}>
+			<div class={gameState.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-2' : ''}>
 				<BoardGrid
-					board={state.view.displayBoard}
-					targetHints={state.view.targetHints}
-					targetHintTone={state.view.targetHintTone}
-					isMyTurn={state.view.isMyTurn}
-					viewerColor={state.view.game?.viewerColor ?? null}
-					selectedBoardFrom={state.view.selectedBoardFrom}
-					onCellEnter={state.actions.onBoardHover}
-					onCellLeave={state.actions.clearBoardHover}
-					onCellClick={state.actions.onCellClick}
+					board={gameState.view.displayBoard}
+					targetHints={gameState.view.targetHints}
+					targetHintTone={gameState.view.targetHintTone}
+					isMyTurn={gameState.view.isMyTurn}
+					viewerColor={gameState.view.game?.viewerColor ?? null}
+					selectedBoardFrom={gameState.view.selectedBoardFrom}
+					onCellEnter={gameState.actions.onBoardHover}
+					onCellLeave={gameState.actions.clearBoardHover}
+					onCellClick={gameState.actions.onCellClick}
 					onBoardDragStart={onBoardDragStartWithGhost}
-					onCellDrop={state.actions.onCellDrop}
-					onDragCancel={state.actions.cancelDrag}
-					pieceTransitionName={state.view.boardPieceTransitionName}
+					onCellDrop={gameState.actions.onCellDrop}
+					onDragCancel={gameState.actions.cancelDrag}
+					pieceTransitionName={gameState.view.boardPieceTransitionName}
 				/>
 			</div>
 
-			<div class={state.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-3' : ''}>
+			<div class={gameState.view.showHistoryPanel ? 'lg:col-start-1 lg:row-start-3' : ''}>
 				<ReserveRow
-					playerName={state.view.game.state.players.white?.name ?? $_('common.waiting')}
-					playerScore={state.view.bottomPlayerScore}
-					clockText={state.view.bottomClockText}
-					clockUrgent={state.view.bottomClockUrgent}
-					isActiveTurn={state.view.displayTurn === 'white'}
-					reserveColor={state.view.bottomReserveColor}
-					pieces={state.view.bottomReservePieces}
-					isMine={state.view.bottomReserveIsMine}
-					selectedPiece={state.view.selectedReservePiece}
-					onClick={state.actions.onReserveClick}
+					playerName={gameState.view.game.state.players.white?.name ?? $_('common.waiting')}
+					playerScore={gameState.view.bottomPlayerScore}
+					clockText={gameState.view.bottomClockText}
+					clockUrgent={gameState.view.bottomClockUrgent}
+					isActiveTurn={gameState.view.displayTurn === 'white'}
+					reserveColor={gameState.view.bottomReserveColor}
+					pieces={gameState.view.bottomReservePieces}
+					isMine={gameState.view.bottomReserveIsMine}
+					selectedPiece={gameState.view.selectedReservePiece}
+					onClick={gameState.actions.onReserveClick}
 					onDragStart={onReserveDragStartWithGhost}
-					onDragCancel={state.actions.cancelDrag}
-					onEnter={state.actions.onReserveHover}
-					onLeave={state.actions.clearReserveHover}
-					pieceTransitionName={state.view.reservePieceTransitionName}
+					onDragCancel={gameState.actions.cancelDrag}
+					onEnter={gameState.actions.onReserveHover}
+					onLeave={gameState.actions.clearReserveHover}
+					pieceTransitionName={gameState.view.reservePieceTransitionName}
 				/>
 			</div>
 
-			{#if state.view.showHistoryPanel}
+			{#if gameState.view.showHistoryPanel}
 				<div class="lg:col-start-2 lg:row-span-3 lg:row-start-1">
 					<MoveHistoryPanel
-						entries={state.view.historyEntries}
-						selectedMoveIndex={state.view.historySelectedMoveIndex}
-						onSelectMove={state.actions.playHistoryMove}
-						onJumpFirst={state.actions.jumpToHistoryFirst}
-						onJumpPrevious={state.actions.jumpToHistoryPrevious}
-						onJumpNext={state.actions.jumpToHistoryNext}
-						onJumpLast={state.actions.jumpToHistoryLast}
+						entries={gameState.view.historyEntries}
+						selectedMoveIndex={gameState.view.historySelectedMoveIndex}
+						onSelectMove={gameState.actions.playHistoryMove}
+						onJumpFirst={gameState.actions.jumpToHistoryFirst}
+						onJumpPrevious={gameState.actions.jumpToHistoryPrevious}
+						onJumpNext={gameState.actions.jumpToHistoryNext}
+						onJumpLast={gameState.actions.jumpToHistoryLast}
 					/>
 				</div>
 			{/if}
 		</div>
 	{/if}
 
-	{#if state.view.isGameFinished}
+	{#if gameState.view.isGameFinished}
 		<div
 			style="position: fixed; top: -50px; left: 0; height: 100vh; width: 100vw; display: flex; justify-content: center; overflow: hidden; pointer-events: none; z-index: 40;"
 		>
@@ -361,21 +366,21 @@
 	{/if}
 
 	<GameDialog
-		open={state.view.showRepetitionDrawModal}
+		open={gameState.view.showRepetitionDrawModal}
 		closable={true}
-		title={state.view.repetitionDrawModalTitle}
-		onClose={() => state.actions.setShowRepetitionDrawModal(false)}
+		title={gameState.view.repetitionDrawModalTitle}
+		onClose={() => gameState.actions.setShowRepetitionDrawModal(false)}
 	>
-		<p class="mt-2 text-gray-700 dark:text-gray-300">{state.view.repetitionDrawModalSubtitle}</p>
+		<p class="mt-2 text-gray-700 dark:text-gray-300">{gameState.view.repetitionDrawModalSubtitle}</p>
 		<p class="mt-2 text-gray-700 dark:text-gray-300">{$_('game.repetition.details')}</p>
 	</GameDialog>
 
-	{#if state.dragGhostPieceInfo && state.dragGhostPosition}
+	{#if ghostPieceType && ghostPieceColor}
 		<DragGhost
-			pieceType={state.dragGhostPieceInfo.type}
-			pieceColor={state.dragGhostPieceInfo.color}
-			x={state.dragGhostPosition.x}
-			y={state.dragGhostPosition.y}
+			pieceType={ghostPieceType}
+			pieceColor={ghostPieceColor}
+			x={ghostX}
+			y={ghostY}
 		/>
 	{/if}
 </main>
