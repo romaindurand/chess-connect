@@ -147,7 +147,9 @@
 					>
 						<span>{$_('menu.language')}</span>
 						<span class="flex items-center gap-1 text-gray-600 dark:text-gray-400">
-							<span>{currentLanguage === 'fr' ? $_('language.french') : $_('language.english')}</span>
+							<span
+								>{currentLanguage === 'fr' ? $_('language.french') : $_('language.english')}</span
+							>
 							<ChevronDown class="h-3.5 w-3.5" aria-hidden="true" />
 						</span>
 					</div>
@@ -228,7 +230,7 @@
 	onClose={() => (activeModal = null)}
 >
 	<div
-		class="prose dark:prose-invert text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+		class="prose text-gray-700 dark:text-gray-300 dark:prose-invert [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
 	>
 		<RulesContent />
 	</div>
@@ -241,7 +243,7 @@
 	onClose={() => (activeModal = null)}
 >
 	<div
-		class="prose dark:prose-invert text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+		class="prose text-gray-700 dark:text-gray-300 dark:prose-invert [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
 	>
 		<AboutContent />
 	</div>
@@ -254,7 +256,7 @@
 	onClose={() => (activeModal = null)}
 >
 	<div
-		class="prose dark:prose-invert text-gray-700 dark:text-gray-300 [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
+		class="prose text-gray-700 dark:text-gray-300 dark:prose-invert [&_h2]:mb-3 [&_h2]:text-xl [&_h2]:font-semibold [&_li]:leading-relaxed [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-6"
 	>
 		<ChangelogContent />
 	</div>

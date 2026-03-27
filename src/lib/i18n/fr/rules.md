@@ -1,7 +1,7 @@
 - La partie se joue sur un plateau 4x4.
 - Chaque joueur commence avec 4 pièces dans sa réserve : un pion, un cavalier, un fou et une tour.
 - Les 3 premiers tous de chaque joueur servent uniquement à poser des pièces sur le plateau.
-- Après le 3e tour, chaque joueur peut poser une pièce sur le plateau, en déplacer une ou capturer une pièce adverse, selon les règles de déplacement des pièces d'échecs. 
+- Après le 3e tour, chaque joueur peut poser une pièce sur le plateau, en déplacer une ou capturer une pièce adverse, selon les règles de déplacement des pièces d'échecs.
 - Une pièce capturée retourne dans la réserve de son propriétaire. Elle pourra être reposée sur le plateau au tour suivant, ou plus tard.
 - Un pion qui atteint un bord repart dans l'autre sens au coup suivant.
 - On ne peut pas placer une pièce sur une case déjà occupée

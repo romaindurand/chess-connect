@@ -93,7 +93,7 @@
 			{@const Icon = pieceIcon(piece)}
 			<button
 				type="button"
-				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black dark:ring-gray-400' : ''} ${!isMine ? 'opacity-50' : ''} ${isMine ? 'touch-none cursor-grab active:cursor-grabbing' : ''}`}
+				class={`rounded px-2 py-1 text-sm ${isMine && selectedPiece === piece ? 'ring-2 ring-black dark:ring-gray-400' : ''} ${!isMine ? 'opacity-50' : ''} ${isMine ? 'cursor-grab touch-none active:cursor-grabbing' : ''}`}
 				onclick={() => onClick(reserveColor, piece)}
 				ondragstart={(event) => onReserveDragStartEvent(event, piece)}
 				ondragend={onDragCancel}

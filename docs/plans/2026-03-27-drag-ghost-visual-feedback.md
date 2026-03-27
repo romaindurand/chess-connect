@@ -13,6 +13,7 @@
 ## Task 1: Extend game state with drag ghost tracking
 
 **Files:**
+
 - Modify: `src/lib/state/game.svelte.ts`
 
 **Step 1: Read current game state structure**
@@ -37,10 +38,10 @@ Find the section with existing getters (around line 100+), add:
 
 ```typescript
 function getDragGhostInfo() {
-  return {
-    position: dragGhostPosition,
-    pieceInfo: dragGhostPieceInfo,
-  };
+	return {
+		position: dragGhostPosition,
+		pieceInfo: dragGhostPieceInfo
+	};
 }
 ```
 
@@ -69,6 +70,7 @@ git commit -m "feat: add drag ghost position tracking to game state"
 ## Task 2: Create DragGhost component
 
 **Files:**
+
 - Create: `src/lib/components/game/DragGhost.svelte`
 
 **Step 1: Write DragGhost component with visual and positioning**
@@ -92,11 +94,7 @@ Create new file `src/lib/components/game/DragGhost.svelte`:
 	const icon = pieceIcon(pieceType);
 </script>
 
-<div
-	class="drag-ghost"
-	style="--ghost-x: {x}px; --ghost-y: {y}px;"
-	aria-hidden="true"
->
+<div class="drag-ghost" style="--ghost-x: {x}px; --ghost-y: {y}px;" aria-hidden="true">
 	<div class="ghost-icon">
 		{icon}
 	</div>
@@ -118,7 +116,9 @@ Create new file `src/lib/components/game/DragGhost.svelte`:
 		pointer-events: none;
 		transform: translate(-50%, -50%);
 		z-index: 9999;
-		transition: left 0.05s ease-out, top 0.05s ease-out;
+		transition:
+			left 0.05s ease-out,
+			top 0.05s ease-out;
 	}
 
 	.ghost-icon {
@@ -150,6 +150,7 @@ git commit -m "feat: create DragGhost component for visual feedback"
 ## Task 3: Add touchmove listener and ghost rendering in +page.svelte
 
 **Files:**
+
 - Modify: `src/routes/game/[id]/+page.svelte`
 
 **Step 1: Import DragGhost component**
@@ -178,7 +179,7 @@ function onDocumentTouchMove(e: TouchEvent) {
 		const touch = e.touches[0];
 		state.dragGhostPosition = {
 			x: touch.clientX,
-			y: touch.clientY,
+			y: touch.clientY
 		};
 	}
 }
@@ -189,6 +190,7 @@ document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
 **Step 3: Initialize ghost on drag start**
 
 Find the component's pointermove handler on pieces (in BoardGrid or ReserveRow callback). When drag initiates, set ghost piece info. This happens in:
+
 - `onBoardDragStart(from)` callback
 - `onReserveDragStart(piece, color)` callback
 
@@ -201,17 +203,17 @@ function onBoardDragStart(from: Coord) {
 	if (piece) {
 		state.dragGhostPieceInfo = {
 			type: piece.type,
-			color: piece.color,
+			color: piece.color
 		};
 	}
 	// ... rest of existing logic
 }
 
-// When receiving onReserveDragStart from ReserveRow  
+// When receiving onReserveDragStart from ReserveRow
 function onReserveDragStart(piece: PieceType, color: PieceColor) {
 	state.dragGhostPieceInfo = {
 		type: piece,
-		color,
+		color
 	};
 	// ... rest of existing logic
 }
@@ -310,16 +312,19 @@ git commit -m "feat: verify drag ghost mobile UX complete and passing"
 ## Summary
 
 **Changes:**
+
 - `game.svelte.ts`: +2 state runes, +1 getter for ghost info
 - `DragGhost.svelte`: New 50-line component with fixed positioning and smooth transitions
 - `+page.svelte`: Enhanced touchmove listener to track position, initialized ghost on drag start, cleanup on drag end, conditional rendering
 
 **Testing:**
+
 - Type safety validated (svelte-check)
 - Test suite green (pnpm test)
 - Manual mobile browser sim validation
 
 **Commits:**
+
 - 1. Extend game state
 - 2. Create DragGhost component
 - 3. Add touchmove tracking and rendering

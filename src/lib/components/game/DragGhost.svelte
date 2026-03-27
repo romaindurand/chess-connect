@@ -9,7 +9,7 @@
 		y: number;
 	}
 
-	const { pieceType, pieceColor, x, y } = $props();
+	const { pieceType, pieceColor, x, y }: Props = $props();
 
 	$effect(() => {
 		console.log('[drag-ghost] DragGhost component updated:', {
@@ -36,11 +36,7 @@
 	const Icon = $derived(pieceIcon(pieceType));
 </script>
 
-<div
-	class="drag-ghost"
-	style="--ghost-x: {x}px; --ghost-y: {y}px;"
-	aria-hidden="true"
->
+<div class="drag-ghost" style="--ghost-x: {x}px; --ghost-y: {y}px;" aria-hidden="true">
 	<span
 		class="ghost-chip inline-flex rounded p-1 {pieceColor === 'white'
 			? 'border border-black bg-white text-black'
@@ -58,7 +54,9 @@
 		pointer-events: none;
 		transform: translate(-50%, -50%);
 		z-index: 9999;
-		transition: left 0.05s ease-out, top 0.05s ease-out;
+		transition:
+			left 0.05s ease-out,
+			top 0.05s ease-out;
 	}
 
 	.ghost-chip {

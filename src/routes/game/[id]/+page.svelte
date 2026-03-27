@@ -158,7 +158,10 @@
 				ghostPieceColor = piece.owner;
 				ghostX = 0;
 				ghostY = 0;
-				console.log('[drag-ghost] ghost initialized:', { type: ghostPieceType, color: ghostPieceColor });
+				console.log('[drag-ghost] ghost initialized:', {
+					type: ghostPieceType,
+					color: ghostPieceColor
+				});
 			}
 		}
 	}
@@ -173,7 +176,10 @@
 			ghostPieceColor = color;
 			ghostX = 0;
 			ghostY = 0;
-			console.log('[drag-ghost] ghost initialized:', { type: ghostPieceType, color: ghostPieceColor });
+			console.log('[drag-ghost] ghost initialized:', {
+				type: ghostPieceType,
+				color: ghostPieceColor
+			});
 		}
 	}
 </script>
@@ -381,16 +387,13 @@
 		title={gameState.view.repetitionDrawModalTitle}
 		onClose={() => gameState.actions.setShowRepetitionDrawModal(false)}
 	>
-		<p class="mt-2 text-gray-700 dark:text-gray-300">{gameState.view.repetitionDrawModalSubtitle}</p>
+		<p class="mt-2 text-gray-700 dark:text-gray-300">
+			{gameState.view.repetitionDrawModalSubtitle}
+		</p>
 		<p class="mt-2 text-gray-700 dark:text-gray-300">{$_('game.repetition.details')}</p>
 	</GameDialog>
 
 	{#if ghostPieceType && ghostPieceColor && ghostVisible}
-		<DragGhost
-			pieceType={ghostPieceType}
-			pieceColor={ghostPieceColor}
-			x={ghostX}
-			y={ghostY}
-		/>
+		<DragGhost pieceType={ghostPieceType} pieceColor={ghostPieceColor} x={ghostX} y={ghostY} />
 	{/if}
 </main>
