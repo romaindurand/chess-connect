@@ -316,6 +316,7 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		input.getStream()?.close();
 		const stream = openGameEventStream(input.getGameId(), (event) => {
 			if (event.type === 'snapshot') {
+				input.setErrorMessage('');
 				snapshotQueue = snapshotQueue.then(async () => {
 					if (input.getActivePieceTransitionName()) {
 						const currentGame = input.getGame();
@@ -333,6 +334,12 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		});
 		stream.onerror = () => {
 			input.setErrorMessage(translate('errors.realTimeDisconnected'));
+			// Lancer reconnexion explicite sans bloquer
+			void attemptExplicitReconnect().then((success) => {
+				if (!success) {
+					input.setErrorMessage(translate('errors.reconnectionFailed'));
+				}
+			});
 		};
 		input.setStream(stream);
 	}
@@ -361,6 +368,24 @@ export function createGameLifecycle(input: GameLifecycleFactoryInput) {
 		} finally {
 			input.setLoading(false);
 		}
+	}
+
+	async function attemptExplicitReconnect(maxAttempts = 10): Promise<boolean> {
+		for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+			try {
+				const game = await getGameViewRemote(input.getGameId());
+				input.setGame(game);
+				connectEventStream(); // Réouvre SSE
+				input.setErrorMessage(''); // Efface l'erreur
+				return true; // Succès
+			} catch {
+				if (attempt < maxAttempts) {
+					// Attendre 1s avant la tentative suivante
+					await new Promise((resolve) => setTimeout(resolve, 1000));
+				}
+			}
+		}
+		return false; // Échec après maxAttempts
 	}
 
 	async function init(): Promise<void> {
