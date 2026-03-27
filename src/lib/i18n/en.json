@@ -147,6 +147,7 @@
 		"startRematchFailed": "Unable to start rematch",
 		"loadGameFailed": "Unable to load game",
 		"realTimeDisconnected": "Real-time connection interrupted, reconnecting...",
+		"reconnectionFailed": "Reconnection failed. Please refresh the page.",
 		"invalidMove": "Invalid move",
 		"missingPlayerSession": "Missing player session",
 		"invalidPayload": "Invalid payload",

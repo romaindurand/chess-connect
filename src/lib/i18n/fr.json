@@ -147,6 +147,7 @@
 		"startRematchFailed": "Impossible de démarrer la revanche",
 		"loadGameFailed": "Impossible de charger la partie",
 		"realTimeDisconnected": "Connexion temps réel interrompue, reconnexion en cours...",
+		"reconnectionFailed": "Reconnexion échouée. Veuillez rafraîchir la page.",
 		"invalidMove": "Coup invalide",
 		"missingPlayerSession": "Session joueur manquante",
 		"invalidPayload": "Payload invalide",
