@@ -11,15 +11,6 @@
 
 	const { pieceType, pieceColor, x, y }: Props = $props();
 
-	$effect(() => {
-		console.log('[drag-ghost] DragGhost component updated:', {
-			pieceType,
-			pieceColor,
-			x,
-			y
-		});
-	});
-
 	function pieceIcon(piece: PieceType): typeof ChessPawn {
 		if (piece === 'pawn') {
 			return ChessPawn;

@@ -50,7 +50,6 @@
 	onMount(async () => {
 		await gameState.lifecycle.init();
 		if (typeof document !== 'undefined') {
-			console.log('[drag-ghost] registering document event listeners');
 			document.addEventListener('touchmove', onDocumentTouchMove, { passive: false });
 			document.addEventListener('pointerup', onDocumentPointerUp);
 			document.addEventListener('pointercancel', onDocumentPointerCancel);
@@ -72,16 +71,6 @@
 		gameState.lifecycle.unlockAudio();
 	}
 
-	// Debug: log ghost state changes
-	$effect(() => {
-		console.log('[drag-ghost] state updated:', {
-			ghostPieceType,
-			ghostPieceColor,
-			ghostPosition: ghostPieceType ? { x: ghostX, y: ghostY } : null,
-			shouldRender: !!(ghostPieceType && ghostPieceColor)
-		});
-	});
-
 	function onDocumentTouchMove(event: TouchEvent): void {
 		if (!gameState.isDragging()) {
 			return;
@@ -92,12 +81,6 @@
 		// Update drag ghost position to follow finger
 		if (event.touches.length > 0) {
 			const touch = event.touches[0];
-			console.log('[drag-ghost] touchmove:', {
-				clientX: touch.clientX,
-				clientY: touch.clientY,
-				isDragging: gameState.isDragging(),
-				hasPieceInfo: !!ghostPieceType
-			});
 			ghostX = touch.clientX;
 			ghostY = touch.clientY;
 			ghostVisible = true;
@@ -106,25 +89,15 @@
 
 	function onDocumentPointerUp(event: PointerEvent): void {
 		if (event.pointerType === 'mouse' || !gameState.isDragging()) return;
-		console.log('[drag-ghost] pointerup triggered:', {
-			pointerType: event.pointerType,
-			clientX: event.clientX,
-			clientY: event.clientY,
-			isDragging: gameState.isDragging()
-		});
 		const el = document.elementFromPoint(event.clientX, event.clientY);
 		const button = el?.closest('[data-cell-x]') as HTMLElement | null;
 		if (button?.dataset.cellX !== undefined && button?.dataset.cellY !== undefined) {
 			const x = parseInt(button.dataset.cellX, 10);
 			const y = parseInt(button.dataset.cellY, 10);
-			console.log('[drag-ghost] dropping on cell:', { x, y });
 			gameState.actions.onCellDrop({ x, y });
 		} else {
-			console.log('[drag-ghost] drop cancelled (no valid cell found)');
 			gameState.actions.cancelDrag();
 		}
-		// Clear ghost visual
-		console.log('[drag-ghost] clearing ghost on pointerup');
 		ghostPieceType = null;
 		ghostPieceColor = null;
 		ghostVisible = false;
@@ -132,54 +105,36 @@
 
 	function onDocumentPointerCancel(event: PointerEvent): void {
 		if (event.pointerType === 'mouse' || !gameState.isDragging()) return;
-		console.log('[drag-ghost] pointercancel triggered:', { pointerType: event.pointerType });
 		gameState.actions.cancelDrag();
 		// Clear ghost visual
-		console.log('[drag-ghost] clearing ghost on pointercancel');
 		ghostPieceType = null;
 		ghostPieceColor = null;
 		ghostVisible = false;
 	}
 
 	function onBoardDragStartWithGhost(coord: Coord): void {
-		console.log('[drag-ghost] board drag start:', coord);
 		gameState.actions.onBoardDragStart(coord);
 		// Initialize ghost piece info if drag was successful
 		const game = gameState.view.game;
 		if (game && gameState.isDragging()) {
 			const piece = game.state.board[coord.y]?.[coord.x];
 			if (piece) {
-				console.log('[drag-ghost] initializing board piece:', {
-					type: piece.type,
-					color: piece.owner,
-					position: coord
-				});
 				ghostPieceType = piece.type;
 				ghostPieceColor = piece.owner;
 				ghostX = 0;
 				ghostY = 0;
-				console.log('[drag-ghost] ghost initialized:', {
-					type: ghostPieceType,
-					color: ghostPieceColor
-				});
 			}
 		}
 	}
 
 	function onReserveDragStartWithGhost(color: 'white' | 'black', piece: PieceType): void {
-		console.log('[drag-ghost] reserve drag start:', { color, piece });
 		gameState.actions.onReserveDragStart(color, piece);
 		// Initialize ghost piece info if drag was successful
 		if (gameState.isDragging()) {
-			console.log('[drag-ghost] initializing reserve piece:', { type: piece, color });
 			ghostPieceType = piece;
 			ghostPieceColor = color;
 			ghostX = 0;
 			ghostY = 0;
-			console.log('[drag-ghost] ghost initialized:', {
-				type: ghostPieceType,
-				color: ghostPieceColor
-			});
 		}
 	}
 </script>

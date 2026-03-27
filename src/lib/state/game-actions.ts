@@ -63,6 +63,7 @@ interface GameActionsFactoryInput {
 
 export function createGameActions(input: GameActionsFactoryInput) {
 	let isDragging = false;
+	let preserveSelectionOnNextClickAfterCanceledDrag = false;
 
 	function clearDragState(): void {
 		input.setDragBoardFrom(null);
@@ -72,6 +73,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 	function resetSelection(): void {
 		input.setSelectedBoardFrom(null);
 		input.setSelectedReservePiece(null);
+		preserveSelectionOnNextClickAfterCanceledDrag = false;
 		clearDragState();
 	}
 
@@ -325,6 +327,8 @@ export function createGameActions(input: GameActionsFactoryInput) {
 
 	async function onCellClick(coord: Coord): Promise<void> {
 		if (isDragging) return;
+		const preserveSelectionFromCanceledDrag = preserveSelectionOnNextClickAfterCanceledDrag;
+		preserveSelectionOnNextClickAfterCanceledDrag = false;
 		clearDragState();
 		const game = input.getGame();
 		if (isHistoryPreviewMode()) {
@@ -376,6 +380,9 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		const selectedBoardFrom = input.getSelectedBoardFrom();
 		if (selectedBoardFrom) {
 			if (coord.x === selectedBoardFrom.x && coord.y === selectedBoardFrom.y) {
+				if (preserveSelectionFromCanceledDrag) {
+					return;
+				}
 				input.setSelectedBoardFrom(null);
 				return;
 			}
@@ -409,6 +416,8 @@ export function createGameActions(input: GameActionsFactoryInput) {
 
 	function onReserveClick(reserveColor: 'white' | 'black', piece: PieceType): void {
 		if (isDragging) return;
+		const preserveSelectionFromCanceledDrag = preserveSelectionOnNextClickAfterCanceledDrag;
+		preserveSelectionOnNextClickAfterCanceledDrag = false;
 		clearDragState();
 		const game = input.getGame();
 		if (isHistoryPreviewMode()) {
@@ -423,10 +432,14 @@ export function createGameActions(input: GameActionsFactoryInput) {
 
 		input.setErrorMessage('');
 		input.setSelectedBoardFrom(null);
+		if (preserveSelectionFromCanceledDrag && input.getSelectedReservePiece() === piece) {
+			return;
+		}
 		input.setSelectedReservePiece(input.getSelectedReservePiece() === piece ? null : piece);
 	}
 
 	function onBoardDragStart(coord: Coord): void {
+		preserveSelectionOnNextClickAfterCanceledDrag = false;
 		const game = input.getGame();
 		if (isHistoryPreviewMode() || !game || !input.getIsMyTurn()) {
 			clearDragState();
@@ -448,6 +461,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 	}
 
 	function onReserveDragStart(reserveColor: 'white' | 'black', piece: PieceType): void {
+		preserveSelectionOnNextClickAfterCanceledDrag = false;
 		const game = input.getGame();
 		if (isHistoryPreviewMode()) {
 			clearDragState();
@@ -474,6 +488,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		isDragging = false;
 		const game = input.getGame();
 		if (isHistoryPreviewMode() || !game || !input.getIsMyTurn()) {
+			preserveSelectionOnNextClickAfterCanceledDrag = false;
 			clearDragState();
 			return;
 		}
@@ -517,9 +532,16 @@ export function createGameActions(input: GameActionsFactoryInput) {
 
 		const activeBoardFrom = input.getDragBoardFrom() ?? input.getSelectedBoardFrom();
 		if (!activeBoardFrom) {
+			preserveSelectionOnNextClickAfterCanceledDrag = false;
+			return;
+		}
+		if (coord.x === activeBoardFrom.x && coord.y === activeBoardFrom.y) {
+			clearDragState();
+			preserveSelectionOnNextClickAfterCanceledDrag = true;
 			return;
 		}
 		if (!input.getTargetHints().has(coordKey(coord))) {
+			preserveSelectionOnNextClickAfterCanceledDrag = false;
 			clearDragState();
 			return;
 		}
@@ -542,11 +564,14 @@ export function createGameActions(input: GameActionsFactoryInput) {
 				error instanceof Error ? error.message : translate('errors.invalidMove')
 			);
 		}
+		preserveSelectionOnNextClickAfterCanceledDrag = false;
 	}
 
 	function cancelDrag(): void {
+		const hadActiveDrag = Boolean(input.getDragBoardFrom() || input.getDragReservePiece());
 		isDragging = false;
 		clearDragState();
+		preserveSelectionOnNextClickAfterCanceledDrag = hadActiveDrag;
 	}
 
 	function setShowRulesModal(open: boolean): void {
