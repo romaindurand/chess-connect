@@ -6,6 +6,7 @@
 	import { resolve } from '$app/paths';
 	import { Confetti } from 'svelte-confetti';
 	import BoardGrid from '$lib/components/game/BoardGrid.svelte';
+	import DragGhost from '$lib/components/game/DragGhost.svelte';
 	import GameHeader from '$lib/components/game/GameHeader.svelte';
 	import InvitationJoinCard from '$lib/components/game/InvitationJoinCard.svelte';
 	import MoveHistoryPanel from '$lib/components/game/MoveHistoryPanel.svelte';
@@ -15,6 +16,7 @@
 	import { createGameState } from '$lib/state/game.svelte';
 	import favicon from '$lib/assets/favicon.png';
 	import { slide } from 'svelte/transition';
+	import type { Coord, PieceType } from '$lib/types/game';
 
 	const props = $props<{ data: { gameId: string } }>();
 	const state = createGameState(() => props.data.gameId);
@@ -57,8 +59,19 @@
 	});
 
 	function onDocumentTouchMove(event: TouchEvent): void {
-		if (state.isDragging()) {
-			event.preventDefault();
+		if (!state.isDragging()) {
+			return;
+		}
+
+		event.preventDefault();
+
+		// Update drag ghost position to follow finger
+		if (event.touches.length > 0) {
+			const touch = event.touches[0];
+			state.dragGhostPosition = {
+				x: touch.clientX,
+				y: touch.clientY
+			};
 		}
 	}
 
@@ -73,11 +86,43 @@
 		} else {
 			state.actions.cancelDrag();
 		}
+		// Clear ghost visual
+		state.dragGhostPosition = null;
+		state.dragGhostPieceInfo = null;
 	}
 
 	function onDocumentPointerCancel(event: PointerEvent): void {
 		if (event.pointerType === 'mouse' || !state.isDragging()) return;
 		state.actions.cancelDrag();
+		// Clear ghost visual
+		state.dragGhostPosition = null;
+		state.dragGhostPieceInfo = null;
+	}
+
+	function onBoardDragStartWithGhost(coord: Coord): void {
+		state.actions.onBoardDragStart(coord);
+		// Initialize ghost piece info if drag was successful
+		const game = state.view.game;
+		if (game && state.isDragging()) {
+			const piece = game.state.board[coord.y]?.[coord.x];
+			if (piece) {
+				state.dragGhostPieceInfo = {
+					type: piece.type,
+					color: piece.owner
+				};
+			}
+		}
+	}
+
+	function onReserveDragStartWithGhost(color: 'white' | 'black', piece: PieceType): void {
+		state.actions.onReserveDragStart(color, piece);
+		// Initialize ghost piece info if drag was successful
+		if (state.isDragging()) {
+			state.dragGhostPieceInfo = {
+				type: piece,
+				color
+			};
+		}
 	}
 </script>
 
@@ -198,7 +243,7 @@
 					isMine={state.view.topReserveIsMine}
 					selectedPiece={state.view.selectedReservePiece}
 					onClick={state.actions.onReserveClick}
-					onDragStart={state.actions.onReserveDragStart}
+					onDragStart={onReserveDragStartWithGhost}
 					onDragCancel={state.actions.cancelDrag}
 					onEnter={state.actions.onReserveHover}
 					onLeave={state.actions.clearReserveHover}
@@ -219,7 +264,7 @@
 					onCellEnter={state.actions.onBoardHover}
 					onCellLeave={state.actions.clearBoardHover}
 					onCellClick={state.actions.onCellClick}
-					onBoardDragStart={state.actions.onBoardDragStart}
+					onBoardDragStart={onBoardDragStartWithGhost}
 					onCellDrop={state.actions.onCellDrop}
 					onDragCancel={state.actions.cancelDrag}
 					pieceTransitionName={state.view.boardPieceTransitionName}
@@ -238,7 +283,7 @@
 					isMine={state.view.bottomReserveIsMine}
 					selectedPiece={state.view.selectedReservePiece}
 					onClick={state.actions.onReserveClick}
-					onDragStart={state.actions.onReserveDragStart}
+					onDragStart={onReserveDragStartWithGhost}
 					onDragCancel={state.actions.cancelDrag}
 					onEnter={state.actions.onReserveHover}
 					onLeave={state.actions.clearReserveHover}
@@ -287,4 +332,13 @@
 		<p class="mt-2 text-gray-700 dark:text-gray-300">{state.view.repetitionDrawModalSubtitle}</p>
 		<p class="mt-2 text-gray-700 dark:text-gray-300">{$_('game.repetition.details')}</p>
 	</GameDialog>
+
+	{#if state.dragGhostPieceInfo && state.dragGhostPosition}
+		<DragGhost
+			pieceType={state.dragGhostPieceInfo.type}
+			pieceColor={state.dragGhostPieceInfo.color}
+			x={state.dragGhostPosition.x}
+			y={state.dragGhostPosition.y}
+		/>
+	{/if}
 </main>
