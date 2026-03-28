@@ -6,11 +6,16 @@
 	import { _ } from 'svelte-i18n';
 
 	import {
+		claimRapidGameSessionRemote,
 		claimRankedGameSessionRemote,
 		createGameRemote,
+		decideRapidProposalRemote,
 		decideRankedProposalRemote,
+		joinRapidQueueRemote,
 		joinRankedQueueRemote,
+		leaveRapidQueueRemote,
 		leaveRankedQueueRemote,
+		openRapidQueueEventStream,
 		openRankedQueueEventStream
 	} from '$lib/client/game-api';
 	import {
@@ -38,7 +43,7 @@
 	const pageDescription = $derived($_('home.pageDescription'));
 	const canonicalUrl = $derived(page.url.href);
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
-	type HomeMode = OpponentType | 'ranked';
+	type HomeMode = OpponentType | 'ranked' | 'rapid';
 
 	let name = $state('');
 	let opponentType = $state<OpponentType>('human');
@@ -63,6 +68,7 @@
 	let advancedOptionsMounted = $state(false);
 	let advancedOptionsCloseTimer: ReturnType<typeof setTimeout> | null = null;
 	let queueStatus = $state<RankedQueueStatus | null>(null);
+	let queueMode = $state<'ranked' | 'rapid' | null>(null);
 	let rankedModalOpen = $state(false);
 	let rankedBusy = $state(false);
 	let rankedError = $state('');
@@ -113,7 +119,7 @@
 	});
 
 	$effect(() => {
-		if (!authState.authenticated && selectedMode === 'ranked') {
+		if (!authState.authenticated && (selectedMode === 'ranked' || selectedMode === 'rapid')) {
 			selectedMode = 'human';
 			opponentType = 'human';
 		}
@@ -131,6 +137,10 @@
 
 		if (selectedMode === 'ranked') {
 			await startRankedSearch(trimmed);
+			return;
+		}
+		if (selectedMode === 'rapid') {
+			await startRapidSearch(trimmed);
 			return;
 		}
 
@@ -225,6 +235,40 @@
 		});
 	}
 
+	function connectRapidQueueEvents(): void {
+		if (rankedSource) {
+			rankedSource.close();
+		}
+		rankedSource = openRapidQueueEventStream(async (event) => {
+			if (event.type !== 'queue') {
+				return;
+			}
+			queueStatus = event.status;
+			const foundProposalId = getMatchFoundProposalId(event.status);
+			if (foundProposalId) {
+				playMatchFoundSound(foundProposalId);
+			}
+			if (!event.status.proposal || event.status.proposal.id !== locallyAcceptedProposalId) {
+				locallyAcceptedProposalId = null;
+			}
+			const proposal = event.status.proposal;
+			if (proposal?.gameId) {
+				try {
+					await claimRapidGameSessionRemote(proposal.id);
+				} catch (error) {
+					rankedError = error instanceof Error ? error.message : $_('errors.unexpected');
+					return;
+				}
+				rankedModalOpen = false;
+				if (rankedSource) {
+					rankedSource.close();
+					rankedSource = null;
+				}
+				await goto(resolve(`/game/${proposal.gameId}`));
+			}
+		});
+	}
+
 	async function startRankedSearch(trimmedName: string): Promise<void> {
 		if (!authState.authenticated) {
 			errorMessage = $_('errors.notAuthenticated');
@@ -235,6 +279,7 @@
 		try {
 			const status = await joinRankedQueueRemote();
 			savePlayerName(trimmedName);
+			queueMode = 'ranked';
 			queueStatus = status;
 			const foundProposalId = getMatchFoundProposalId(status);
 			if (foundProposalId) {
@@ -249,11 +294,41 @@
 		}
 	}
 
+	async function startRapidSearch(trimmedName: string): Promise<void> {
+		if (!authState.authenticated) {
+			errorMessage = $_('errors.notAuthenticated');
+			return;
+		}
+		rankedBusy = true;
+		rankedError = '';
+		try {
+			const status = await joinRapidQueueRemote();
+			savePlayerName(trimmedName);
+			queueMode = 'rapid';
+			queueStatus = status;
+			const foundProposalId = getMatchFoundProposalId(status);
+			if (foundProposalId) {
+				playMatchFoundSound(foundProposalId);
+			}
+			rankedModalOpen = true;
+			connectRapidQueueEvents();
+		} catch (error) {
+			rankedError = error instanceof Error ? error.message : $_('errors.unexpected');
+		} finally {
+			rankedBusy = false;
+		}
+	}
+
 	async function leaveRankedSearch(): Promise<void> {
 		rankedBusy = true;
 		try {
-			await leaveRankedQueueRemote();
+			if (queueMode === 'rapid') {
+				await leaveRapidQueueRemote();
+			} else {
+				await leaveRankedQueueRemote();
+			}
 			queueStatus = null;
+			queueMode = null;
 			locallyAcceptedProposalId = null;
 			rankedModalOpen = false;
 			rankedError = '';
@@ -280,7 +355,10 @@
 			locallyAcceptedProposalId = proposalId;
 		}
 		try {
-			const result = await decideRankedProposalRemote(proposalId, accept);
+			const result =
+				queueMode === 'rapid'
+					? await decideRapidProposalRemote(proposalId, accept)
+					: await decideRankedProposalRemote(proposalId, accept);
 			if (result.gameId) {
 				locallyAcceptedProposalId = null;
 				rankedModalOpen = false;
@@ -379,6 +457,7 @@
 		shownToken = null;
 		name = loadPlayerName();
 		queueStatus = null;
+		queueMode = null;
 		locallyAcceptedProposalId = null;
 		rankedModalOpen = false;
 		if (rankedSource) {
@@ -411,7 +490,7 @@
 	}
 
 	$effect(() => {
-		if (selectedMode === 'ranked' && advancedOptionsCloseTimer) {
+		if ((selectedMode === 'ranked' || selectedMode === 'rapid') && advancedOptionsCloseTimer) {
 			clearTimeout(advancedOptionsCloseTimer);
 			advancedOptionsCloseTimer = null;
 		}
@@ -535,7 +614,7 @@
 			class="dark:border-gray-700 dark:bg-gray-900" -->
 			<legend class="px-1 text-sm font-medium dark:text-gray-300">{$_('home.gameType')}</legend>
 			<div
-				class={`mt-3 grid gap-2 ${authState.authenticated ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}
+				class={`mt-3 grid gap-2 ${authState.authenticated ? 'sm:grid-cols-4' : 'sm:grid-cols-2'}`}
 			>
 				<label
 					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'human' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
@@ -574,6 +653,18 @@
 						/>
 						<span>{$_('home.ranked')}</span>
 					</label>
+					<label
+						class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'rapid' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
+					>
+						<input
+							class="sr-only"
+							type="radio"
+							name="homeMode"
+							value="rapid"
+							bind:group={selectedMode}
+						/>
+						<span>{$_('home.rapid')}</span>
+					</label>
 				{/if}
 			</div>
 			<p class="mt-3 text-sm text-gray-600 dark:text-gray-400">
@@ -581,13 +672,15 @@
 					{$_('home.modeDescriptionHuman')}
 				{:else if selectedMode === 'ai'}
 					{$_('home.modeDescriptionAi')}
+				{:else if selectedMode === 'rapid'}
+					{$_('home.modeDescriptionRapid')}
 				{:else}
 					{$_('home.modeDescriptionRanked')}
 				{/if}
 			</p>
 		</fieldset>
 
-		{#if selectedMode !== 'ranked'}
+		{#if selectedMode !== 'ranked' && selectedMode !== 'rapid'}
 			<details
 				transition:slide
 				class="rounded-md border border-gray-200 p-3 dark:border-gray-700 dark:bg-gray-900"
@@ -735,7 +828,7 @@
 			</details>
 		{/if}
 
-		{#if authState.authenticated}
+		{#if authState.authenticated && selectedMode !== 'rapid'}
 			<p class="text-sm text-gray-600 dark:text-gray-400">
 				<a class="underline dark:text-blue-400" href={resolve('/ladder')}>{$_('home.openLadder')}</a
 				>
@@ -749,7 +842,7 @@
 		>
 			{#if isSubmitting || rankedBusy}
 				{$_('home.creating')}
-			{:else if selectedMode === 'ranked'}
+			{:else if selectedMode === 'ranked' || selectedMode === 'rapid'}
 				{$_('home.searchGame')}
 			{:else if selectedMode === 'ai'}
 				{$_('home.playVsAi')}
@@ -771,13 +864,19 @@
 			class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 dark:bg-black/75"
 		>
 			<div class="w-full max-w-md rounded-lg bg-white p-5 shadow-xl dark:bg-gray-900">
-				<h2 class="text-lg font-semibold dark:text-gray-100">{$_('home.rankedSearchingTitle')}</h2>
+				<h2 class="text-lg font-semibold dark:text-gray-100">
+					{queueMode === 'rapid' ? $_('home.rapidSearchingTitle') : $_('home.rankedSearchingTitle')}
+				</h2>
 				<p class="mt-2 text-sm text-gray-700 dark:text-gray-300">
-					{$_('home.rankedSearchingTimer', { values: { seconds: queueStatus?.waitSeconds ?? 0 } })}
+					{$_(queueMode === 'rapid' ? 'home.rapidSearchingTimer' : 'home.rankedSearchingTimer', {
+						values: { seconds: queueStatus?.waitSeconds ?? 0 }
+					})}
 				</p>
-				<p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-					{$_('home.rankedSearchRange', { values: { range: queueStatus?.searchRange ?? 0 } })}
-				</p>
+				{#if queueMode === 'ranked'}
+					<p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
+						{$_('home.rankedSearchRange', { values: { range: queueStatus?.searchRange ?? 0 } })}
+					</p>
+				{/if}
 
 				{#if queueStatus?.proposal && !queueStatus.proposal.gameId}
 					<div
@@ -786,7 +885,7 @@
 						<p class="text-sm font-medium dark:text-gray-100">{$_('home.matchFound')}</p>
 						{#each queueStatus.proposal.participants as participant (participant.userId)}
 							<p class="mt-1 text-sm text-gray-700 dark:text-gray-300">
-								{participant.username} ({participant.rating})
+								{participant.username}{queueMode === 'ranked' ? ` (${participant.rating})` : ''}
 							</p>
 						{/each}
 						{#if !hasAcceptedProposal}

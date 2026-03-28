@@ -2,6 +2,7 @@ import { error } from '@sveltejs/kit';
 
 import { cookieName, getViewForRequest, subscribeToGame } from '$lib/server/game-store';
 import { maybeApplyRankedResultForGame } from '$lib/server/ranked-results';
+import { maybeApplyRapidResultForGame } from '$lib/server/rapid-results';
 import type { ServerEvent } from '$lib/types/game';
 import type { RequestHandler } from './$types';
 
@@ -20,6 +21,7 @@ export const GET: RequestHandler = ({ params, cookies }) => {
 			const encoder = new TextEncoder();
 			try {
 				await maybeApplyRankedResultForGame(gameId);
+				await maybeApplyRapidResultForGame(gameId);
 				const view = getViewForRequest(gameId, token);
 				controller.enqueue(encoder.encode(encodeSse({ type: 'snapshot', game: view })));
 			} catch {
@@ -31,6 +33,7 @@ export const GET: RequestHandler = ({ params, cookies }) => {
 				if (event.type === 'snapshot') {
 					void (async () => {
 						await maybeApplyRankedResultForGame(gameId);
+						await maybeApplyRapidResultForGame(gameId);
 						const view = getViewForRequest(gameId, token);
 						controller.enqueue(encoder.encode(encodeSse({ type: 'snapshot', game: view })));
 					})();

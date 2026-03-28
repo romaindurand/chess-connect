@@ -1,23 +1,20 @@
 import type { Color } from '$lib/types/game';
 
 import { getGameOrThrow } from './game-store';
-import { applyRankedResultByUsernames } from './ranking-store';
+import { applyRapidResultByUsernames } from './rapid-ranking-store';
 
-export async function maybeApplyRankedResultForGame(gameId: string): Promise<void> {
+export async function maybeApplyRapidResultForGame(gameId: string): Promise<void> {
 	const record = getGameOrThrow(gameId);
 	const state = record.state;
 	if (state.status !== 'finished' || !state.winner) {
 		return;
 	}
-	if (state.options.isRanked !== true) {
-		return;
-	}
-	if (state.options.isRapid === true) {
+	if (state.options.isRapid !== true) {
 		return;
 	}
 
 	const roundKey = `${state.id}#${state.gameNumber}`;
-	if (state.options.rankedRoundKeyApplied === roundKey) {
+	if (state.options.rapidRoundKeyApplied === roundKey) {
 		return;
 	}
 
@@ -29,7 +26,7 @@ export async function maybeApplyRankedResultForGame(gameId: string): Promise<voi
 		return;
 	}
 
-	const result = await applyRankedResultByUsernames({
+	const result = await applyRapidResultByUsernames({
 		gameRoundKey: roundKey,
 		winnerUsername: winnerName,
 		loserUsername: loserName
@@ -38,7 +35,5 @@ export async function maybeApplyRankedResultForGame(gameId: string): Promise<voi
 		return;
 	}
 
-	state.options.rankedRoundKeyApplied = roundKey;
-	state.options.rankedWhiteDelta = winnerColor === 'white' ? result.winnerDelta : result.loserDelta;
-	state.options.rankedBlackDelta = winnerColor === 'black' ? result.winnerDelta : result.loserDelta;
+	state.options.rapidRoundKeyApplied = roundKey;
 }

@@ -46,8 +46,10 @@ export interface GameOptions {
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
+	isRapid?: boolean;
 	isRanked?: boolean;
 	rankedRoundKeyApplied?: string;
+	rapidRoundKeyApplied?: string;
 	[key: string]: GameOptionValue;
 }
 
@@ -59,8 +61,10 @@ export const DEFAULT_GAME_OPTIONS: GameOptions = {
 	opponentType: 'human',
 	hostColor: 'random',
 	aiDifficulty: 'baseline',
+	isRapid: false,
 	isRanked: false,
-	rankedRoundKeyApplied: undefined
+	rankedRoundKeyApplied: undefined,
+	rapidRoundKeyApplied: undefined
 };
 
 export interface GameState {

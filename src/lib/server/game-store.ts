@@ -53,13 +53,15 @@ interface Store {
 interface CreateGameOptions {
 	timeLimitSeconds?: number;
 	incrementPerMoveSeconds?: number;
-	roundLimit?: number;
+	roundLimit?: number | null;
 	allowAiTrainingData?: boolean;
 	opponentType?: OpponentType;
 	hostColor?: HostColorPreference;
 	aiDifficulty?: AiDifficulty;
+	isRapid?: boolean;
 	isRanked?: boolean;
 	rankedRoundKeyApplied?: string;
+	rapidRoundKeyApplied?: string;
 }
 
 declare global {
@@ -153,9 +155,11 @@ function createNewState(
 		opponentType: options?.opponentType ?? DEFAULT_GAME_OPTIONS.opponentType,
 		hostColor: options?.hostColor ?? DEFAULT_GAME_OPTIONS.hostColor,
 		aiDifficulty: options?.aiDifficulty ?? DEFAULT_GAME_OPTIONS.aiDifficulty,
+		isRapid: options?.isRapid ?? DEFAULT_GAME_OPTIONS.isRapid,
 		isRanked: options?.isRanked ?? DEFAULT_GAME_OPTIONS.isRanked,
 		rankedRoundKeyApplied:
-			options?.rankedRoundKeyApplied ?? DEFAULT_GAME_OPTIONS.rankedRoundKeyApplied
+			options?.rankedRoundKeyApplied ?? DEFAULT_GAME_OPTIONS.rankedRoundKeyApplied,
+		rapidRoundKeyApplied: options?.rapidRoundKeyApplied ?? DEFAULT_GAME_OPTIONS.rapidRoundKeyApplied
 	};
 	const timeControlPerPlayerSeconds =
 		gameOptions.timeLimitSeconds !== null ? gameOptions.timeLimitSeconds : null;

@@ -33,7 +33,12 @@
 	const ogImageUrl = $derived(toAbsoluteUrl(page.url.origin, favicon));
 	const rankedDeltaText = $derived.by(() => {
 		const game = gameState.view.game;
-		if (!game || game.state.options.isRanked !== true || !game.viewerColor) {
+		if (
+			!game ||
+			game.state.options.isRanked !== true ||
+			game.state.options.isRapid === true ||
+			!game.viewerColor
+		) {
 			return null;
 		}
 		const raw =

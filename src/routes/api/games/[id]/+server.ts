@@ -10,6 +10,7 @@ import {
 } from '$lib/server/game-store';
 import { AUTH_COOKIE_NAME, resolvePlayerNameFromAuth } from '$lib/server/auth-store';
 import { maybeApplyRankedResultForGame } from '$lib/server/ranked-results';
+import { maybeApplyRapidResultForGame } from '$lib/server/rapid-results';
 import type {
 	GameActionPayload,
 	JoinGamePayload,
@@ -68,6 +69,7 @@ export const GET: RequestHandler = async ({ params, cookies }) => {
 	try {
 		const gameId = params.id;
 		await maybeApplyRankedResultForGame(gameId);
+		await maybeApplyRapidResultForGame(gameId);
 		const token = cookies.get(cookieName(gameId));
 		const view = getViewForRequest(gameId, token);
 		return json(view);
@@ -108,6 +110,7 @@ export const POST: RequestHandler = async ({ params, request, cookies }) => {
 		if (payload.type === 'play') {
 			await playMove(gameId, token, payload.move);
 			await maybeApplyRankedResultForGame(gameId);
+			await maybeApplyRapidResultForGame(gameId);
 		}
 		if (payload.type === 'rematch-request') {
 			await requestRematch(gameId, token);

@@ -1,11 +1,15 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+	claimRapidGameSessionRemote,
 	claimRankedGameSessionRemote,
 	createGameRemote,
+	decideRapidProposalRemote,
 	decideRankedProposalRemote,
 	getLadderRemote,
+	joinRapidQueueRemote,
 	joinRankedQueueRemote,
+	leaveRapidQueueRemote,
 	leaveRankedQueueRemote
 } from '$lib/client/game-api';
 import { initI18n, setLanguage } from '$lib/i18n';
@@ -105,6 +109,56 @@ describe('game api', () => {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ accept: false })
+		});
+	});
+
+	it('posts rapid queue requests to the correct endpoints', async () => {
+		const fetchMock = vi
+			.fn()
+			.mockResolvedValueOnce(
+				createJsonResponse({
+					queued: true,
+					enteredAt: '2026-03-19T00:00:00.000Z',
+					waitSeconds: 2,
+					searchRange: 75,
+					proposal: null
+				})
+			)
+			.mockResolvedValueOnce(createJsonResponse({ ok: true }))
+			.mockResolvedValueOnce(
+				createJsonResponse({
+					proposalId: 'proposal-rapid-1',
+					accepted: true,
+					gameId: null,
+					token: null
+				})
+			)
+			.mockResolvedValueOnce(
+				createJsonResponse({
+					proposalId: 'proposal-rapid-2',
+					accepted: true,
+					gameId: 'game-rapid-1',
+					token: 'rapid-token'
+				})
+			);
+		vi.stubGlobal('fetch', fetchMock);
+
+		await joinRapidQueueRemote();
+		await leaveRapidQueueRemote();
+		await decideRapidProposalRemote('proposal-rapid-1', true);
+		await claimRapidGameSessionRemote('proposal-rapid-2');
+
+		expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/rapid/queue', { method: 'POST' });
+		expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/rapid/queue', { method: 'DELETE' });
+		expect(fetchMock).toHaveBeenNthCalledWith(3, '/api/rapid/match/proposal-rapid-1/accept', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ accept: true })
+		});
+		expect(fetchMock).toHaveBeenNthCalledWith(4, '/api/rapid/match/proposal-rapid-2/accept', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ accept: true })
 		});
 	});
 });

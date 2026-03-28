@@ -3,20 +3,20 @@ import type { GameState } from '$lib/types/game';
 
 const mocks = vi.hoisted(() => ({
 	getGameOrThrow: vi.fn(),
-	applyRankedResultByUsernames: vi.fn()
+	applyRapidResultByUsernames: vi.fn()
 }));
 
 vi.mock('./game-store', () => ({
 	getGameOrThrow: mocks.getGameOrThrow
 }));
 
-vi.mock('./ranking-store', () => ({
-	applyRankedResultByUsernames: mocks.applyRankedResultByUsernames
+vi.mock('./rapid-ranking-store', () => ({
+	applyRapidResultByUsernames: mocks.applyRapidResultByUsernames
 }));
 
-import { maybeApplyRankedResultForGame } from './ranked-results';
+import { maybeApplyRapidResultForGame } from './rapid-results';
 
-function createRankedFinishedState(): GameState {
+function createRapidFinishedState(): GameState {
 	return {
 		id: 'game-1',
 		status: 'finished',
@@ -30,7 +30,8 @@ function createRankedFinishedState(): GameState {
 			opponentType: 'human',
 			hostColor: 'random',
 			aiDifficulty: 'baseline',
-			isRanked: true
+			isRanked: false,
+			isRapid: true
 		},
 		players: {
 			white: { name: 'Alice', joinedAt: 0 },
@@ -61,16 +62,16 @@ function createRankedFinishedState(): GameState {
 	};
 }
 
-describe('ranked-results', () => {
+describe('rapid-results', () => {
 	beforeEach(() => {
 		mocks.getGameOrThrow.mockReset();
-		mocks.applyRankedResultByUsernames.mockReset();
+		mocks.applyRapidResultByUsernames.mockReset();
 	});
 
-	it('applies ranked deltas to finished ranked games', async () => {
-		const state = createRankedFinishedState();
+	it('applies rapid rating updates to finished rapid games', async () => {
+		const state = createRapidFinishedState();
 		mocks.getGameOrThrow.mockReturnValue({ state });
-		mocks.applyRankedResultByUsernames.mockResolvedValue({
+		mocks.applyRapidResultByUsernames.mockResolvedValue({
 			winnerBefore: 1200,
 			winnerAfter: 1216,
 			winnerDelta: 16,
@@ -79,36 +80,33 @@ describe('ranked-results', () => {
 			loserDelta: -16
 		});
 
-		await maybeApplyRankedResultForGame('game-1');
+		await maybeApplyRapidResultForGame('game-1');
 
-		expect(mocks.applyRankedResultByUsernames).toHaveBeenCalledWith({
+		expect(mocks.applyRapidResultByUsernames).toHaveBeenCalledWith({
 			gameRoundKey: 'game-1#1',
 			winnerUsername: 'Alice',
 			loserUsername: 'Bob'
 		});
-		expect(state.options.rankedRoundKeyApplied).toBe('game-1#1');
-		expect(state.options.rankedWhiteDelta).toBe(16);
-		expect(state.options.rankedBlackDelta).toBe(-16);
+		expect(state.options.rapidRoundKeyApplied).toBe('game-1#1');
 	});
 
 	it('does nothing when the round was already applied', async () => {
-		const state = createRankedFinishedState();
-		state.options.rankedRoundKeyApplied = 'game-1#1';
+		const state = createRapidFinishedState();
+		state.options.rapidRoundKeyApplied = 'game-1#1';
 		mocks.getGameOrThrow.mockReturnValue({ state });
 
-		await maybeApplyRankedResultForGame('game-1');
+		await maybeApplyRapidResultForGame('game-1');
 
-		expect(mocks.applyRankedResultByUsernames).not.toHaveBeenCalled();
+		expect(mocks.applyRapidResultByUsernames).not.toHaveBeenCalled();
 	});
 
-	it('does nothing for rapid games even when isRanked is true', async () => {
-		const state = createRankedFinishedState();
-		state.options.isRanked = true;
-		state.options.isRapid = true;
+	it('does nothing when game is not marked rapid', async () => {
+		const state = createRapidFinishedState();
+		state.options.isRapid = false;
 		mocks.getGameOrThrow.mockReturnValue({ state });
 
-		await maybeApplyRankedResultForGame('game-1');
+		await maybeApplyRapidResultForGame('game-1');
 
-		expect(mocks.applyRankedResultByUsernames).not.toHaveBeenCalled();
+		expect(mocks.applyRapidResultByUsernames).not.toHaveBeenCalled();
 	});
 });

@@ -112,10 +112,54 @@ export async function claimRankedGameSessionRemote(
 	return decideRankedProposalRemote(proposalId, true);
 }
 
+export async function getRapidQueueStatusRemote(): Promise<RankedQueueStatus> {
+	const response = await fetch('/api/rapid/queue');
+	return readJsonOrThrow<RankedQueueStatus>(response);
+}
+
+export async function joinRapidQueueRemote(): Promise<RankedQueueStatus> {
+	const response = await fetch('/api/rapid/queue', { method: 'POST' });
+	return readJsonOrThrow<RankedQueueStatus>(response);
+}
+
+export async function leaveRapidQueueRemote(): Promise<void> {
+	const response = await fetch('/api/rapid/queue', { method: 'DELETE' });
+	await readJsonOrThrow<{ ok: boolean }>(response);
+}
+
+export async function decideRapidProposalRemote(
+	proposalId: string,
+	accept: boolean
+): Promise<RankedMatchDecisionResponse> {
+	const response = await fetch(`/api/rapid/match/${proposalId}/accept`, {
+		method: 'POST',
+		headers: { 'Content-Type': 'application/json' },
+		body: JSON.stringify({ accept })
+	});
+	return readJsonOrThrow<RankedMatchDecisionResponse>(response);
+}
+
+export async function claimRapidGameSessionRemote(
+	proposalId: string
+): Promise<RankedMatchDecisionResponse> {
+	return decideRapidProposalRemote(proposalId, true);
+}
+
 export function openRankedQueueEventStream(
 	onEvent: (event: RankedQueueServerEvent) => void
 ): EventSource {
 	const source = new EventSource('/api/ranked/queue/events');
+	source.onmessage = (message) => {
+		const parsed = JSON.parse(message.data) as RankedQueueServerEvent;
+		onEvent(parsed);
+	};
+	return source;
+}
+
+export function openRapidQueueEventStream(
+	onEvent: (event: RankedQueueServerEvent) => void
+): EventSource {
+	const source = new EventSource('/api/rapid/queue/events');
 	source.onmessage = (message) => {
 		const parsed = JSON.parse(message.data) as RankedQueueServerEvent;
 		onEvent(parsed);
