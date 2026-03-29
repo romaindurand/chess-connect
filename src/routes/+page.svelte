@@ -613,9 +613,7 @@
 			<!-- style="border-color: var(--border-gray-200); background-color: transparent;"
 			class="dark:border-gray-700 dark:bg-gray-900" -->
 			<legend class="px-1 text-sm font-medium dark:text-gray-300">{$_('home.gameType')}</legend>
-			<div
-				class={`mt-3 grid gap-2 ${authState.authenticated ? 'sm:grid-cols-4' : 'sm:grid-cols-2'}`}
-			>
+			<div class="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
 				<label
 					class={`rounded-md border px-3 py-2 text-sm ${selectedMode === 'human' ? 'border-black bg-black text-white dark:border-gray-400 dark:bg-gray-800 dark:text-gray-100' : 'border-gray-300 dark:border-gray-700 dark:text-gray-300'}`}
 				>
