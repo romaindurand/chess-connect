@@ -26,9 +26,7 @@
 		en: 'English'
 	};
 	const menuTransition = $derived(isDesktop ? fade : fly);
-	const menuTransitionParams = $derived(
-		isDesktop ? { duration: 180 } : { x: 200, duration: 200 }
-	);
+	const menuTransitionParams = $derived(isDesktop ? { duration: 180 } : { x: 200, duration: 200 });
 
 	const currentLanguage = $derived(($locale === 'fr' ? 'fr' : 'en') as SupportedLanguage);
 	const RulesContent = $derived($locale === 'fr' ? RulesFr : RulesEn);

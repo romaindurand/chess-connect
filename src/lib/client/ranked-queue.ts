@@ -17,12 +17,29 @@ export function createMatchFoundSoundGate(): {
 }
 
 export function getMatchFoundProposalId(status: RankedQueueStatus | null): string | null {
+	const proposal = getPendingProposal(status);
+	if (!proposal) {
+		return null;
+	}
+
+	return proposal.id;
+}
+
+export function hasPendingProposal(status: RankedQueueStatus | null): boolean {
+	return getPendingProposal(status) !== null;
+}
+
+function getPendingProposal(status: RankedQueueStatus | null): RankedQueueStatus['proposal'] {
 	const proposal = status?.proposal;
 	if (!proposal || proposal.gameId) {
 		return null;
 	}
 
-	return proposal.id;
+	if (proposal.participants.some((participant) => participant.rejectedAt !== null)) {
+		return null;
+	}
+
+	return proposal;
 }
 
 export function hasAcceptedCurrentProposal(input: {

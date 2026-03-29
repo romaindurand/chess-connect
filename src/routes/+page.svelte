@@ -21,6 +21,7 @@
 	import {
 		createMatchFoundSoundGate,
 		getMatchFoundProposalId,
+		hasPendingProposal,
 		hasAcceptedCurrentProposal
 	} from '$lib/client/ranked-queue';
 	import { loadPlayerName, savePlayerName } from '$lib/client/player-name-storage';
@@ -85,6 +86,7 @@
 			locallyAcceptedProposalId
 		})
 	);
+	const showMatchFoundPrompt = $derived(hasPendingProposal(queueStatus));
 
 	function playMatchFoundSound(proposalId: string): void {
 		if (
@@ -876,7 +878,7 @@
 					</p>
 				{/if}
 
-				{#if queueStatus?.proposal && !queueStatus.proposal.gameId}
+				{#if showMatchFoundPrompt && queueStatus?.proposal}
 					<div
 						class="mt-4 rounded-md border border-gray-200 p-3 dark:border-gray-700 dark:bg-gray-800"
 					>

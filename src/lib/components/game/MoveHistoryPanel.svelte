@@ -56,11 +56,13 @@
 	}
 </script>
 
-<aside class="flex flex-col rounded border border-gray-300 p-2 dark:border-gray-700 dark:bg-gray-900">
+<aside
+	class="flex flex-col rounded border border-gray-300 p-2 dark:border-gray-700 dark:bg-gray-900"
+>
 	<p class="mb-2 text-xs font-medium text-gray-700 dark:text-gray-300">
 		{$_('game.history.title')}
 	</p>
-	<div class="order-2 mb-2 grid grid-cols-4 gap-2 lg:order-3 lg:mb-0 lg:mt-2">
+	<div class="order-2 mb-2 grid grid-cols-4 gap-2 lg:order-3 lg:mt-2 lg:mb-0">
 		<button
 			type="button"
 			class="rounded border border-gray-300 p-2 dark:border-gray-700 dark:text-gray-200"

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
 	createMatchFoundSoundGate,
 	getMatchFoundProposalId,
+	hasPendingProposal,
 	hasAcceptedCurrentProposal
 } from './ranked-queue';
 import type { RankedQueueStatus } from '$lib/types/game';
@@ -84,6 +85,35 @@ describe('ranked queue helpers', () => {
 			}
 		});
 
+		expect(getMatchFoundProposalId(status)).toBeNull();
+	});
+
+	it('does not consider a proposal pending when any participant has rejected', () => {
+		const status = createStatus({
+			proposal: {
+				id: 'proposal-1',
+				expiresAt: '2026-03-19T10:00:30.000Z',
+				gameId: null,
+				participants: [
+					{
+						userId: 'u1',
+						username: 'Alice',
+						rating: 1200,
+						acceptedAt: null,
+						rejectedAt: '2026-03-19T10:00:21.000Z'
+					},
+					{
+						userId: 'u2',
+						username: 'Bob',
+						rating: 1200,
+						acceptedAt: null,
+						rejectedAt: null
+					}
+				]
+			}
+		});
+
+		expect(hasPendingProposal(status)).toBe(false);
 		expect(getMatchFoundProposalId(status)).toBeNull();
 	});
 
