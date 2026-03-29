@@ -6,7 +6,17 @@ import { mdsvex } from 'mdsvex';
 const config = {
 	extensions: ['.svelte', '.md'],
 	preprocess: [vitePreprocess(), mdsvex({ extensions: ['.md'] })],
-	kit: { adapter: adapter() }
+	kit: {
+		adapter: adapter(),
+		experimental: {
+			remoteFunctions: true
+		}
+	},
+	compilerOptions: {
+		experimental: {
+			async: true
+		}
+	}
 };
 
 export default config;

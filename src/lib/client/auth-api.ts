@@ -1,4 +1,11 @@
-import { localizeServerError, translate } from '$lib/i18n';
+import { localizeServerError } from '$lib/i18n';
+import {
+	registerRemote as _registerRemote,
+	loginWithTokenRemote as _loginWithTokenRemote,
+	logoutRemote as _logoutRemote,
+	getAuthStateRemote as _getAuthStateRemote,
+	rotateTokenRemote as _rotateTokenRemote
+} from '../../routes/api/auth.remote';
 
 export interface AuthState {
 	authenticated: boolean;
@@ -6,48 +13,33 @@ export interface AuthState {
 	userId?: string;
 }
 
-async function readJsonOrThrow<T>(response: Response): Promise<T> {
-	const payload = (await response.json()) as T | { error: string };
-	if (!response.ok) {
-		const message =
-			typeof payload === 'object' && payload !== null && 'error' in payload
-				? localizeServerError(String((payload as { error: string }).error))
-				: translate('errors.unexpected');
-		throw new Error(message);
+async function wrapCall<T>(call: () => Promise<T>): Promise<T> {
+	try {
+		return await call();
+	} catch (e: unknown) {
+		const message = e instanceof Error ? e.message : 'errors.unexpected';
+		throw new Error(localizeServerError(message));
 	}
-	return payload as T;
 }
 
 export async function registerRemote(
 	username: string
 ): Promise<{ rawToken: string; username: string }> {
-	const response = await fetch('/api/auth/register', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ username })
-	});
-	return readJsonOrThrow<{ rawToken: string; username: string }>(response);
+	return wrapCall(() => _registerRemote({ username }));
 }
 
 export async function loginWithTokenRemote(token: string): Promise<{ username: string }> {
-	const response = await fetch('/api/auth/login-token', {
-		method: 'POST',
-		headers: { 'Content-Type': 'application/json' },
-		body: JSON.stringify({ token })
-	});
-	return readJsonOrThrow<{ username: string }>(response);
+	return wrapCall(() => _loginWithTokenRemote({ token }));
 }
 
 export async function logoutRemote(): Promise<void> {
-	await fetch('/api/auth/logout', { method: 'POST' });
+	await wrapCall(() => _logoutRemote());
 }
 
 export async function getAuthStateRemote(): Promise<AuthState> {
-	const response = await fetch('/api/auth/me');
-	return readJsonOrThrow<AuthState>(response);
+	return wrapCall(() => _getAuthStateRemote());
 }
 
 export async function rotateTokenRemote(): Promise<{ rawToken: string }> {
-	const response = await fetch('/api/auth/token/rotate', { method: 'POST' });
-	return readJsonOrThrow<{ rawToken: string }>(response);
+	return wrapCall(() => _rotateTokenRemote());
 }

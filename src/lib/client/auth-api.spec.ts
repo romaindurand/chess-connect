@@ -9,60 +9,44 @@ import {
 } from '$lib/client/auth-api';
 import { initI18n, setLanguage } from '$lib/i18n';
 
-function createJsonResponse(payload: unknown, init?: ResponseInit): Response {
-	return new Response(JSON.stringify(payload), {
-		headers: { 'Content-Type': 'application/json' },
-		...init
-	});
-}
+vi.mock('../../routes/api/auth.remote', () => ({
+	registerRemote: vi.fn(),
+	loginWithTokenRemote: vi.fn(),
+	logoutRemote: vi.fn(),
+	getAuthStateRemote: vi.fn(),
+	rotateTokenRemote: vi.fn()
+}));
+
+import * as authRemote from '../../routes/api/auth.remote';
 
 describe('auth api', () => {
 	initI18n();
 	setLanguage('fr');
 
 	afterEach(() => {
-		vi.unstubAllGlobals();
+		vi.clearAllMocks();
 	});
 
 	it('registers a user and returns the raw token payload', async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValue(createJsonResponse({ rawToken: 'ccrec_token', username: 'Romain' }));
-		vi.stubGlobal('fetch', fetchMock);
+		vi.mocked(authRemote.registerRemote).mockResolvedValue({ rawToken: 'ccrec_token', username: 'Romain' });
 
 		await expect(registerRemote('Romain')).resolves.toEqual({
 			rawToken: 'ccrec_token',
 			username: 'Romain'
 		});
-		expect(fetchMock).toHaveBeenCalledWith('/api/auth/register', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ username: 'Romain' })
-		});
+		expect(authRemote.registerRemote).toHaveBeenCalledWith({ username: 'Romain' });
 	});
 
 	it('throws the server error message when registration fails', async () => {
-		vi.stubGlobal(
-			'fetch',
-			vi
-				.fn()
-				.mockResolvedValue(
-					createJsonResponse({ error: 'errors.usernameAlreadyTaken' }, { status: 409 })
-				)
+		vi.mocked(authRemote.registerRemote).mockRejectedValue(
+			new Error('errors.usernameAlreadyTaken')
 		);
 
 		await expect(registerRemote('Romain')).rejects.toThrow("Ce nom d'utilisateur est déjà pris");
 	});
 
 	it('loads the current auth state', async () => {
-		vi.stubGlobal(
-			'fetch',
-			vi
-				.fn()
-				.mockResolvedValue(
-					createJsonResponse({ authenticated: true, username: 'Romain', userId: 'user-1' })
-				)
-		);
+		vi.mocked(authRemote.getAuthStateRemote).mockResolvedValue({ authenticated: true, username: 'Romain', userId: 'user-1' });
 
 		await expect(getAuthStateRemote()).resolves.toEqual({
 			authenticated: true,
@@ -72,27 +56,20 @@ describe('auth api', () => {
 	});
 
 	it('logs in with a recovery token and rotates tokens', async () => {
-		const fetchMock = vi
-			.fn()
-			.mockResolvedValueOnce(createJsonResponse({ username: 'Romain' }))
-			.mockResolvedValueOnce(createJsonResponse({ rawToken: 'ccrec_next' }));
-		vi.stubGlobal('fetch', fetchMock);
+		vi.mocked(authRemote.loginWithTokenRemote).mockResolvedValue({ username: 'Romain' });
+		vi.mocked(authRemote.rotateTokenRemote).mockResolvedValue({ rawToken: 'ccrec_next' });
 
 		await expect(loginWithTokenRemote('ccrec_token')).resolves.toEqual({ username: 'Romain' });
 		await expect(rotateTokenRemote()).resolves.toEqual({ rawToken: 'ccrec_next' });
-		expect(fetchMock).toHaveBeenNthCalledWith(1, '/api/auth/login-token', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ token: 'ccrec_token' })
-		});
-		expect(fetchMock).toHaveBeenNthCalledWith(2, '/api/auth/token/rotate', { method: 'POST' });
+		
+		expect(authRemote.loginWithTokenRemote).toHaveBeenCalledWith({ token: 'ccrec_token' });
+		expect(authRemote.rotateTokenRemote).toHaveBeenCalled();
 	});
 
 	it('posts logout without expecting a payload', async () => {
-		const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
-		vi.stubGlobal('fetch', fetchMock);
+		vi.mocked(authRemote.logoutRemote).mockResolvedValue(undefined);
 
 		await expect(logoutRemote()).resolves.toBeUndefined();
-		expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' });
+		expect(authRemote.logoutRemote).toHaveBeenCalled();
 	});
 });
