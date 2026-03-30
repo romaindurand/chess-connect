@@ -828,12 +828,10 @@
 			</details>
 		{/if}
 
-		{#if authState.authenticated && selectedMode !== 'rapid'}
-			<p class="text-sm text-gray-600 dark:text-gray-400">
-				<a class="underline dark:text-blue-400" href={resolve('/ladder')}>{$_('home.openLadder')}</a
-				>
-			</p>
-		{/if}
+		<p class="text-sm text-gray-600 dark:text-gray-400">
+			<a class="underline dark:text-blue-400" href={resolve('/ladder')}>{$_('home.openLadder')}</a
+			>
+		</p>
 
 		<button
 			type="submit"
