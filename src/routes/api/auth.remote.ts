@@ -12,9 +12,7 @@ import {
 } from '$lib/server/auth-store';
 import type { AuthState } from '$lib/client/auth-api';
 
-const usernameSchema = z.string()
-	.min(2, 'errors.nameLength')
-	.max(24, 'errors.nameLength');
+const usernameSchema = z.string().min(2, 'errors.nameLength').max(24, 'errors.nameLength');
 
 export const registerRemote = command(
 	z.object({ username: usernameSchema }),

@@ -28,7 +28,10 @@ describe('auth api', () => {
 	});
 
 	it('registers a user and returns the raw token payload', async () => {
-		vi.mocked(authRemote.registerRemote).mockResolvedValue({ rawToken: 'ccrec_token', username: 'Romain' });
+		vi.mocked(authRemote.registerRemote).mockResolvedValue({
+			rawToken: 'ccrec_token',
+			username: 'Romain'
+		});
 
 		await expect(registerRemote('Romain')).resolves.toEqual({
 			rawToken: 'ccrec_token',
@@ -46,7 +49,11 @@ describe('auth api', () => {
 	});
 
 	it('loads the current auth state', async () => {
-		vi.mocked(authRemote.getAuthStateRemote).mockResolvedValue({ authenticated: true, username: 'Romain', userId: 'user-1' });
+		vi.mocked(authRemote.getAuthStateRemote).mockResolvedValue({
+			authenticated: true,
+			username: 'Romain',
+			userId: 'user-1'
+		});
 
 		await expect(getAuthStateRemote()).resolves.toEqual({
 			authenticated: true,
@@ -61,7 +68,7 @@ describe('auth api', () => {
 
 		await expect(loginWithTokenRemote('ccrec_token')).resolves.toEqual({ username: 'Romain' });
 		await expect(rotateTokenRemote()).resolves.toEqual({ rawToken: 'ccrec_next' });
-		
+
 		expect(authRemote.loginWithTokenRemote).toHaveBeenCalledWith({ token: 'ccrec_token' });
 		expect(authRemote.rotateTokenRemote).toHaveBeenCalled();
 	});

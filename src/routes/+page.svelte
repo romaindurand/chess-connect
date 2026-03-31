@@ -490,13 +490,6 @@
 			advancedOptionsOpen = true;
 		}, 0);
 	}
-
-	$effect(() => {
-		if ((selectedMode === 'ranked' || selectedMode === 'rapid') && advancedOptionsCloseTimer) {
-			clearTimeout(advancedOptionsCloseTimer);
-			advancedOptionsCloseTimer = null;
-		}
-	});
 </script>
 
 <svelte:head>
@@ -680,28 +673,28 @@
 			</p>
 		</fieldset>
 
-		{#if selectedMode !== 'ranked' && selectedMode !== 'rapid'}
-			<details
-				transition:slide
-				class="rounded-md border border-gray-200 p-3 dark:border-gray-700 dark:bg-gray-900"
-				open={advancedOptionsMounted}
+		<details
+			transition:slide
+			class="rounded-md border border-gray-200 p-3 dark:border-gray-700 dark:bg-gray-900"
+			open={advancedOptionsMounted}
+		>
+			<summary
+				class="cursor-pointer text-sm font-medium dark:text-gray-300"
+				onclick={toggleAdvancedOptions}
+				aria-expanded={advancedOptionsOpen}
 			>
-				<summary
-					class="cursor-pointer text-sm font-medium dark:text-gray-300"
-					onclick={toggleAdvancedOptions}
-					aria-expanded={advancedOptionsOpen}
-				>
-					{$_('home.advancedOptions')}
-				</summary>
-				<div
-					class={`grid transition-all duration-300 ease-out ${
-						advancedOptionsOpen
-							? 'mt-3 grid-rows-[1fr] opacity-100'
-							: 'mt-0 grid-rows-[0fr] opacity-0'
-					}`}
-				>
-					<div class="overflow-hidden">
-						<div class="space-y-3 p-2">
+				{$_('home.advancedOptions')}
+			</summary>
+			<div
+				class={`grid transition-all duration-300 ease-out ${
+					advancedOptionsOpen
+						? 'mt-3 grid-rows-[1fr] opacity-100'
+						: 'mt-0 grid-rows-[0fr] opacity-0'
+				}`}
+			>
+				<div class="overflow-hidden">
+					<div class="space-y-3 p-2">
+						{#if selectedMode !== 'ranked' && selectedMode !== 'rapid'}
 							<div class="space-y-2">
 								<span class="text-sm font-medium dark:text-gray-300">{$_('home.yourColor')}</span>
 								<div class="grid gap-2 sm:grid-cols-3">
@@ -750,7 +743,7 @@
 							</label>
 
 							{#if timeControlEnabled}
-								<div class="space-y-2">
+								<div class="space-y-2" transition:slide>
 									<span class="text-sm dark:text-gray-300">{$_('home.timePerPlayer')}</span>
 									<div class="grid grid-cols-2 gap-2">
 										<label class="block space-y-1">
@@ -802,7 +795,7 @@
 							</label>
 
 							{#if roundLimitEnabled}
-								<label class="block space-y-2">
+								<label class="block space-y-2" transition:slide>
 									<span class="text-sm dark:text-gray-300">{$_('home.roundLimit')}</span>
 									<input
 										type="number"
@@ -813,24 +806,24 @@
 									/>
 								</label>
 							{/if}
+						{/if}
 
-							<label class="flex items-center gap-2 text-sm">
-								<input
-									type="checkbox"
-									bind:checked={allowAiTrainingData}
-									class="dark:bg-gray-800"
-								/>
-								<span class="dark:text-gray-300">{$_('home.allowAiTrainingData')}</span>
-							</label>
-						</div>
+						<label class="flex items-center gap-2 text-sm">
+							<input type="checkbox" bind:checked={allowAiTrainingData} class="dark:bg-gray-800" />
+							<span class="dark:text-gray-300">{$_('home.allowAiTrainingData')}</span>
+						</label>
+						{#if selectedMode === 'ranked' || selectedMode === 'rapid'}
+							<p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
+								{$_('home.rankedAiTrainingNotice')}
+							</p>
+						{/if}
 					</div>
 				</div>
-			</details>
-		{/if}
+			</div>
+		</details>
 
 		<p class="text-sm text-gray-600 dark:text-gray-400">
-			<a class="underline dark:text-blue-400" href={resolve('/ladder')}>{$_('home.openLadder')}</a
-			>
+			<a class="underline dark:text-blue-400" href={resolve('/ladder')}>{$_('home.openLadder')}</a>
 		</p>
 
 		<button

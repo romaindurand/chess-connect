@@ -13,7 +13,7 @@ const config = {
 		}
 	},
 	vitePlugin: {
-		inspector: true,
+		inspector: true
 	},
 	compilerOptions: {
 		experimental: {

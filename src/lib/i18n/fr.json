@@ -45,6 +45,7 @@
 		"enableTimeControl": "Activer une limite de temps",
 		"enableRoundLimit": "Limiter le nombre de manches",
 		"allowAiTrainingData": "Autoriser l'enregistrement des parties pour entraîner l'ordinateur",
+		"rankedAiTrainingNotice": "Dans les parties classées et non-classées, les deux joueurs doivent accepter pour que la partie puisse être utilisée lors de l'entraînnement de l'ordinateur.",
 		"timePerPlayer": "Durée par joueur",
 		"minutes": "Minutes",
 		"seconds": "Secondes",

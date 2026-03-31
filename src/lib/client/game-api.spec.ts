@@ -52,7 +52,7 @@ describe('game api', () => {
 		vi.mocked(gamesRemote.createGameRemote).mockResolvedValue(result);
 
 		await expect(createGameRemote({ name: 'Romain' })).resolves.toEqual(result);
-		
+
 		expect(gamesRemote.createGameRemote).toHaveBeenCalledWith({ name: 'Romain' });
 	});
 
@@ -66,7 +66,10 @@ describe('game api', () => {
 		vi.mocked(rankedRemote.decideRankedProposalRemote).mockResolvedValue(result);
 
 		await expect(claimRankedGameSessionRemote('proposal-1')).resolves.toEqual(result);
-		expect(rankedRemote.decideRankedProposalRemote).toHaveBeenCalledWith({ proposalId: 'proposal-1', accept: true });
+		expect(rankedRemote.decideRankedProposalRemote).toHaveBeenCalledWith({
+			proposalId: 'proposal-1',
+			accept: true
+		});
 	});
 
 	it('posts ranked queue and ladder requests to the correct endpoints', async () => {
@@ -77,7 +80,9 @@ describe('game api', () => {
 			searchRange: 75,
 			proposal: null
 		});
-		vi.mocked(rankedRemote.leaveRankedQueueRemote).mockResolvedValue(undefined as unknown as {ok: boolean});
+		vi.mocked(rankedRemote.leaveRankedQueueRemote).mockResolvedValue(
+			undefined as unknown as { ok: boolean }
+		);
 		vi.mocked(rankedRemote.getLadderRemote).mockResolvedValue({ ladder: [] });
 		vi.mocked(rankedRemote.decideRankedProposalRemote).mockResolvedValue({
 			proposalId: 'proposal-2',
@@ -94,7 +99,10 @@ describe('game api', () => {
 		expect(rankedRemote.joinRankedQueueRemote).toHaveBeenCalled();
 		expect(rankedRemote.leaveRankedQueueRemote).toHaveBeenCalled();
 		expect(rankedRemote.getLadderRemote).toHaveBeenCalledWith(200);
-		expect(rankedRemote.decideRankedProposalRemote).toHaveBeenCalledWith({ proposalId: 'proposal-2', accept: false });
+		expect(rankedRemote.decideRankedProposalRemote).toHaveBeenCalledWith({
+			proposalId: 'proposal-2',
+			accept: false
+		});
 	});
 
 	it('posts rapid queue requests to the correct endpoints', async () => {
@@ -105,8 +113,10 @@ describe('game api', () => {
 			searchRange: 75,
 			proposal: null
 		});
-		vi.mocked(rapidRemote.leaveRapidQueueRemote).mockResolvedValue(undefined as unknown as {ok: boolean});
-		
+		vi.mocked(rapidRemote.leaveRapidQueueRemote).mockResolvedValue(
+			undefined as unknown as { ok: boolean }
+		);
+
 		vi.mocked(rapidRemote.decideRapidProposalRemote)
 			.mockResolvedValueOnce({
 				proposalId: 'proposal-rapid-1',
@@ -128,7 +138,13 @@ describe('game api', () => {
 
 		expect(rapidRemote.joinRapidQueueRemote).toHaveBeenCalled();
 		expect(rapidRemote.leaveRapidQueueRemote).toHaveBeenCalled();
-		expect(rapidRemote.decideRapidProposalRemote).toHaveBeenNthCalledWith(1, { proposalId: 'proposal-rapid-1', accept: true });
-		expect(rapidRemote.decideRapidProposalRemote).toHaveBeenNthCalledWith(2, { proposalId: 'proposal-rapid-2', accept: true });
+		expect(rapidRemote.decideRapidProposalRemote).toHaveBeenNthCalledWith(1, {
+			proposalId: 'proposal-rapid-1',
+			accept: true
+		});
+		expect(rapidRemote.decideRapidProposalRemote).toHaveBeenNthCalledWith(2, {
+			proposalId: 'proposal-rapid-2',
+			accept: true
+		});
 	});
 });

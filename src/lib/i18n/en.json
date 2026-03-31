@@ -45,6 +45,7 @@
 		"enableTimeControl": "Enable time control",
 		"enableRoundLimit": "Limit number of rounds",
 		"allowAiTrainingData": "Allow game recording for computer training",
+		"rankedAiTrainingNotice": "In ranked and unranked matches, both players must accept for the game to be used for computer training.",
 		"timePerPlayer": "Time per player",
 		"minutes": "Minutes",
 		"seconds": "Seconds",
