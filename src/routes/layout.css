@@ -21,3 +21,116 @@
 	animation-duration: 500ms;
 	animation-timing-function: ease-in-out;
 }
+
+@layer components {
+	.selection-corners {
+		position: relative;
+		--selection-color: rgb(0 0 0);
+		--selection-thickness: 4px;
+		--selection-segment: 18px;
+		--selection-offset: 2px;
+	}
+
+	:where(.dark, .dark *) .selection-corners {
+		--selection-color: rgb(227, 234, 247);
+	}
+
+	.selection-corners::after {
+		content: '';
+		position: absolute;
+		inset: calc(-1 * var(--selection-offset));
+		border: var(--selection-thickness) solid var(--selection-color);
+		border-radius: calc(0.5rem + var(--selection-offset));
+		pointer-events: none;
+		-webkit-mask:
+			linear-gradient(#000 0 0) top left / var(--selection-segment) var(--selection-segment) no-repeat,
+			linear-gradient(#000 0 0) top right / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom left / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom right / var(--selection-segment) var(--selection-segment)
+				no-repeat;
+		mask:
+			linear-gradient(#000 0 0) top left / var(--selection-segment) var(--selection-segment) no-repeat,
+			linear-gradient(#000 0 0) top right / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom left / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom right / var(--selection-segment) var(--selection-segment)
+				no-repeat;
+	}
+
+	.hover-selection-corners-inside {
+		position: relative;
+		--selection-color: rgb(5 150 105);
+		--selection-thickness: 4px;
+		--selection-segment: 18px;
+		--selection-inside-offset: 4px;
+	}
+
+	:where(.dark, .dark *) .hover-selection-corners-inside {
+		--selection-color: rgb(52 211 153);
+	}
+
+	.hover-selection-corners-inside:hover::after {
+		content: '';
+		position: absolute;
+		inset: var(--selection-inside-offset);
+		border: var(--selection-thickness) solid var(--selection-color);
+		border-radius: calc(0.5rem - var(--selection-inside-offset));
+		pointer-events: none;
+		-webkit-mask:
+			linear-gradient(#000 0 0) top left / var(--selection-segment) var(--selection-segment) no-repeat,
+			linear-gradient(#000 0 0) top right / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom left / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom right / var(--selection-segment) var(--selection-segment)
+				no-repeat;
+		mask:
+			linear-gradient(#000 0 0) top left / var(--selection-segment) var(--selection-segment) no-repeat,
+			linear-gradient(#000 0 0) top right / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom left / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom right / var(--selection-segment) var(--selection-segment)
+				no-repeat;
+	}
+
+	.selection-corners-inside {
+		position: relative;
+		--selection-color: rgb(5 150 105);
+		--selection-thickness: 4px;
+		--selection-segment: 18px;
+		--selection-inside-offset: 4px;
+	}
+
+	:where(.dark, .dark *) .selection-corners-inside {
+		--selection-color: rgb(52 211 153);
+	}
+
+	.selection-corners-inside::after {
+		content: '';
+		position: absolute;
+		inset: var(--selection-inside-offset);
+		border: var(--selection-thickness) solid var(--selection-color);
+		border-radius: calc(0.5rem - var(--selection-inside-offset));
+		pointer-events: none;
+		-webkit-mask:
+			linear-gradient(#000 0 0) top left / var(--selection-segment) var(--selection-segment) no-repeat,
+			linear-gradient(#000 0 0) top right / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom left / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom right / var(--selection-segment) var(--selection-segment)
+				no-repeat;
+		mask:
+			linear-gradient(#000 0 0) top left / var(--selection-segment) var(--selection-segment) no-repeat,
+			linear-gradient(#000 0 0) top right / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom left / var(--selection-segment) var(--selection-segment)
+				no-repeat,
+			linear-gradient(#000 0 0) bottom right / var(--selection-segment) var(--selection-segment)
+				no-repeat;
+	}
+}

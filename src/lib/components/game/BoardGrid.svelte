@@ -15,10 +15,12 @@
 		isMyTurn: boolean;
 		viewerColor: Color | null;
 		selectedBoardFrom: Coord | null;
+		dragHoverCoord: Coord | null;
 		onCellEnter: (coord: Coord, cell: PieceOnBoard | null) => void;
 		onCellLeave: () => void;
 		onCellClick: (coord: Coord) => void;
 		onBoardDragStart: (coord: Coord) => void;
+		onCellDragHover: (coord: Coord | null) => void;
 		onCellDrop: (coord: Coord) => void | Promise<void>;
 		onDragCancel: () => void;
 		pieceTransitionName: (coord: Coord) => string | null;
@@ -31,10 +33,12 @@
 		isMyTurn,
 		viewerColor,
 		selectedBoardFrom,
+		dragHoverCoord,
 		onCellEnter,
 		onCellLeave,
 		onCellClick,
 		onBoardDragStart,
+		onCellDragHover,
 		onCellDrop,
 		onDragCancel,
 		pieceTransitionName
@@ -79,12 +83,18 @@
 		onBoardDragStart(coord);
 	}
 
-	function onCellDragOver(event: DragEvent): void {
+	function onCellDragOver(event: DragEvent, coord: Coord): void {
 		event.preventDefault();
+		onCellDragHover(coord);
+	}
+
+	function onCellDragLeave(): void {
+		onCellDragHover(null);
 	}
 
 	function onCellDropEvent(event: DragEvent, coord: Coord): void {
 		event.preventDefault();
+		onCellDragHover(null);
 		onCellDrop(coord);
 	}
 
@@ -107,15 +117,21 @@
 				{#each row as cell, x (x)}
 					{@const coord = { x, y }}
 					{@const key = coordKey(coord)}
+					{@const isDragHoverTarget =
+						targetHintTone === 'ally' &&
+						targetHints.has(key) &&
+						dragHoverCoord?.x === x &&
+						dragHoverCoord?.y === y}
 					<button
 						type="button"
 						data-cell-x={coord.x}
 						data-cell-y={coord.y}
-						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100') : 'border-gray-300 dark:bg-gray-800'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'ring-2 ring-black' : ''} ${canDragCell(cell) ? 'cursor-grab touch-none active:cursor-grabbing' : ''}`}
+						class={`aspect-square rounded border ${targetHints.has(key) ? (targetHintTone === 'enemy' ? 'border-red-500 bg-red-100' : 'border-black bg-emerald-100 hover-selection-corners-inside') : 'border-gray-300 dark:bg-gray-800'} ${selectedBoardFrom && selectedBoardFrom.x === x && selectedBoardFrom.y === y ? 'selection-corners' : ''} ${isDragHoverTarget ? 'selection-corners-inside' : ''} ${canDragCell(cell) ? 'cursor-grab touch-none active:cursor-grabbing' : ''}`}
 						onmouseenter={() => onCellEnter(coord, cell)}
 						onmouseleave={onCellLeave}
 						onclick={() => onCellClick(coord)}
-						ondragover={onCellDragOver}
+						ondragover={(event) => onCellDragOver(event, coord)}
+						ondragleave={onCellDragLeave}
 						ondrop={(event) => onCellDropEvent(event, coord)}
 						draggable={canDragCell(cell)}
 						ondragstart={(event) => onBoardDragStartEvent(event, coord)}

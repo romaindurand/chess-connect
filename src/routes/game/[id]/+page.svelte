@@ -24,6 +24,7 @@
 	let ghostPieceType: PieceType | null = $state(null);
 	let ghostPieceColor: Color | null = $state(null);
 	let ghostVisible = $state(false);
+	let dragHoverCoord: Coord | null = $state(null);
 
 	const props = $props<{ data: { gameId: string } }>();
 	const gameState = createGameState(() => props.data.gameId);
@@ -78,6 +79,7 @@
 
 	function onDocumentTouchMove(event: TouchEvent): void {
 		if (!gameState.isDragging()) {
+			dragHoverCoord = null;
 			return;
 		}
 
@@ -89,6 +91,16 @@
 			ghostX = touch.clientX;
 			ghostY = touch.clientY;
 			ghostVisible = true;
+			const el = document.elementFromPoint(touch.clientX, touch.clientY);
+			const button = el?.closest('[data-cell-x]') as HTMLElement | null;
+			if (button?.dataset.cellX !== undefined && button?.dataset.cellY !== undefined) {
+				dragHoverCoord = {
+					x: parseInt(button.dataset.cellX, 10),
+					y: parseInt(button.dataset.cellY, 10)
+				};
+			} else {
+				dragHoverCoord = null;
+			}
 		}
 	}
 
@@ -106,6 +118,7 @@
 		ghostPieceType = null;
 		ghostPieceColor = null;
 		ghostVisible = false;
+		dragHoverCoord = null;
 	}
 
 	function onDocumentPointerCancel(event: PointerEvent): void {
@@ -115,10 +128,12 @@
 		ghostPieceType = null;
 		ghostPieceColor = null;
 		ghostVisible = false;
+		dragHoverCoord = null;
 	}
 
 	function onBoardDragStartWithGhost(coord: Coord): void {
 		gameState.actions.onBoardDragStart(coord);
+		dragHoverCoord = null;
 		// Initialize ghost piece info if drag was successful
 		const game = gameState.view.game;
 		if (game && gameState.isDragging()) {
@@ -134,6 +149,7 @@
 
 	function onReserveDragStartWithGhost(color: 'white' | 'black', piece: PieceType): void {
 		gameState.actions.onReserveDragStart(color, piece);
+		dragHoverCoord = null;
 		// Initialize ghost piece info if drag was successful
 		if (gameState.isDragging()) {
 			ghostPieceType = piece;
@@ -279,10 +295,12 @@
 					isMyTurn={gameState.view.isMyTurn}
 					viewerColor={gameState.view.game?.viewerColor ?? null}
 					selectedBoardFrom={gameState.view.selectedBoardFrom}
+					dragHoverCoord={dragHoverCoord}
 					onCellEnter={gameState.actions.onBoardHover}
 					onCellLeave={gameState.actions.clearBoardHover}
 					onCellClick={gameState.actions.onCellClick}
 					onBoardDragStart={onBoardDragStartWithGhost}
+					onCellDragHover={(coord) => (dragHoverCoord = coord)}
 					onCellDrop={gameState.actions.onCellDrop}
 					onDragCancel={gameState.actions.cancelDrag}
 					pieceTransitionName={gameState.view.boardPieceTransitionName}
