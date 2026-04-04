@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { resolve } from '$app/paths';
-	import { Copy, History } from '@lucide/svelte';
+	import Copy from '@lucide/svelte/icons/copy';
+	import History from '@lucide/svelte/icons/history';
 	import { _ } from 'svelte-i18n';
 	import favicon from '$lib/assets/favicon.png';
 	import AppMenu from '../AppMenu.svelte';

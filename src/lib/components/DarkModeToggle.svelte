@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
-	import { Moon, Sun } from '@lucide/svelte';
+	import Moon from '@lucide/svelte/icons/moon';
+	import Sun from '@lucide/svelte/icons/sun';
 	import { getDarkModePreference, setDarkModePreference } from '$lib/client/dark-mode-storage';
 
 	let isDarkMode = $state(false);

@@ -1,7 +1,13 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { _, locale } from 'svelte-i18n';
-	import { Menu, X, Volume2, VolumeX, ChevronDown, Moon, Sun } from '@lucide/svelte';
+	import Menu from '@lucide/svelte/icons/menu';
+	import X from '@lucide/svelte/icons/x';
+	import Volume2 from '@lucide/svelte/icons/volume-2';
+	import VolumeX from '@lucide/svelte/icons/volume-x';
+	import ChevronDown from '@lucide/svelte/icons/chevron-down';
+	import Moon from '@lucide/svelte/icons/moon';
+	import Sun from '@lucide/svelte/icons/sun';
 	import GameDialog from './GameDialog.svelte';
 	import { getSoundPreference, setSoundPreference } from '$lib/client/sound-storage';
 	import { getDarkModePreference, setDarkModePreference } from '$lib/client/dark-mode-storage';

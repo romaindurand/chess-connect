@@ -1,5 +1,8 @@
 <script lang="ts">
-	import { ChessBishop, ChessKnight, ChessPawn, ChessRook } from '@lucide/svelte';
+	import ChessBishop from '@lucide/svelte/icons/chess-bishop';
+	import ChessKnight from '@lucide/svelte/icons/chess-knight';
+	import ChessPawn from '@lucide/svelte/icons/chess-pawn';
+	import ChessRook from '@lucide/svelte/icons/chess-rook';
 	import { _ } from 'svelte-i18n';
 	import type { PieceType } from '$lib/types/game';
 

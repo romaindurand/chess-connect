@@ -1,7 +1,8 @@
 <script lang="ts">
 	import { _ } from 'svelte-i18n';
 	import { rotateTokenRemote, logoutRemote } from '$lib/client/auth-api';
-	import { Eye, EyeOff } from '@lucide/svelte';
+	import Eye from '@lucide/svelte/icons/eye';
+	import EyeOff from '@lucide/svelte/icons/eye-off';
 
 	interface Props {
 		username: string;
