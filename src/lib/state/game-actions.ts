@@ -164,24 +164,56 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		}
 	): Promise<GameView> {
 		const previousGame = input.getGame();
-		const previousMoveHistoryLength = input.getGame()?.state.moveHistory.length ?? 0;
+		const previousMoveHistoryLength = previousGame?.state.moveHistory.length ?? 0;
 		const followLiveHistory = shouldFollowLiveEdge(
 			input.getHistoryStep(),
 			previousMoveHistoryLength
 		);
 
+		let optimisticGame: GameView | null = null;
+		if (previousGame) {
+			optimisticGame = JSON.parse(JSON.stringify(previousGame)) as GameView;
+			if (payload.move.kind === 'move') {
+				const piece = optimisticGame.state.board[payload.move.from.y][payload.move.from.x];
+				optimisticGame.state.board[payload.move.from.y][payload.move.from.x] = null;
+				optimisticGame.state.board[payload.move.to.y][payload.move.to.x] = piece;
+			} else if (payload.move.kind === 'place' && previousGame.viewerColor) {
+				const owner = previousGame.viewerColor;
+				if (optimisticGame.state.reserves[owner][payload.move.piece]) {
+					optimisticGame.state.reserves[owner][payload.move.piece] = false;
+					optimisticGame.state.board[payload.move.to.y][payload.move.to.x] = {
+						type: payload.move.piece,
+						owner,
+						pawnDirection: owner === 'white' ? -1 : 1
+					};
+				}
+			}
+			optimisticGame.state.turn = optimisticGame.state.turn === 'white' ? 'black' : 'white';
+			optimisticGame.legalOptions = { byBoardFrom: {}, byReservePiece: { pawn: [], rook: [], knight: [], bishop: [] } };
+		}
+
 		if (typeof document === 'undefined' || typeof document.startViewTransition !== 'function') {
-			const updatedGame = await playMoveRemote(input.getGameId(), payload);
-			input.setGame(updatedGame);
-			if (isAutomaticDrawRoundReset(previousGame?.state ?? null, updatedGame.state)) {
-				input.setShowRepetitionDrawModal(true);
+			if (optimisticGame) {
+				input.setGame(optimisticGame);
 			}
-			if (followLiveHistory) {
-				input.setHistoryStep(updatedGame.state.moveHistory.length);
-				input.setHistorySnapshot(null);
+			try {
+				const updatedGame = await playMoveRemote(input.getGameId(), payload);
+				input.setGame(updatedGame);
+				if (isAutomaticDrawRoundReset(previousGame?.state ?? null, updatedGame.state)) {
+					input.setShowRepetitionDrawModal(true);
+				}
+				if (followLiveHistory) {
+					input.setHistoryStep(updatedGame.state.moveHistory.length);
+					input.setHistorySnapshot(null);
+				}
+				clearTransitionMarkers();
+				return updatedGame;
+			} catch (error) {
+				if (previousGame) {
+					input.setGame(previousGame);
+				}
+				throw error;
 			}
-			clearTransitionMarkers();
-			return updatedGame;
 		}
 
 		const transitionName = `piece-${Date.now()}-${Math.floor(Math.random() * 100000)}`;
@@ -191,7 +223,7 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		input.setTransitionReserveKey(
 			markers.fromReserve ? `${markers.fromReserve.owner}:${markers.fromReserve.piece}` : null
 		);
-		const movingOwner = markers.fromReserve?.owner ?? input.getGame()?.viewerColor ?? null;
+		const movingOwner = markers.fromReserve?.owner ?? previousGame?.viewerColor ?? null;
 		input.setTransitionMovingOwner(movingOwner);
 
 		await tick();
@@ -199,21 +231,31 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		let updatedGame: GameView | null = null;
 		let moveError: unknown = null;
 
-		const transition = document.startViewTransition(async () => {
-			try {
-				updatedGame = await playMoveRemote(input.getGameId(), payload);
-				input.setGame(updatedGame);
-				if (isAutomaticDrawRoundReset(previousGame?.state ?? null, updatedGame.state)) {
-					input.setShowRepetitionDrawModal(true);
-				}
-				if (followLiveHistory) {
-					input.setHistoryStep(updatedGame.state.moveHistory.length);
-					input.setHistorySnapshot(null);
-				}
-			} catch (error) {
-				moveError = error;
+		const transition = document.startViewTransition(() => {
+			if (optimisticGame) {
+				input.setGame(optimisticGame);
 			}
 		});
+
+		try {
+			updatedGame = await playMoveRemote(input.getGameId(), payload);
+			// Mettre à jour avec la vérité serveur sans casser l'animation en attente
+			await transition.ready.catch(() => undefined);
+			input.setGame(updatedGame);
+			
+			if (isAutomaticDrawRoundReset(previousGame?.state ?? null, updatedGame.state)) {
+				input.setShowRepetitionDrawModal(true);
+			}
+			if (followLiveHistory) {
+				input.setHistoryStep(updatedGame.state.moveHistory.length);
+				input.setHistorySnapshot(null);
+			}
+		} catch (error) {
+			moveError = error;
+			if (previousGame) {
+				input.setGame(previousGame);
+			}
+		}
 
 		await transition.finished.catch(() => undefined);
 		clearTransitionMarkers();
