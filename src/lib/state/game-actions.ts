@@ -146,9 +146,10 @@ export function createGameActions(input: GameActionsFactoryInput) {
 
 		await tick();
 
-		const transition = document.startViewTransition(() => {
+		const transition = document.startViewTransition(async () => {
 			input.setHistoryStep(moveIndex + 1);
 			input.setHistorySnapshot(getSnapshotForHistoryStep(entries, moveIndex + 1));
+			await tick();
 		});
 
 		await transition.finished.catch(() => undefined);
@@ -231,10 +232,11 @@ export function createGameActions(input: GameActionsFactoryInput) {
 		let updatedGame: GameView | null = null;
 		let moveError: unknown = null;
 
-		const transition = document.startViewTransition(() => {
+		const transition = document.startViewTransition(async () => {
 			if (optimisticGame) {
 				input.setGame(optimisticGame);
 			}
+			await tick();
 		});
 
 		try {
