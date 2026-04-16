@@ -10,6 +10,12 @@ export async function chooseAiMove(
 	color: Color,
 	mctsOptions?: MctsOptions
 ): Promise<PlayerMove | null> {
+	const usesModel = mctsOptions?.modelAdapter !== undefined;
+	if (usesModel) {
+		console.debug(`[AI] Choix du coup avec modèle IA (GPU) pour ${color}`);
+	} else {
+		console.debug(`[AI] Fallback: choix du coup avec MCTS pur (CPU) pour ${color}`);
+	}
 	const result = await runMcts(state, color, { simulations: DEFAULT_SIMULATIONS, ...mctsOptions });
 	return result.move;
 }

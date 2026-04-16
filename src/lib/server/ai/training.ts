@@ -11,7 +11,7 @@ import {
 
 import { DEFAULT_AI_DIFFICULTY } from './config';
 import { encodeState } from './encoder';
-import { runMcts } from './mcts';
+import { runMcts, type ModelAdapter } from './mcts';
 
 export interface SelfPlayGameResult {
 	winner: Color | null;
@@ -108,7 +108,8 @@ interface PendingSample {
 }
 
 async function playSelfPlayGame(
-	maxPlies: number
+	maxPlies: number,
+	modelAdapter?: ModelAdapter
 ): Promise<{ result: SelfPlayGameResult; samples: TrainingSample[] }> {
 	let state = createSelfPlayState();
 	const moves: string[] = [];
@@ -119,7 +120,8 @@ async function playSelfPlayGame(
 		const encoded = Array.from(encodeState(state, actor));
 		const mctsResult = await runMcts(state, actor, {
 			simulations: SELF_PLAY_SIMULATIONS,
-			tacticalSafety: 'disabled'
+			tacticalSafety: 'disabled',
+			modelAdapter
 		});
 		const move = mctsResult.move;
 		if (!move) {
@@ -160,6 +162,7 @@ export async function runSelfPlayBatch(options?: {
 	games?: number;
 	maxPlies?: number;
 	concurrency?: number;
+	modelAdapter?: ModelAdapter;
 	onGameComplete?: (completed: number, total: number) => void;
 }): Promise<SelfPlayBatchReport> {
 	const totalGames = options?.games ?? 8;
@@ -170,7 +173,7 @@ export async function runSelfPlayBatch(options?: {
 	const results = await pMap(
 		Array.from({ length: totalGames }, (_, index) => index),
 		async () => {
-			const result = await playSelfPlayGame(maxPlies);
+			const result = await playSelfPlayGame(maxPlies, options?.modelAdapter);
 			completed += 1;
 			options?.onGameComplete?.(completed, totalGames);
 			return result;
